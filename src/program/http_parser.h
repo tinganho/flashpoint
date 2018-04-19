@@ -5,10 +5,12 @@
 #ifndef FLASH_HTTP_PARSER_H
 #define FLASH_HTTP_PARSER_H
 
-#include <http_scanner.h>
+#include <program/http_scanner.h>
 #include <types.h>
 
-namespace flash::lib {
+using namespace flashpoint::lib;
+
+namespace flashpoint::program {
     enum class Headers {
         Method =  1 << 1,
         Path =    1 << 2,
@@ -41,7 +43,6 @@ namespace flash::lib {
     class HttpParser final {
     public:
         HttpParser(char* text, unsigned int length);
-        std::map<std::string, std::string> get_graphql_origins();
         std::unique_ptr<HttpRequest> parse();
         RequestLine parse_request_line();
         std::map<HttpHeader, char*> parse_headers();

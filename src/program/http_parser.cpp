@@ -4,13 +4,11 @@
 
 #include <iostream>
 #include <vector>
-#include "http_parser.h"
+#include <program/http_parser.h>
 
-namespace flash::lib {
+using namespace flashpoint::lib;
 
-    static std::vector<std::tuple<const char*, int>> should_parse_header = {
-        { "Host", sizeof("Host") - 1 }
-    };
+namespace flashpoint::program {
 
     HttpParser::HttpParser(char* text, unsigned int size):
         scanner(text, size)
@@ -31,7 +29,8 @@ namespace flash::lib {
         return request;
     }
 
-    std::map<HttpHeader, char*> HttpParser::parse_headers() {
+    std::map<HttpHeader, char*> HttpParser::parse_headers()
+    {
         std::map<HttpHeader, char*> headers = {};
         while (true) {
             auto header = scanner.scan_header();
@@ -41,11 +40,6 @@ namespace flash::lib {
             headers.emplace(header, scanner.get_header_value());
         }
         return headers;
-    };
-
-    std::map<std::string, std::string> HttpParser::get_graphql_origins()
-    {
-
     }
 
     RequestLine HttpParser::parse_request_line()

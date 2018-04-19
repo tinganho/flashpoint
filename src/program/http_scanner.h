@@ -9,7 +9,7 @@
 #include <stack>
 #include <vector>
 
-namespace flash::lib {
+namespace flashpoint::program {
 
     enum Character {
         NullCharacter = 0x00,

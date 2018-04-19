@@ -7,7 +7,7 @@
 #include <map>
 #include <memory>
 
-namespace flash::lib {
+namespace flashpoint::lib {
 
     enum class OridinalCategory {
         None =      0,

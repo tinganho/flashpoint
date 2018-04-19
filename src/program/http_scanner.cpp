@@ -1,13 +1,9 @@
-//
-// Created by Tingan Ho on 2018-04-08.
-//
-
 #include <iostream>
 #include <tuple>
 #include "utils.h"
 #include "http_scanner.h"
 
-namespace flash::lib {
+namespace flashpoint::program {
 
     HttpScanner::HttpScanner(char* text, unsigned int size):
         position(0),
@@ -24,8 +20,7 @@ namespace flash::lib {
     HttpMethod HttpScanner::scan_method()
     {
         HttpMethod token = HttpMethod::None;
-        switch (current_char())
-        {
+        switch (current_char()) {
             case Character::C:
                 position += 7;
                 token = HttpMethod::Connect;
@@ -335,14 +330,14 @@ namespace flash::lib {
         while (position < size && current_char() != Character::CarriageReturn) {
             increment_position();
         }
-        increment_position();
-        increment_position();
+        scan_expected(Character::CarriageReturn);
+        scan_expected(Character::LineFeed);
     }
 
     char* HttpScanner::get_token_value() const
     {
         int size = position - start_position + 1;
-        char* str = (char*)malloc(size);
+        char* str = new char[size];
         std::strncpy(str, text + start_position, size);
         str[size - 1] = '\0';
         return str;

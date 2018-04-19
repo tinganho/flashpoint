@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "test_definition.h"
 
-namespace flash::lib {
+namespace flashpoint::test {
 
     Test::Test(std::string name, std::function<void(Test* t)> procedure):
             name(name),
@@ -19,12 +19,12 @@ namespace flash::lib {
     std::vector<Domain*> domains = {};
     Domain * current_domain;
 
-    void domain(std::string name) {
+    void domain(const std::string& name) {
         current_domain = new Domain(name);
         domains.push_back(current_domain);
     }
 
-    void test(std::string name, std::function<void(Test* t)> procedure) {
+    void test(const std::string& name, std::function<void(Test* t)> procedure) {
         auto test = new Test(name, procedure);
         current_domain->tests.push_back(test);
     }
@@ -56,7 +56,7 @@ namespace flash::lib {
 
         if (tests_failed > 0) {
             std::cout << std::endl;
-            std::cout << "Failed tests:" << std::endl;
+            std::cout << "Failed test:" << std::endl;
             std::cout << std::endl;
             for (auto const & t : failed_tests) {
                 std::cout <<  "\e[31m    " + t->name + "\e[0m" << std::endl;

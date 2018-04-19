@@ -1,6 +1,3 @@
-
-
-
 #ifndef FLASH_TEST_DEFINITION_H
 #define FLASH_TEST_DEFINITION_H
 
@@ -12,7 +9,7 @@
 #include <functional>
 #include "utils.h"
 
-namespace flash::lib {
+namespace flashpoint::test {
 
     struct Test {
         std::string name;
@@ -29,8 +26,8 @@ namespace flash::lib {
         Domain(std::string name);
     };
 
-    void domain(std::string name);
-    void test(std::string name, std::function<void(Test* t)> procedure);
+    void domain(const std::string& name);
+    void test(const std::string& name, std::function<void(Test* t)> procedure);
     int print_result();
     void run_tests();
 
