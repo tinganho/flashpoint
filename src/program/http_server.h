@@ -6,12 +6,11 @@
 namespace flashpoint::program {
     class HttpServer {
     public:
-        int listen(const char* host, unsigned int port);
+        HttpServer(uv_loop_t* loop);
+        int listen(const char *host, unsigned int port);
         void close();
-    private:
         uv_loop_t* loop;
-        sockaddr_in addr;
-        uv_tcp_t server;
+    private:
     };
 
     void echo_read(uv_stream_t* client, ssize_t nread, const uv_buf_t *buf);

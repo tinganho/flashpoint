@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-04-08.
-//
-
 #include <iostream>
 #include <vector>
 #include <program/http_parser.h>
@@ -20,6 +16,11 @@ namespace flashpoint::program {
     {
         auto [method, path, query] = parse_request_line();
         std::map<HttpHeader, char*> headers = parse_headers();
+        auto it = headers.find(HttpHeader::ContentLength);
+        if (it != headers.end()) {
+            parse_body(std::atoll(it->second));
+        }
+
         std::unique_ptr<HttpRequest> request(new HttpRequest {
             method,
             path,
@@ -27,6 +28,12 @@ namespace flashpoint::program {
             headers,
         });
         return request;
+    }
+
+    void HttpParser::parse_body(long long length)
+    {
+        const char* body = scanner.scan_body(length);
+        const char* error;
     }
 
     std::map<HttpHeader, char*> HttpParser::parse_headers()

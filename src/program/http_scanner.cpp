@@ -69,6 +69,17 @@ namespace flashpoint::program {
         return token;
     }
 
+    char* HttpScanner::scan_body(unsigned int length)
+    {
+        unsigned long long i = 0;
+        set_token_start_position();
+        while (position < size && i < length) {
+            increment_position();
+            i++;
+        }
+        return get_token_value();
+    }
+
     char* HttpScanner::scan_absolute_path()
     {
         set_token_start_position();
@@ -76,6 +87,7 @@ namespace flashpoint::program {
         char ch = current_char();
         while (position < size && (is_pchar(ch) || ch == Character::Slash)) {
             increment_position();
+            ch = current_char();
         }
         return get_token_value();
     }
@@ -114,13 +126,11 @@ namespace flashpoint::program {
         while (position < size && is_header_field_part(current_char())) {
             increment_position();
         }
-        HttpHeader header = get_header(get_token_value());
+        HttpHeader header = get_header(get_lower_cased_value());
         scan_expected(Character::Colon);
         scan_optional(Character::Space);
         set_token_start_position();
-        while (position < size && is_vchar(current_char())) {
-            increment_position();
-        }
+        scan_header_value();
         current_header = get_token_value();
         scan_optional(Character::Space);
         scan_expected(Character::CarriageReturn);
@@ -146,14 +156,15 @@ namespace flashpoint::program {
 
     bool HttpScanner::is_header_field_start(char ch)
     {
-        return (ch >= Character::A && ch <= Character::Z);
+        return (ch >= Character::a && ch <= Character::z) ||
+           (ch >= Character::A && ch <= Character::Z);
     }
 
     bool HttpScanner::is_header_field_part(char ch)
     {
         return (ch >= Character::a && ch <= Character::z) ||
-               (ch >= Character::A && ch <= Character::Z) ||
-               ch == Character::Dash;
+           (ch >= Character::A && ch <= Character::Z) ||
+           ch == Character::Dash;
     }
 
     bool HttpScanner::is_method_part(char ch)
@@ -185,6 +196,51 @@ namespace flashpoint::program {
         throw std::logic_error("Should not reach here.");
     }
 
+    bool HttpScanner::scan_field_content()
+    {
+        save();
+        char ch = current_char();
+        if (is_vchar(ch) || is_obs_text(ch)) {
+            increment_position();
+        }
+        else {
+            revert();
+            return false;
+        }
+        ch = current_char();
+        if (ch == Space || ch == HorizontalTab) {
+            increment_position();
+            ch = current_char();
+            while (position < size && (ch == Space || ch == HorizontalTab)) {
+                increment_position();
+                ch = current_char();
+            }
+        }
+        else {
+            return true;
+        }
+        if (!is_vchar(current_char())) {
+            revert();
+            return false;
+        }
+        increment_position();
+        return true;
+    }
+
+    void HttpScanner::scan_header_value()
+    {
+        while (position < size) {
+            if (scan_field_content()) {
+                continue;
+            }
+            if (is_obs_text(current_char())) {
+                increment_position();
+                continue;
+            }
+            return;
+        }
+    }
+
     bool HttpScanner::is_pchar(char ch)
     {
         if (is_unreserverd_char(ch)) {
@@ -193,13 +249,13 @@ namespace flashpoint::program {
         if (is_sub_delimiter(ch)) {
             return true;
         }
-        if (ch == Character::Colon) {
+        if (ch == Colon) {
             return true;
         }
-        if (ch == Character::At) {
+        if (ch == At) {
             return true;
         }
-        if (ch == Character::Percent) {
+        if (ch == Percent) {
             increment_position();
             if (!ishexnumber(current_char())) {
                 throw std::logic_error("Expected hex number.");
@@ -256,6 +312,19 @@ namespace flashpoint::program {
         return false;
     }
 
+    bool HttpScanner::is_obs_text(char ch)
+    {
+        return  (ch >= 0x80 && ch <= 0xff);
+    }
+
+    bool HttpScanner::is_tchar(char ch)
+    {
+        return (ch >= Exclamation && ch <= Tilde) ||
+            (ch >= A && ch <= Z) ||
+            (ch >= a && ch <= z) ||
+            (ch >= _0 && ch <= _9);
+    }
+
 
     void HttpScanner::increment_position()
     {
@@ -286,7 +355,13 @@ namespace flashpoint::program {
             increment_position();
             return;
         }
-        throw std::logic_error(std::string("Expected character character '") + ch  + "'");
+        if (ch == Character::CarriageReturn) {
+            throw std::logic_error(std::string("Expected character '") + "\\r'.");
+        }
+        if (ch == Character::LineFeed) {
+            throw std::logic_error(std::string("Expected character '") + "\\n'.");
+        }
+        throw std::logic_error(std::string("Expected character '") + ch + "'");
     }
 
 
@@ -332,6 +407,17 @@ namespace flashpoint::program {
         }
         scan_expected(Character::CarriageReturn);
         scan_expected(Character::LineFeed);
+    }
+
+    char* HttpScanner::get_lower_cased_value() const
+    {
+        long long size = position - start_position + 1;
+        auto* str = new char[size];
+        for (int i = 0; i < size; i++) {
+            str[i] = static_cast<char>(tolower(text[start_position + i]));
+        }
+        str[size - 1] = '\0';
+        return str;
     }
 
     char* HttpScanner::get_token_value() const

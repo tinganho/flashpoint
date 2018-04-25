@@ -57,27 +57,32 @@ namespace flashpoint::lib {
         usleep(ms);
     }
 
-    bool path_exists(const std::string& path) {
-        boost::filesystem::path candidate(path);
-        return boost::filesystem::exists(candidate);
+    bool path_exists(const boost::filesystem::path& path) {
+        return boost::filesystem::exists(path);
     }
 
-    std::string read_file(const std::string& file) {
-        std::ifstream t(file);
-        std::stringstream buffer;
-        buffer << t.rdbuf();
-        return buffer.str();
+    char* read_file(const boost::filesystem::path& filename) {
+        std::ifstream file(filename.string(), std::ios::binary);
+        if (file.is_open()) {
+            file.seekg(0, std::ios::end);
+            int size = file.tellg();
+            char* content = new char[size + 1];
+            file.seekg(0, std::ios::beg);
+            file.read(content, size);
+            content[size] = '\0';
+            file.close();
+            return content;
+        }
+        else {
+            throw std::logic_error("Unable to open file" + filename.string());
+        }
     }
 
-    void write_file(const std::string& file, const std::string& content) {
-        std::ofstream f;
-        f.open(file);
-        f << content;
-        f.close();
-    }
-
-    void write_file(const std::string& file, const std::string& content, const std::string& cwd) {
-        write_file(cwd + file, content);
+    void write_file(boost::filesystem::path &filename, const char* content) {
+        std::ofstream file;
+        file.open(filename.string());
+        file.write(content, strlen(content));
+        file.close();
     }
 
     void remove_folder(const std::string &path) {
@@ -136,15 +141,23 @@ namespace flashpoint::lib {
         return boost::replace_all_copy(target, pattern, replacement);
     }
 
+    std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+        size_t start_pos = 0;
+        while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+            str.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        return str;
+    }
+
     namespace Debug {
         void fail(std::string err) {
             throw std::logic_error(err);
         }
     }
 
-    void create_folder(std::string dir) {
-        boost::filesystem::path d(dir);
-        boost::filesystem::create_directories(d);
+    void create_folder(boost::filesystem::path &folder) {
+        boost::filesystem::create_directories(folder);
     }
 
     std::vector<std::string> find_files(const std::string& pattern) {
@@ -171,8 +184,7 @@ namespace flashpoint::lib {
 
     std::string resolve_paths(const std::string& path1, const std::string& path2) {
         boost::filesystem::path p1 (path1);
-        boost::filesystem::path p2 (path2);
-        return boost::filesystem::canonical(p1 / p2).string();
+        return boost::filesystem::canonical(p1 / path2).string();
     }
 
     std::string resolve_paths(const std::string& path1, const std::string& path2, const std::string& path3) {

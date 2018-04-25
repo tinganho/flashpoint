@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-04-08.
-//
-
 #ifndef FLASH_HTTP_PARSER_H
 #define FLASH_HTTP_PARSER_H
 
@@ -46,6 +42,7 @@ namespace flashpoint::program {
         std::unique_ptr<HttpRequest> parse();
         RequestLine parse_request_line();
         std::map<HttpHeader, char*> parse_headers();
+        void parse_body(long long length);
     private:
         HttpScanner scanner;
         unsigned int length;

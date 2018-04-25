@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-04-08.
-//
-
 #ifndef FLASH_HTTP_SCANNER_H
 #define FLASH_HTTP_SCANNER_H
 
@@ -13,15 +9,6 @@ namespace flashpoint::program {
 
     enum Character {
         NullCharacter = 0x00,
-
-        Backspace = 0x08,             // \b
-        HorizontalTab = 0x09,
-        LineFeed = 0x0A,              // \n
-        VerticalTab = 0x0B,
-        FormFeed = 0x0C,
-        CarriageReturn = 0x0D,        // \r
-        Tab = 0x09,                   // \t
-        Space = 0x20,
 
         _ = 0x5F,
         $ = 0x24,
@@ -95,9 +82,11 @@ namespace flashpoint::program {
         Asterisk = 0x2A,              // *
         At = 0x40,                    // @
         Backslash = 0x5C,             // \
+        Backspace = 0x08,             // \b
 	    Backtick = 0x60,              // `
         Bar = 0x7C,                   // |
         Caret = 0x5E,                 // ^
+        CarriageReturn = 0x0D,        // \r
         CloseBrace = 0x7D,            // }
         CloseBracket = 0x5D,          // ]
         CloseParen = 0x29,            // )
@@ -107,10 +96,13 @@ namespace flashpoint::program {
         DoubleQuote = 0x22,           // "
         Equal = 0x3D,                 // =
         Exclamation = 0x21,           // !
+        FormFeed = 0x0C,              // [FORM_FEED]
         Dollar = 0x24,                // $
         GreaterThan = 0x3E,           // >
         Hash = 0x23,                  // #
+        HorizontalTab = 0x09,         // [HORIZONTAL_TAB]
         LessThan = 0x3C,              // <
+        LineFeed = 0x0A,              // \n
         Minus = 0x2D,                 // -
         Dash = Minus,                 // -
         OpenBrace = 0x7B,             // {
@@ -122,10 +114,13 @@ namespace flashpoint::program {
         Semicolon = 0x3B,             // ;
         SingleQuote = 0x27,           // '
         Slash = 0x2F,                 // /
+        Space = 0x20,                 // [Space]
+        Tab = 0x09,                   // \t
         Tilde = 0x7E,                 // ~
         Underscore = 0x5F,            // _
+        VerticalTab = 0x0B,           // [VERTICAL_TAB]
 
-        MaxAsciiCharacter = 0x7F,
+        MaxAsciiCharacter = 0x7F,     // DEL
     };
 
     enum class HttpMethod {
@@ -268,101 +263,101 @@ namespace flashpoint::program {
     };
 
     const std::map<const char*, HttpHeader, char_compare> string_to_token = {
-        { "Accept", HttpHeader::Accept },
-        { "Accept-Charset", HttpHeader::AcceptCharset },
-        { "Accept-Encoding", HttpHeader::AcceptEncoding },
-        { "Accept-Language", HttpHeader::AcceptLanguage },
-        { "Accept-Post", HttpHeader::AcceptPost },
-        { "Accept-Ranges", HttpHeader::AcceptRanges },
-        { "Age", HttpHeader::Age },
-        { "Allow", HttpHeader::Allow },
-        { "ALPN", HttpHeader::ALPN },
-        { "Alt-Svc", HttpHeader::AltSvc },
-        { "Alt-Used", HttpHeader::AltUsed },
-        { "Authentication-Info", HttpHeader::AuthenticationInfo },
-        { "Authorization", HttpHeader::Authorization },
-        { "Cache-Control", HttpHeader::CacheControl },
-        { "CalDAV-Timezones", HttpHeader::CalDAVTimezones },
-        { "Connection", HttpHeader::Connection },
-        { "Content-Disposition", HttpHeader::ContentDisposition },
-        { "Content-Encoding", HttpHeader::ContentEncoding },
-        { "Content-Language", HttpHeader::ContentLanguage },
-        { "Content-Length", HttpHeader::ContentLength },
-        { "Content-Location", HttpHeader::ContentLocation },
-        { "Content-Range", HttpHeader::ContentRange },
-        { "Content-Type", HttpHeader::ContentType },
-        { "Cookie", HttpHeader::Cookie },
-        { "DASL", HttpHeader::DASL },
-        { "DAV", HttpHeader::DAV },
-        { "Date", HttpHeader::Date },
-        { "Depth", HttpHeader::Depth },
-        { "Destination", HttpHeader::Destination },
-        { "ETag", HttpHeader::ETag },
-        { "Expect", HttpHeader::Expect },
-        { "Expires", HttpHeader::Expires },
-        { "Forwarded", HttpHeader::Forwarded },
-        { "From", HttpHeader::From },
-        { "Host", HttpHeader::Host },
-        { "HTTP2-Settings", HttpHeader::HTTP2Settings },
-        { "If", HttpHeader::If },
-        { "If-Match", HttpHeader::IfMatch },
-        { "If-Modified-Since", HttpHeader::IfModifiedSince },
-        { "If-None-Match", HttpHeader::IfNoneMatch },
-        { "If-Range", HttpHeader::IfRange },
-        { "If-Schedule-Tag-Match", HttpHeader::IfScheduleTagMatch },
-        { "If-Unmodified-Since", HttpHeader::IfUnmodifiedSince },
-        { "Last-Modified", HttpHeader::LastModified },
-        { "Link", HttpHeader::Link },
-        { "Location", HttpHeader::Location },
-        { "Lock-Token", HttpHeader::LockToken },
-        { "Max-Forwards", HttpHeader::MaxForwards },
-        { "MIME-Version", HttpHeader::MIMEVersion },
-        { "Ordering-Type", HttpHeader::OrderingType },
-        { "Origin", HttpHeader::Origin },
-        { "Overwrite", HttpHeader::Overwrite },
-        { "Position", HttpHeader::Position },
-        { "Pragma", HttpHeader::Pragma },
-        { "Prefer", HttpHeader::Prefer },
-        { "Preference-Applied", HttpHeader::PreferenceApplied },
-        { "Proxy-Authenticate", HttpHeader::ProxyAuthenticate },
-        { "Proxy-Authentication-Info", HttpHeader::ProxyAuthenticationInfo },
-        { "Proxy-Authorization", HttpHeader::ProxyAuthorization },
-        { "Public-Key-Pins", HttpHeader::PublicKeyPins },
-        { "Public-Key-Pins-Report-Only", HttpHeader::PublicKeyPinsReportOnly },
-        { "Range", HttpHeader::Range },
-        { "Referer", HttpHeader::Referer },
-        { "Retry-After", HttpHeader::RetryAfter },
-        { "Schedule-Reply", HttpHeader::ScheduleReply },
-        { "Schedule-Tag", HttpHeader::ScheduleTag },
-        { "Sec-WebSocket-Accept", HttpHeader::SecWebSocketAccept },
-        { "Sec-WebSocket-Extensions", HttpHeader::SecWebSocketExtensions },
-        { "Sec-WebSocket-Key", HttpHeader::SecWebSocketKey },
-        { "Sec-WebSocket-Protocol", HttpHeader::SecWebSocketProtocol },
-        { "Sec-WebSocket-Version", HttpHeader::SecWebSocketVersion },
-        { "Server", HttpHeader::Server },
-        { "Set-Cookie", HttpHeader::SetCookie },
-        { "SLUG", HttpHeader::SLUG },
-        { "Strict-Transport-Security", HttpHeader::StrictTransportSecurity },
-        { "TE", HttpHeader::TE },
-        { "Timeout", HttpHeader::Timeout },
-        { "Topic", HttpHeader::Topic },
-        { "Trailer", HttpHeader::Trailer },
-        { "Transfer-Encoding", HttpHeader::TransferEncoding },
-        { "TTL", HttpHeader::TTL },
-        { "Urgency", HttpHeader::Urgency },
-        { "Upgrade", HttpHeader::Upgrade },
-        { "User-Agent", HttpHeader::UserAgent },
-        { "Vary", HttpHeader::Vary },
-        { "Via", HttpHeader::Via },
-        { "WWW-Authenticate", HttpHeader::WWWAuthenticate },
-        { "Warning", HttpHeader::Warning },
-        { "X-Content-Type-Options", HttpHeader::XContentTypeOptions },
+        { "accept", HttpHeader::Accept },
+        { "accept-charset", HttpHeader::AcceptCharset },
+        { "accept-encoding", HttpHeader::AcceptEncoding },
+        { "accept-language", HttpHeader::AcceptLanguage },
+        { "accept-post", HttpHeader::AcceptPost },
+        { "accept-ranges", HttpHeader::AcceptRanges },
+        { "age", HttpHeader::Age },
+        { "allow", HttpHeader::Allow },
+        { "alpn", HttpHeader::ALPN },
+        { "alt-svc", HttpHeader::AltSvc },
+        { "alt-used", HttpHeader::AltUsed },
+        { "authentication-info", HttpHeader::AuthenticationInfo },
+        { "authorization", HttpHeader::Authorization },
+        { "cache-control", HttpHeader::CacheControl },
+        { "caldav-timezones", HttpHeader::CalDAVTimezones },
+        { "connection", HttpHeader::Connection },
+        { "content-disposition", HttpHeader::ContentDisposition },
+        { "content-encoding", HttpHeader::ContentEncoding },
+        { "content-language", HttpHeader::ContentLanguage },
+        { "content-length", HttpHeader::ContentLength },
+        { "content-location", HttpHeader::ContentLocation },
+        { "content-range", HttpHeader::ContentRange },
+        { "content-type", HttpHeader::ContentType },
+        { "cookie", HttpHeader::Cookie },
+        { "dasl", HttpHeader::DASL },
+        { "dav", HttpHeader::DAV },
+        { "date", HttpHeader::Date },
+        { "depth", HttpHeader::Depth },
+        { "destination", HttpHeader::Destination },
+        { "etag", HttpHeader::ETag },
+        { "expect", HttpHeader::Expect },
+        { "expires", HttpHeader::Expires },
+        { "forwarded", HttpHeader::Forwarded },
+        { "from", HttpHeader::From },
+        { "host", HttpHeader::Host },
+        { "http2-settings", HttpHeader::HTTP2Settings },
+        { "if", HttpHeader::If },
+        { "if-match", HttpHeader::IfMatch },
+        { "if-modified-since", HttpHeader::IfModifiedSince },
+        { "if-none-match", HttpHeader::IfNoneMatch },
+        { "if-range", HttpHeader::IfRange },
+        { "if-schedule-tag-match", HttpHeader::IfScheduleTagMatch },
+        { "if-unmodified-since", HttpHeader::IfUnmodifiedSince },
+        { "last-modified", HttpHeader::LastModified },
+        { "link", HttpHeader::Link },
+        { "location", HttpHeader::Location },
+        { "lock-token", HttpHeader::LockToken },
+        { "max-forwards", HttpHeader::MaxForwards },
+        { "mime-version", HttpHeader::MIMEVersion },
+        { "ordering-type", HttpHeader::OrderingType },
+        { "origin", HttpHeader::Origin },
+        { "overwrite", HttpHeader::Overwrite },
+        { "position", HttpHeader::Position },
+        { "pragma", HttpHeader::Pragma },
+        { "prefer", HttpHeader::Prefer },
+        { "preference-applied", HttpHeader::PreferenceApplied },
+        { "proxy-authenticate", HttpHeader::ProxyAuthenticate },
+        { "proxy-authentication-info", HttpHeader::ProxyAuthenticationInfo },
+        { "proxy-authorization", HttpHeader::ProxyAuthorization },
+        { "public-key-pins", HttpHeader::PublicKeyPins },
+        { "public-key-pins-report-only", HttpHeader::PublicKeyPinsReportOnly },
+        { "range", HttpHeader::Range },
+        { "referer", HttpHeader::Referer },
+        { "retry-after", HttpHeader::RetryAfter },
+        { "schedule-reply", HttpHeader::ScheduleReply },
+        { "schedule-tag", HttpHeader::ScheduleTag },
+        { "sec-webSocket-accept", HttpHeader::SecWebSocketAccept },
+        { "sec-webSocket-extensions", HttpHeader::SecWebSocketExtensions },
+        { "sec-webSocket-key", HttpHeader::SecWebSocketKey },
+        { "sec-webSocket-protocol", HttpHeader::SecWebSocketProtocol },
+        { "sec-webSocket-version", HttpHeader::SecWebSocketVersion },
+        { "server", HttpHeader::Server },
+        { "set-cookie", HttpHeader::SetCookie },
+        { "slug", HttpHeader::SLUG },
+        { "strict-transport-security", HttpHeader::StrictTransportSecurity },
+        { "te", HttpHeader::TE },
+        { "timeout", HttpHeader::Timeout },
+        { "topic", HttpHeader::Topic },
+        { "trailer", HttpHeader::Trailer },
+        { "transfer-encoding", HttpHeader::TransferEncoding },
+        { "ttl", HttpHeader::TTL },
+        { "urgency", HttpHeader::Urgency },
+        { "upgrade", HttpHeader::Upgrade },
+        { "user-agent", HttpHeader::UserAgent },
+        { "vary", HttpHeader::Vary },
+        { "via", HttpHeader::Via },
+        { "www-authenticate", HttpHeader::WWWAuthenticate },
+        { "warning", HttpHeader::Warning },
+        { "x-content-type-options", HttpHeader::XContentTypeOptions },
     };
 
     struct SavedTextCursor {
-        unsigned int position;
-        unsigned int start_position;
-        unsigned int end_position;
+        long long position;
+        long long start_position;
+        long long end_position;
     };
 
     enum ParserMode {
@@ -381,8 +376,10 @@ namespace flashpoint::program {
         HttpHeader scan_header();
         char* scan_absolute_path();
         char* scan_query();
+        char* scan_body(unsigned int length);
         RequestLineToken scan_http_version();
         HttpMethod scan_method();
+        char* get_lower_cased_value() const;
         char* get_token_value() const;
         char* get_header_value();
         bool scan_optional(char ch);
@@ -391,9 +388,9 @@ namespace flashpoint::program {
         bool next_char_is(char ch);
         void scan_rest_of_line();
     private:
-        unsigned int position;
-        unsigned int start_position;
-        unsigned int end_position;
+        long long position;
+        long long start_position;
+        long long end_position;
         char* current_header;
         ParserMode parser_mode;
         std::stack<SavedTextCursor> saved_text_cursors;
@@ -403,7 +400,11 @@ namespace flashpoint::program {
         void save();
         void revert();
         char peek_next_char();
+        bool scan_field_content();
+        void scan_header_value();
         bool is_vchar(char ch);
+        bool is_obs_text(char ch);
+        bool is_tchar(char ch);
         bool is_unreserverd_char(char ch);
         bool is_sub_delimiter(char ch);
         bool is_header_field_start(char ch);
