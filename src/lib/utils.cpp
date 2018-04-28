@@ -6,6 +6,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #ifdef WINDOWS
 #include <windows.h>
 #else
@@ -182,25 +183,20 @@ namespace flashpoint::lib {
         return find_files(_cwd + pattern);
     }
 
-    std::string resolve_paths(const std::string& path1, const std::string& path2) {
-        boost::filesystem::path p1 (path1);
-        return boost::filesystem::canonical(p1 / path2).string();
+    path resolve_paths(const path& _path1, const path& _path2) {
+        return boost::filesystem::weakly_canonical(_path1 / _path2);
     }
 
-    std::string resolve_paths(const std::string& path1, const std::string& path2, const std::string& path3) {
-        boost::filesystem::path p1 (path1);
-        boost::filesystem::path p2 (path2);
-        boost::filesystem::path p3 (path3);
-        return boost::filesystem::canonical(p1 / p2 / p3).string();
+    path resolve_paths(const path& _path1, const path& _path2, const path& _path3) {
+        return boost::filesystem::weakly_canonical(_path1 / _path2 / _path3);
     }
 
-    std::string root_path(const std::string& path) {
-        std::string exec_path = get_exec_path();
-        return resolve_paths(exec_path, "../") + "/";
+    path root_path(const path& _path) {
+        return boost::filesystem::weakly_canonical(root_path() / _path);
     }
 
-    std::string root_path() {
-        return root_path("");
+    path root_path() {
+        return resolve_paths(boost::dll::program_location(), "../../");
     }
 
     std::string get_cwd() {

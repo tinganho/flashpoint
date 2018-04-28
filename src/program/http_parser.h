@@ -2,26 +2,13 @@
 #define FLASH_HTTP_PARSER_H
 
 #include <program/http_scanner.h>
+#include <unordered_map>
 #include <types.h>
+#include <uv.h>
 
 using namespace flashpoint::lib;
 
 namespace flashpoint::program {
-    enum class Headers {
-        Method =  1 << 1,
-        Path =    1 << 2,
-        Headers = 1 << 3,
-        Body =    1 << 4,
-    };
-
-    enum class Version {
-        _1_1,
-        _2,
-    };
-
-    enum class ContentType {
-
-    };
 
     struct RequestLine {
         HttpMethod method;
@@ -33,7 +20,8 @@ namespace flashpoint::program {
         HttpMethod method;
         char* path;
         char* query;
-        std::map<HttpHeader, char*> headers;
+        std::unordered_map<HttpHeader, char*> headers;
+        uv_stream_t* client_stream;
     };
 
     class HttpParser final {
@@ -41,7 +29,7 @@ namespace flashpoint::program {
         HttpParser(char* text, unsigned int length);
         std::unique_ptr<HttpRequest> parse();
         RequestLine parse_request_line();
-        std::map<HttpHeader, char*> parse_headers();
+        std::unordered_map<HttpHeader, char*> parse_headers();
         void parse_body(long long length);
     private:
         HttpScanner scanner;

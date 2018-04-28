@@ -317,15 +317,6 @@ namespace flashpoint::program {
         return  (ch >= 0x80 && ch <= 0xff);
     }
 
-    bool HttpScanner::is_tchar(char ch)
-    {
-        return (ch >= Exclamation && ch <= Tilde) ||
-            (ch >= A && ch <= Z) ||
-            (ch >= a && ch <= z) ||
-            (ch >= _0 && ch <= _9);
-    }
-
-
     void HttpScanner::increment_position()
     {
         if (position >= size) {

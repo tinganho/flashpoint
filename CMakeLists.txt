@@ -8,6 +8,14 @@ include(ExternalProject)
 include(cmake/modules/find_glib.cmake)
 include(cmake/lib/utils.cmake)
 
+set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+find_package(OpenSSL REQUIRED)
+if (OpenSSL_FOUND)
+    include_directories(${OpenSSL_INCLUDE_DIRS})
+    message(STATUS "Using OpenSSL ${OPENSSL_VERSION} ${OPENSSL_INCLUDE_DIRS}")
+else()
+    message(STATUS "Unable to find openssl")
+endif()
 
 # See: https://stackoverflow.com/questions/6468681/failed-linking-to-boost-library-with-cmake-generated-project-file-for-msvc9
 add_definitions(-DBOOST_ALL_NO_LIB)
@@ -22,17 +30,16 @@ find_package(Boost 1.66 COMPONENTS system filesystem regex REQUIRED)
 
 add_subdirectory(third_party/glob)
 add_subdirectory(third_party/jsoncpp EXCLUDE_FROM_ALL)
-add_subdirectory(third_party/libgraphqlparser EXCLUDE_FROM_ALL)
 
 include_directories(
     src
     src/lib
     third_party/glob
-    third_party/libgraphqlparser
     third_party/diff_match_patch
     ${GLIB_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIR}
     ${JSONCPP_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 add_executable(flash
@@ -46,5 +53,5 @@ add_executable(flash-test
     ${PROGRAM_SRC}
     ${LIB_SRC})
 
-target_link_libraries(flash jsoncpp graphqlparser ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a)
-target_link_libraries(flash-test jsoncpp graphqlparser ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a)
+target_link_libraries(flash jsoncpp ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
+target_link_libraries(flash-test jsoncpp ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)

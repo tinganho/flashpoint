@@ -2,6 +2,7 @@
 #define FLASH_HTTP_SCANNER_H
 
 #include <map>
+#include <unordered_map>
 #include <stack>
 #include <vector>
 
@@ -123,7 +124,7 @@ namespace flashpoint::program {
         MaxAsciiCharacter = 0x7F,     // DEL
     };
 
-    enum class HttpMethod {
+    enum HttpMethod {
         None,
         Get,
         Post,
@@ -247,19 +248,10 @@ namespace flashpoint::program {
         End,
     };
 
-    enum class Header {
-    };
-
     struct char_compare {
         bool operator()(const char* a, const char* b) const {
             return std::strcmp(a, b) < 0;
         }
-    };
-
-    enum class Result {
-        False,
-        True,
-        Unknown,
     };
 
     const std::map<const char*, HttpHeader, char_compare> string_to_token = {
@@ -404,7 +396,6 @@ namespace flashpoint::program {
         void scan_header_value();
         bool is_vchar(char ch);
         bool is_obs_text(char ch);
-        bool is_tchar(char ch);
         bool is_unreserverd_char(char ch);
         bool is_sub_delimiter(char ch);
         bool is_header_field_start(char ch);

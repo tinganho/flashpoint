@@ -18,6 +18,7 @@
 #include <boost/filesystem.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
 
+using namespace boost::filesystem;
 
 namespace flashpoint::lib {
     std::string execute_command(const std::string& command);
@@ -38,10 +39,10 @@ namespace flashpoint::lib {
     std::string folder_path(const std::string &path);
     bool copy_folder(const boost::filesystem::path& source, const boost::filesystem::path& destination);
 
-    std::string resolve_paths(const std::string& path1, const std::string& path2);
-    std::string resolve_paths(const std::string& path1, const std::string& path2, const std::string& path3);
-    std::string root_path(const std::string& path);
-    std::string root_path();
+    path resolve_paths(const path& _path1, const path& _path2);
+    path resolve_paths(const path& path1, const path& path2, const path& path3);
+    path root_path(const std::string& path);
+    path root_path();
 
     std::vector<std::string> find_files(const std::string& pattern);
     std::vector<std::string> find_files(const std::string& pattern, const std::string& cwd);

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 #include <program/http_parser.h>
 
 using namespace flashpoint::lib;
@@ -15,10 +16,12 @@ namespace flashpoint::program {
     std::unique_ptr<HttpRequest> HttpParser::parse()
     {
         auto [method, path, query] = parse_request_line();
-        std::map<HttpHeader, char*> headers = parse_headers();
-        auto it = headers.find(HttpHeader::ContentLength);
-        if (it != headers.end()) {
-            parse_body(std::atoll(it->second));
+        std::unordered_map<HttpHeader, char*> headers = parse_headers();
+        if (method != Get) {
+            const char* header = headers[HttpHeader::ContentLength];
+            if (header != NULL) {
+                parse_body(std::atoll(header));
+            }
         }
 
         std::unique_ptr<HttpRequest> request(new HttpRequest {
@@ -26,6 +29,7 @@ namespace flashpoint::program {
             path,
             query,
             headers,
+            nullptr,
         });
         return request;
     }
@@ -33,18 +37,18 @@ namespace flashpoint::program {
     void HttpParser::parse_body(long long length)
     {
         const char* body = scanner.scan_body(length);
-        const char* error;
+
     }
 
-    std::map<HttpHeader, char*> HttpParser::parse_headers()
+    std::unordered_map<HttpHeader, char*> HttpParser::parse_headers()
     {
-        std::map<HttpHeader, char*> headers = {};
+        std::unordered_map<HttpHeader, char*> headers = {};
         while (true) {
             auto header = scanner.scan_header();
             if (header == HttpHeader::End) {
                 break;
             }
-            headers.emplace(header, scanner.get_header_value());
+            headers[header] = scanner.get_header_value();
         }
         return headers;
     }
