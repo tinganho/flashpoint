@@ -73,7 +73,7 @@ namespace flashpoint::program {
         c->write_bio = BIO_new(BIO_s_mem());
         SSL_set_bio(c->ssl, c->read_bio, c->write_bio);
         c->socket = client;
-        uv_tcp_init(c->loop, client);
+        uv_tcp_init(c->server->loop, client);
         client->data = c;
         if (uv_accept(server, (uv_stream_t*)client) == 0) {
             int r = uv_read_start((uv_stream_t *) client, alloc_buffer, on_read);
@@ -91,63 +91,6 @@ namespace flashpoint::program {
     void handle_signal(uv_signal_t* signal, int signum)
     {
         exit(0);
-    }
-
-
-    void on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf);
-
-    HttpServer::HttpServer(uv_loop_t* loop):
-        loop(loop) { }
-
-    void HttpServer::listen(const char *host, unsigned int port)
-    {
-        SSL_library_init();
-        SSL_load_error_strings();
-
-        Client* c = new Client;
-        c->loop = loop;
-        c->ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
-        SSL_CTX_set_options(c->ssl_ctx, SSL_OP_NO_SSLv2);
-        SSL_CTX_set_options(c->ssl_ctx, SSL_OP_NO_SSLv3);
-        SSL_CTX_set_options(c->ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
-        SSL_CTX_set_options(c->ssl_ctx, SSL_OP_SINGLE_DH_USE);
-        SSL_CTX_set_options(c->ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
-        EC_KEY *ecdh = EC_KEY_new_by_curve_name (NID_X9_62_prime256v1);
-        if (!ecdh) {
-            throw std::logic_error("Could not generate elliptic curve diffie hellman key.");
-        }
-        if (1 != SSL_CTX_set_tmp_ecdh (c->ssl_ctx, ecdh)) {
-            throw std::logic_error("Could not set elliptic curve diffie hellman key.");
-        }
-        EC_KEY_free(ecdh);
-
-        const char* cipher_list =
-            "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:"
-            "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:"
-            "DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:"
-            "DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:"
-            "ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:"
-            "!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA";
-        SSL_CTX_set_cipher_list(c->ssl_ctx, cipher_list);
-
-        path cert = resolve_paths(root_path(), "certs/cert.pem");
-        path key = resolve_paths(root_path(), "certs/key.pem").string().c_str();
-        const char* cert_path = const_cast<char *>(cert.c_str());
-        const char* key_path = const_cast<char *>(key.c_str());
-        SSL_CTX_use_certificate_file(c->ssl_ctx, cert_path, SSL_FILETYPE_PEM);
-        SSL_CTX_use_PrivateKey_file(c->ssl_ctx, key_path, SSL_FILETYPE_PEM);
-        uv_signal_t* signal = (uv_signal_t*)malloc(sizeof(uv_signal_t));
-        uv_signal_init(loop, signal);
-        uv_signal_start(signal, handle_signal, SIGHUP);
-        uv_tcp_t* server = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
-        uv_tcp_init(loop, server);
-        server->data = c;
-        uv_ip4_addr(host, port, &addr);
-        uv_tcp_bind(server, (sockaddr*)&addr, 0);
-        int r = uv_listen((uv_stream_t*)server, 128, on_new_connection);
-        if (r) {
-            std::fprintf(stderr, "Listen error %s\n", uv_strerror(r));
-        }
     }
 
     void on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf)
@@ -197,5 +140,64 @@ namespace flashpoint::program {
     void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
         buf->base = new char[suggested_size];
         buf->len = suggested_size;
+    }
+
+    HttpServer::HttpServer(uv_loop_t* loop):
+        loop(loop) { }
+
+    void HttpServer::listen(const char *host, unsigned int port)
+    {
+        SSL_library_init();
+        SSL_load_error_strings();
+
+        Client* c = new Client;
+        c->server = this;
+        ssl_ctx = c->ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
+        setup_security_context();
+
+        path cert = resolve_paths(root_path(), "certs/cert.pem");
+        path key = resolve_paths(root_path(), "certs/key.pem").string().c_str();
+        const char* cert_path = const_cast<char *>(cert.c_str());
+        const char* key_path = const_cast<char *>(key.c_str());
+        SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM);
+        SSL_CTX_use_PrivateKey_file(ssl_ctx, key_path, SSL_FILETYPE_PEM);
+        uv_signal_t* signal = (uv_signal_t*)malloc(sizeof(uv_signal_t));
+        uv_signal_init(loop, signal);
+        uv_signal_start(signal, handle_signal, SIGHUP);
+        uv_tcp_t* server = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
+        uv_tcp_init(loop, server);
+        server->data = c;
+        uv_ip4_addr(host, port, &addr);
+        uv_tcp_bind(server, (sockaddr*)&addr, 0);
+        int r = uv_listen((uv_stream_t*)server, 128, on_new_connection);
+        if (r) {
+            std::fprintf(stderr, "Listen error %s\n", uv_strerror(r));
+        }
+    }
+
+    void HttpServer::setup_security_context()
+    {
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv2);
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv3);
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_DH_USE);
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
+        EC_KEY *ecdh = EC_KEY_new_by_curve_name (NID_X9_62_prime256v1);
+        if (!ecdh) {
+            throw std::logic_error("Could not generate elliptic curve diffie hellman key.");
+        }
+        if (1 != SSL_CTX_set_tmp_ecdh (ssl_ctx, ecdh)) {
+            throw std::logic_error("Could not set elliptic curve diffie hellman key.");
+        }
+        EC_KEY_free(ecdh);
+
+        const char* cipher_list =
+            "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:"
+            "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:"
+            "DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:"
+            "DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:"
+            "ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:"
+            "!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA";
+        SSL_CTX_set_cipher_list(ssl_ctx, cipher_list);
     }
 }

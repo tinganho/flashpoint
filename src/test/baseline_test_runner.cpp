@@ -12,6 +12,7 @@
 
 using namespace flashpoint::lib;
 using namespace flashpoint::program;
+using namespace boost::filesystem;
 
 namespace flashpoint::test {
     boost::filesystem::path root_folder(root_path());
@@ -69,12 +70,12 @@ namespace flashpoint::test {
     int BaselineTestRunner::run_tests()
     {
         domain("Baselines");
-        visit_tests([&](const char* content, boost::filesystem::path folder, boost::filesystem::path file) {
+        visit_tests([&](const char* content, path folder, path file) {
             test(file.string(), [=](Test* test, std::function<void()> success, std::function<void(std::string error)> error) {
-                boost::filesystem::path current_folder(test_folder / "currents");
-                boost::filesystem::path reference_folder(test_folder / "references");
-                boost::filesystem::path current_file = current_folder / file;
-                boost::filesystem::path reference_file = reference_folder / file;
+                path current_folder(test_folder / "currents");
+                path reference_folder(test_folder / "references");
+                path current_file = current_folder / file;
+                path reference_file = reference_folder / file;
 
                 const char* reference = "";
                 if (boost::filesystem::exists(reference_file)) {
