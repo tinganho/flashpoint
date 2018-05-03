@@ -13,8 +13,6 @@ using namespace boost::filesystem;
 
 namespace flashpoint::program {
 
-    static sockaddr_in addr;
-
     void on_write_cb(uv_write_t* write_request, int status)
     {
         if (status < 0) {
@@ -37,7 +35,7 @@ namespace flashpoint::program {
 
     void flush_write_bio(Client *client)
     {
-        char buf[1024*16];
+        char buf[1024 * 16];
         int bytes_read = 0;
         while((bytes_read = BIO_read(client->write_bio, buf, sizeof(buf))) > 0) {
             write_to_socket(client, buf, bytes_read);
@@ -61,6 +59,49 @@ namespace flashpoint::program {
         }
     }
 
+
+    void on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf)
+    {
+        Client* client = static_cast<Client*>(client_stream->data);
+        if (length > 0) {
+            if (!SSL_is_init_finished(client->ssl)) {
+                BIO_write(client->read_bio, buf->base, length);
+                SSL_accept(client->ssl);
+                flush_write_bio(client);
+                return;
+            }
+            BIO_write(client->read_bio, buf->base, length);
+            char read_buffer[1024 * 10];
+            int r = SSL_read(client->ssl, read_buffer, sizeof(read_buffer));
+            if (r < 0) {
+                handle_error(client, r);
+            }
+            else if (r > 0) {
+                HttpParser http_parser(read_buffer, r);
+                std::unique_ptr<HttpRequest> request = http_parser.parse();
+                if (request == nullptr) {
+                    uv_close((uv_handle_t*)client->socket, NULL);
+                    return;
+                }
+                HttpResponse response;
+                response.header(HttpHeader::Host, "localhost:8000");
+                response.header(HttpHeader::ContentType, "application/json");
+                response.header(HttpHeader::Accept, "*/*");
+                response.body = "Hello world";
+                response.status(200);
+                int r = SSL_write(client->ssl, response.to_buffer(), response.size());
+                if (r < 0) {
+                    return handle_error(client, r);
+                }
+                flush_write_bio(client);
+            }
+        }
+
+        if (buf->base) {
+            delete buf->base;
+        }
+    }
+
     void on_new_connection(uv_stream_t* server, int status)
     {
         if (status < 0) {
@@ -68,7 +109,7 @@ namespace flashpoint::program {
         }
         uv_tcp_t* client = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
         Client* c = static_cast<Client*>(server->data);
-        c->ssl = SSL_new(c->ssl_ctx);
+        c->ssl = SSL_new(c->server->ssl_ctx);
         c->read_bio = BIO_new(BIO_s_mem());
         c->write_bio = BIO_new(BIO_s_mem());
         SSL_set_bio(c->ssl, c->read_bio, c->write_bio);
@@ -93,49 +134,6 @@ namespace flashpoint::program {
         exit(0);
     }
 
-    void on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf)
-    {
-        Client* client = static_cast<Client*>(client_stream->data);
-        if (length > 0) {
-            if (!SSL_is_init_finished(client->ssl)) {
-                BIO_write(client->read_bio, buf->base, length);
-                SSL_accept(client->ssl);
-                flush_write_bio(client);
-                return;
-            }
-            int written = BIO_write(client->read_bio, buf->base, length);
-            char read_buffer[1024 * 10];
-            int r = SSL_read(client->ssl, read_buffer, sizeof(read_buffer));
-            if (r < 0) {
-                handle_error(client, r);
-            }
-            else if (r > 0) {
-                HttpParser http_parser(read_buffer, r);
-                std::unique_ptr<HttpRequest> request = http_parser.parse();
-                if (request == nullptr) {
-                    uv_close((uv_handle_t*)client_stream, NULL);
-                    return;
-                }
-                HttpResponse response;
-                response.header(HttpHeader::Host, "localhost:8000");
-                response.header(HttpHeader::ContentType, "application/json");
-                response.header(HttpHeader::Connection, "close");
-                response.header(HttpHeader::Accept, "*/*");
-                response.body = "Hello world";
-                response.status(200);
-                int r = SSL_write(client->ssl, response.to_buffer(), response.size());
-                if (r < 0) {
-                    return handle_error(client, r);
-                }
-                flush_write_bio(client);
-            }
-        }
-
-        if (buf->base) {
-            delete buf->base;
-        }
-    }
-
 
     void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
         buf->base = new char[suggested_size];
@@ -152,21 +150,15 @@ namespace flashpoint::program {
 
         Client* c = new Client;
         c->server = this;
-        ssl_ctx = c->ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
         setup_security_context();
 
-        path cert = resolve_paths(root_path(), "certs/cert.pem");
-        path key = resolve_paths(root_path(), "certs/key.pem").string().c_str();
-        const char* cert_path = const_cast<char *>(cert.c_str());
-        const char* key_path = const_cast<char *>(key.c_str());
-        SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM);
-        SSL_CTX_use_PrivateKey_file(ssl_ctx, key_path, SSL_FILETYPE_PEM);
         uv_signal_t* signal = (uv_signal_t*)malloc(sizeof(uv_signal_t));
         uv_signal_init(loop, signal);
         uv_signal_start(signal, handle_signal, SIGHUP);
         uv_tcp_t* server = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
         uv_tcp_init(loop, server);
         server->data = c;
+        sockaddr_in addr;
         uv_ip4_addr(host, port, &addr);
         uv_tcp_bind(server, (sockaddr*)&addr, 0);
         int r = uv_listen((uv_stream_t*)server, 128, on_new_connection);
@@ -177,6 +169,7 @@ namespace flashpoint::program {
 
     void HttpServer::setup_security_context()
     {
+        ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
         SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv2);
         SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv3);
         SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
@@ -190,6 +183,13 @@ namespace flashpoint::program {
             throw std::logic_error("Could not set elliptic curve diffie hellman key.");
         }
         EC_KEY_free(ecdh);
+
+        path cert = resolve_paths(root_path(), "certs/cert.pem");
+        path key = resolve_paths(root_path(), "certs/key.pem").string().c_str();
+        const char* cert_path = const_cast<char *>(cert.c_str());
+        const char* key_path = const_cast<char *>(key.c_str());
+        SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM);
+        SSL_CTX_use_PrivateKey_file(ssl_ctx, key_path, SSL_FILETYPE_PEM);
 
         const char* cipher_list =
             "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:"

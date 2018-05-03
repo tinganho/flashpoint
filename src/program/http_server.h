@@ -13,18 +13,14 @@ namespace flashpoint::program {
         void listen(const char *host, unsigned int port);
         void close();
         uv_loop_t* loop;
-    private:
         SSL_CTX* ssl_ctx;
+    private:
         void setup_security_context();
     };
 
     struct Client {
         uv_tcp_t* socket;
-        uv_write_t write_request;
-        uv_connect_t connect_request;
-        SSL_CTX* ssl_ctx;
         HttpServer* server;
-        std::unique_ptr<HttpRequest> request;
         std::vector<char> buffer_out;
         SSL* ssl;
         BIO* read_bio;

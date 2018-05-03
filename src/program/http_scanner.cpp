@@ -1,6 +1,7 @@
 #include <iostream>
 #include <tuple>
-#include "utils.h"
+#include <lib/utils.h>
+#include <lib/character.h>
 #include "http_scanner.h"
 
 namespace flashpoint::program {

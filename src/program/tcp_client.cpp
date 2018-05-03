@@ -27,7 +27,7 @@ namespace flashpoint::program {
         uv_tcp_init(loop, socket);
         uv_tcp_keepalive(socket, 1, 60);
         sockaddr_in* dest = (sockaddr_in*)malloc(sizeof(sockaddr_in));
-        uv_ip4_addr("0.0.0.0", port, dest);
+        uv_ip4_addr(host, port, dest);
         uv_connect_t* connect = (uv_connect_t*)malloc(sizeof(uv_connect_t));
         connect->data = this;
         uv_tcp_connect(connect, socket, (sockaddr*)dest, [](uv_connect_s* _connection, int status) {

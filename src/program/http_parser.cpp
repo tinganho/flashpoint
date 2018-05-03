@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <program/http_parser.h>
+#include <lib/character.h>
 
 using namespace flashpoint::lib;
 

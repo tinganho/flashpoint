@@ -58,11 +58,11 @@ namespace flashpoint::lib {
         usleep(ms);
     }
 
-    bool path_exists(const boost::filesystem::path& path) {
-        return boost::filesystem::exists(path);
+    bool path_exists(const path& path) {
+        return exists(path);
     }
 
-    char* read_file(const boost::filesystem::path& filename) {
+    char* read_file(const path& filename) {
         std::ifstream file(filename.string(), std::ios::binary);
         if (file.is_open()) {
             file.seekg(0, std::ios::end);
@@ -79,7 +79,7 @@ namespace flashpoint::lib {
         }
     }
 
-    void write_file(boost::filesystem::path &filename, const char* content) {
+    void write_file(const path& filename, const char* content) {
         std::ofstream file;
         file.open(filename.string());
         file.write(content, strlen(content));
@@ -90,40 +90,40 @@ namespace flashpoint::lib {
         boost::filesystem::remove_all(boost::filesystem::path(path));
     }
 
-    bool copy_folder(const boost::filesystem::path& source, const boost::filesystem::path& destination) {
+    bool copy_folder(const path& source, const path& destination) {
         try {
-            if (!boost::filesystem::exists(source) || !boost::filesystem::is_directory(source)) {
+            if (!exists(source) || !is_directory(source)) {
                 std::cerr << "Source directory '" << source.string()
                           << "' does not exist or is not a directory." << '\n';
                 return false;
             }
-            if (boost::filesystem::exists(destination)) {
+            if (exists(destination)) {
                 std::cerr << "Destination directory '" << destination.string()
                           << "' already exists." << '\n';
                 return false;
             }
-            if (!boost::filesystem::create_directory(destination)) {
+            if (!create_directory(destination)) {
                 std::cerr << "Unable to create destination directory '" << destination.string() << "'.\n";
                 return false;
             }
         }
-        catch (boost::filesystem::filesystem_error const & e) {
+        catch (filesystem_error const & e) {
             std::cerr << e.what() << '\n';
             return false;
         }
-        for (boost::filesystem::directory_iterator file(source); file != boost::filesystem::directory_iterator(); ++file) {
+        for (directory_iterator file(source); file != directory_iterator(); ++file) {
             try {
-                boost::filesystem::path current(file->path());
-                if (boost::filesystem::is_directory(current)) {
+                path current(file->path());
+                if (is_directory(current)) {
                     if (!copy_folder(current, destination / current.filename())) {
                         return false;
                     }
                 }
                 else {
-                    boost::filesystem::copy_file(current, destination / current.filename());
+                    copy_file(current, destination / current.filename());
                 }
             }
-            catch (boost::filesystem::filesystem_error const & e) {
+            catch (filesystem_error const & e) {
                 std::cerr << e.what() << '\n';
             }
         }
@@ -157,22 +157,23 @@ namespace flashpoint::lib {
         }
     }
 
-    void create_folder(boost::filesystem::path &folder) {
-        boost::filesystem::create_directories(folder);
+    void create_folder(const path& folder) {
+        create_directories(folder);
     }
 
-    std::vector<std::string> find_files(const std::string& pattern) {
-        glob::Glob glob(pattern);
+    std::vector<std::string> find_files(const path& pattern) {
+        std::string _pattern = pattern.string();
+        glob::Glob glob(_pattern);
         std::vector<std::string> files;
         while (glob) {
-            const std::string path = pattern.substr(0, pattern.find_last_of('/'));
+            const std::string path = _pattern.substr(0, _pattern.find_last_of('/'));
             files.push_back(path + '/' + glob.GetFileName());
             glob.Next();
         }
         return files;
     }
 
-    std::vector<std::string> find_files(const std::string& pattern, const std::string& cwd) {
+    std::vector<std::string> find_files(const path& pattern, const std::string& cwd) {
         if (cwd.front() != '/') {
             throw std::invalid_argument("Utils::find_files: Current working directory 'p_cwd', must be an absolute path. Got '" + cwd + "'.");
         }
@@ -180,39 +181,23 @@ namespace flashpoint::lib {
         if (cwd.back() != '/') {
             _cwd = _cwd + '/';
         }
-        return find_files(_cwd + pattern);
+        return find_files(_cwd / pattern);
     }
 
     path resolve_paths(const path& _path1, const path& _path2) {
-        return boost::filesystem::weakly_canonical(_path1 / _path2);
+        return weakly_canonical(_path1 / _path2);
     }
 
     path resolve_paths(const path& _path1, const path& _path2, const path& _path3) {
-        return boost::filesystem::weakly_canonical(_path1 / _path2 / _path3);
+        return weakly_canonical(_path1 / _path2 / _path3);
     }
 
     path root_path(const path& _path) {
-        return boost::filesystem::weakly_canonical(root_path() / _path);
+        return weakly_canonical(root_path() / _path);
     }
 
     path root_path() {
         return resolve_paths(boost::dll::program_location(), "../../");
-    }
-
-    std::string get_cwd() {
-        boost::filesystem::path full_path(boost::filesystem::current_path());
-        return full_path.string() + "/";
-    }
-
-    std::string get_exec_path() {
-#ifdef WINDOWS
-        char result[MAX_PATH];
-		return string(result, GetModuleFileName(NULL, result, MAX_PATH));
-#else
-        char result[PATH_MAX];
-        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-        return std::string(result, (count > 0) ? count : 0);
-#endif
     }
 
     std::vector<std::string> to_vector_of_strings(const Json::Value& vec) {

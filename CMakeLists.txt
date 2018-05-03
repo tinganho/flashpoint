@@ -21,9 +21,9 @@ endif()
 add_definitions(-DBOOST_ALL_NO_LIB)
 set(Boost_USE_STATIC_LIBS ON)
 
-file(GLOB LIB_SRC ${CMAKE_SOURCE_DIR}/src/lib/*)
-file(GLOB PROGRAM_SRC ${CMAKE_SOURCE_DIR}/src/program/*)
-file(GLOB TEST_SRC ${CMAKE_SOURCE_DIR}/src/test/*)
+file(GLOB_RECURSE LIB_SRC ${CMAKE_SOURCE_DIR}/src/lib/*)
+file(GLOB_RECURSE PROGRAM_SRC ${CMAKE_SOURCE_DIR}/src/program/*)
+file(GLOB_RECURSE TEST_SRC ${CMAKE_SOURCE_DIR}/src/test/*)
 
 set(Boost_DEBUG on)
 find_package(Boost 1.66 COMPONENTS system filesystem regex REQUIRED)
