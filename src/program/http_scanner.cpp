@@ -119,7 +119,7 @@ namespace flashpoint::program {
         set_token_start_position();
         if (!is_header_field_start(current_char())) {
             if (scan_optional(Character::CarriageReturn)) {
-                scan_expected(Character::LineFeed);
+                scan_expected(Character::NewLine);
                 return HttpHeader::End;
             }
             throw std::logic_error("Parse error in the header");
@@ -135,7 +135,7 @@ namespace flashpoint::program {
         current_header = get_token_value();
         scan_optional(Character::Space);
         scan_expected(Character::CarriageReturn);
-        scan_expected(Character::LineFeed);
+        scan_expected(Character::NewLine);
         return header;
     }
 
@@ -350,7 +350,7 @@ namespace flashpoint::program {
         if (ch == Character::CarriageReturn) {
             throw std::logic_error(std::string("Expected character '") + "\\r'.");
         }
-        if (ch == Character::LineFeed) {
+        if (ch == Character::NewLine) {
             throw std::logic_error(std::string("Expected character '") + "\\n'.");
         }
         throw std::logic_error(std::string("Expected character '") + ch + "'");
@@ -398,7 +398,7 @@ namespace flashpoint::program {
             increment_position();
         }
         scan_expected(Character::CarriageReturn);
-        scan_expected(Character::LineFeed);
+        scan_expected(Character::NewLine);
     }
 
     char* HttpScanner::get_lower_cased_value() const

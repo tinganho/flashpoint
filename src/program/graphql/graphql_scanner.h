@@ -5,12 +5,22 @@
 #include <stack>
 #include <glibmm/ustring.h>
 
-namespace flashpoint::lib::graphql {
+namespace flashpoint::program::graphql {
 
     struct SavedTextCursor {
-        long long position;
-        long long start_position;
-        long long end_position;
+        unsigned long long position;
+        unsigned long long start_position;
+        unsigned long long end_position;
+
+        SavedTextCursor(
+            unsigned long long position,
+            unsigned long long start_position,
+            unsigned long long end_position):
+
+            position(position),
+            start_position(start_position),
+            end_position(end_position)
+        { }
     };
 
     enum class GraphQlToken {
@@ -21,11 +31,18 @@ namespace flashpoint::lib::graphql {
         LineTerminator,
         Comment,
 
+        // Operation keywords
         QueryKeyword,
         MutationKeyword,
         SubscriptionKeyword,
 
-        // Scalar values
+        OnKeyword,
+        FragmentKeyword,
+        TypeKeyword,
+        UnionKeyword,
+        EnumKeyword,
+
+        // Scalar type keywords
         IDKeyword,
         IntKeyword,
         FloatKeyword,
@@ -54,41 +71,46 @@ namespace flashpoint::lib::graphql {
         OpenParen,
         Pipe,
 
-        EndOfRequestPayload,
+        EndOfDocument,
     };
 
     class GraphQlScanner {
     public:
         GraphQlScanner(const Glib::ustring& text);
-        unsigned int length() const;
-        unsigned int start_position = 0;
-        unsigned int position = 0;
-        unsigned int line = 1;
-        unsigned int column = 1;
-        unsigned int start_column = 1;
+        unsigned long long length() const;
+        unsigned long long start_position = 0;
+        unsigned long long position = 0;
+        unsigned long long line = 1;
+        unsigned long long column = 1;
+        unsigned long long start_column = 1;
+        unsigned long long start_line = 1;
+        unsigned int token_length;
         bool token_is_terminated = false;
         GraphQlToken next_token();
+        bool try_scan(GraphQlToken token);
+        bool scan_expected(GraphQlToken token);
         void set_token_start_position();
         void save();
         void revert();
-        bool scan_optional(GraphQlToken token);
-        void scan_expected(GraphQlToken token);
         Glib::ustring get_value() const;
-        const char* get_name() const;
+        Glib::ustring get_name() const;
+        Glib::ustring name;
+        void scan_rest_of_line();
+        GraphQlToken peek_next_token();
 
     private:
         char32_t ch;
         const Glib::ustring& text;
-        long long size;
-        long long end_position;
+        unsigned long long size;
+        unsigned long long end_position;
         std::stack<SavedTextCursor> saved_text_cursors;
-        const char* name;
         char current_char() const;
         void increment_position();
         bool is_name_start(const char32_t &ch) const;
         bool is_name_part(const char32_t &ch) const;
         GraphQlToken scan_string_literal();
         GraphQlToken get_name_from_value(const char *token);
+        bool is_line_break(const char32_t& ch) const;
     };
 }
 

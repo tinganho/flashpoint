@@ -4,6 +4,7 @@
 #include <experimental/optional>
 #include <glibmm/ustring.h>
 #include <boost/variant.hpp>
+#include <lib/memory_pool.h>
 #include <vector>
 
 #define C(name, ...) \
@@ -17,13 +18,30 @@
 #define I(parameter) \
     parameter(parameter)
 
-namespace flashpoint::lib::graphql {
+#define new_operator(class); \
+    void* operator new(std::size_t size, MemoryPool* memory_pool, MemoryPoolTicket* request) { \
+        return memory_pool->allocate(size, alignof(class), request); \
+    }
+
+using namespace flashpoint::lib;
+
+namespace flashpoint::program::graphql {
+    struct SelectionSet;
 
     enum class SyntaxKind {
+        Argument,
+        Arguments,
+        Document,
         Name,
         NamedType,
-        Parameter,
-        ParameterList,
+        Field,
+        OperationDefinition,
+        Selection,
+        SelectionSet,
+        Type,
+        TypeCondition,
+        VariableDefinition,
+        VariableDefinitions,
 
         // Literals
         IntLiteral,
@@ -32,15 +50,7 @@ namespace flashpoint::lib::graphql {
         BooleanLiteral,
         EnumLiteral,
         NullLiteral,
-        ArgumentLiteral,
 
-
-        Type,
-        TypeCondition,
-        Selection,
-        SelectionSet,
-        Signature,
-        Query,
     };
 
     struct Syntax {
@@ -53,13 +63,17 @@ namespace flashpoint::lib::graphql {
             start(start),
             end(_end)
         { }
+
+        new_operator(Syntax)
     };
 
     struct Name : Syntax {
-        const char* identifier;
+        Glib::ustring identifier;
 
-        C(Name, const char* identifier),
+        C(Name, Glib::ustring identifier),
             I(identifier) { }
+
+        new_operator(Name)
     };
 
     struct NamedType {
@@ -80,8 +94,6 @@ namespace flashpoint::lib::graphql {
         bool is_nullable;
         bool is_list;
         TypeEnum type;
-
-        // Only set if type is object, otherwise empty
         std::experimental::optional<const char*> object_symbol;
 
         C(Type, bool is_nullable, bool is_list, TypeEnum type),
@@ -179,11 +191,11 @@ namespace flashpoint::lib::graphql {
     };
 
     typedef boost::variant<
-        IntLiteral,
-        FloatLiteral,
-        BooleanLiteral,
-        StringLiteral,
-        NullLiteral> Literal;
+        IntLiteral*,
+        FloatLiteral*,
+        BooleanLiteral*,
+        StringLiteral*,
+        NullLiteral*> Literal;
 
     struct Value {
         ValueType type;
@@ -195,33 +207,74 @@ namespace flashpoint::lib::graphql {
         { }
     };
 
-    struct Parameter : Syntax {
-        Name name;
-        Type type;
-        std::experimental::optional<Value> default_value;
 
-        C(Parameter, Name name, Type type, std::experimental::optional<Value> default_value),
-            I(name),
-            I(type),
-            I(default_value)
+    struct VariableDefinition : Syntax {
+        Name* name;
+        Type* type;
+        Value* default_value;
+
+        S(VariableDefinition)
         { }
     };
 
-    struct ParameterList : Syntax {
-        std::vector<Parameter> parameters;
+    struct VariableDefinitions : Syntax {
+        std::vector<VariableDefinition*> variable_definitions;
 
-        S(ParameterList)
+        S(VariableDefinitions)
         { }
     };
 
-    struct Signature : Syntax {
-        Name name;
-        std::experimental::optional<ParameterList> parameter_list;
+    struct Argument : Syntax {
+        Name* name;
+        Value* value;
 
-        C(Signature, Name name, std::experimental::optional<ParameterList> parameter_list),
-            I(name),
-            I(parameter_list)
+        S(Argument)
         { }
+    };
+
+    struct Arguments : Syntax {
+        std::vector<Argument> arguments;
+
+        S(Arguments)
+        { }
+    };
+
+    struct Directive : Syntax {
+        Name* name;
+        Arguments* arguments;
+
+        S(Directive)
+        { }
+    };
+
+    struct Directives : Syntax {
+        std::vector<Directive> directives;
+
+        S(Directives)
+        { }
+    };
+
+    struct Field : Syntax {
+        Name* alias;
+        Name* name;
+        Arguments* arguments;
+        Directive* directive;
+        SelectionSet* selection_set;
+
+        S(Field)
+        { }
+
+        new_operator(Field)
+    };
+
+    struct FragmentSpread : Syntax {
+        Name* name;
+        Directives* directives;
+
+        S(FragmentSpread)
+        { }
+
+        new_operator(FragmentSpread)
     };
 
     struct InlineFragment : Syntax {
@@ -232,45 +285,67 @@ namespace flashpoint::lib::graphql {
         { }
     };
 
-    struct Selection : Syntax {
-        enum Type { FIELD, FRAGMENTSPREAD, INLINEFRAGMENT } type;
-        union Sel {
-            InlineFragment fragment;
-        } selection;
+    typedef boost::variant<
+        Field*,
+        FragmentSpread*,
+        InlineFragment*
+    > OneOfFields;
 
-        C(Selection, Type type, Sel selection),
-            I(type),
-            I(selection)
+    struct Selection : Syntax {
+        OneOfFields field;
+
+        S(Selection)
         { }
+
+        new_operator(Selection)
     };
 
     struct SelectionSet : Syntax {
-        std::vector<Selection> selections;
+        std::vector<Selection*> selections;
 
         S(SelectionSet)
         { }
+
+        new_operator(SelectionSet)
     };
 
-    enum class Operation {
+    enum class OperationType {
         Query,
         Mutation,
         Subscription,
     };
 
-    struct Query : Syntax {
-        Operation operation;
-        std::experimental::optional<Signature> signature;
-        SelectionSet selection_set;
+    struct OperationDefinition : Syntax {
+        OperationType operation_type;
+        Name* name;
+        VariableDefinitions* variable_definitions;
+        SelectionSet* selection_set;
 
-        C(Query, Operation operation, std::experimental::optional<Signature> signature, SelectionSet selection_set),
-            I(operation),
-            I(signature),
-            I(selection_set)
+        S(OperationDefinition)
         { }
+
+        new_operator(OperationDefinition)
     };
 
-    struct RequestPayload {
-        std::unique_ptr<Query> query;
+    struct FragmentDefinition : Syntax {
+        Name* name;
+        TypeCondition* type_condition;
+        Directives* directives;
+        SelectionSet* selection_set;
+
+        S(FragmentDefinition)
+        { }
+
+        new_operator(FragmentDefinition)
+    };
+
+    typedef boost::variant<OperationDefinition*, FragmentDefinition*> Definition;
+
+    struct Document : Syntax {
+        std::vector<Definition> definitions;
+
+        S(Document)
+        {}
     };
 };
 

@@ -53,5 +53,10 @@ add_executable(flash-test
     ${PROGRAM_SRC}
     ${LIB_SRC})
 
-target_link_libraries(flash jsoncpp ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
-target_link_libraries(flash-test jsoncpp ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
+add_executable(generate-diagnostics
+        tasks/generate_diagnostics.cpp
+    ${LIB_SRC})
+
+target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
+target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
+target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob)

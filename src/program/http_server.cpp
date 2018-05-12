@@ -184,8 +184,8 @@ namespace flashpoint::program {
         }
         EC_KEY_free(ecdh);
 
-        path cert = resolve_paths(root_path(), "certs/cert.pem");
-        path key = resolve_paths(root_path(), "certs/key.pem").string().c_str();
+        path cert = resolve_paths(root_dir(), "certs/cert.pem");
+        path key = resolve_paths(root_dir(), "certs/key.pem").string().c_str();
         const char* cert_path = const_cast<char *>(cert.c_str());
         const char* key_path = const_cast<char *>(key.c_str());
         SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM);

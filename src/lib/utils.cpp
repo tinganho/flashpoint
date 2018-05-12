@@ -193,10 +193,10 @@ namespace flashpoint::lib {
     }
 
     path root_path(const path& _path) {
-        return weakly_canonical(root_path() / _path);
+        return weakly_canonical(root_dir() / _path);
     }
 
-    path root_path() {
+    path root_dir() {
         return resolve_paths(boost::dll::program_location(), "../../");
     }
 

@@ -42,7 +42,7 @@ namespace flashpoint::lib {
     path resolve_paths(const path& _path1, const path& _path2);
     path resolve_paths(const path& path1, const path& path2, const path& path3);
     path root_path(const std::string& path);
-    path root_path();
+    path root_dir();
 
     std::vector<std::string> find_files(const path& pattern);
     std::vector<std::string> find_files(const path& pattern, const path& cwd);

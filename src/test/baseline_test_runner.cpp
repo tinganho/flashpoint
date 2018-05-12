@@ -1,6 +1,6 @@
 #include <iostream>
 #include <program/http_server.h>
-#include <lib/graphql/graphql_parser.h>
+#include <program/graphql/graphql_parser.h>
 #include <lib/tcp_client_raw.h>
 #include <test/baseline_test_runner.h>
 #include <test/test_definition.h>
@@ -12,12 +12,12 @@
 #include <sstream>
 
 using namespace flashpoint::lib;
-using namespace flashpoint::lib::graphql;
 using namespace flashpoint::program;
+using namespace flashpoint::program::graphql;
 using namespace boost::filesystem;
 
 namespace flashpoint::test {
-    boost::filesystem::path root_folder(root_path());
+    boost::filesystem::path root_folder(root_dir());
 
     BaselineTestRunner::BaselineTestRunner(uv_loop_t* loop):
         loop(loop)
@@ -30,7 +30,7 @@ namespace flashpoint::test {
 
     void BaselineTestRunner::visit_tests(const path& test_folder, std::function<void(const TestCase& test_case)> callback)
     {
-        std::vector<std::string> tests = find_files(root_path() / test_folder / "/tests/cases/*");
+        std::vector<std::string> tests = find_files(root_dir() / test_folder / "/tests/cases/*");
         for (const auto& t : tests) {
             const char* test_case_file_content = read_file(t);
             std::vector<std::string> paths = split_string(replace_string(t, (test_folder / "cases").string(), ""), '/');
@@ -81,10 +81,14 @@ namespace flashpoint::test {
     void BaselineTestRunner::run_graphql_tests()
     {
         domain("GraphQL");
-        visit_tests("src/lib/graphql", [&](const TestCase& test_case) {
+        visit_tests("src/program/graphql", [&](const TestCase& test_case) {
             test(test_case.test_case_file_name, [=](Test* test, std::function<void()> success, std::function<void(std::string error)> error) {
-                GraphQlParser parser;
+                auto memory_pool = new MemoryPool(1024*4*10000, 1024*4);
+                auto ticket = memory_pool->take_ticket();
+                GraphQlParser parser(memory_pool, ticket);
                 parser.parse(test_case.test_case_file_content);
+                memory_pool->return_ticket(ticket);
+                success();
             });
         });
         run_test_suites();

@@ -4,7 +4,7 @@
 
 using namespace flashpoint::program;
 
-namespace flashpoint::lib::graphql {
+namespace flashpoint::program::graphql {
 
     GraphQlScanner::GraphQlScanner(const Glib::ustring& text):
         text(text),
@@ -23,14 +23,15 @@ namespace flashpoint::lib::graphql {
             char32_t ch = current_char();
             increment_position();
             switch (ch) {
-                case LineFeed:
+                case NewLine:
                 case CarriageReturn:
                 case Space:
+                    start_position++;
                     continue;
                 case OpenBrace:
                     return GraphQlToken::OpenBrace;
                 case CloseBrace:
-                    return GraphQlToken::OpenBrace;
+                    return GraphQlToken::CloseBrace;
                 case DoubleQuote:
                     return scan_string_literal();
                 default:
@@ -43,9 +44,10 @@ namespace flashpoint::lib::graphql {
                     }
             }
         }
+        return GraphQlToken::EndOfDocument;
     }
 
-    const char* GraphQlScanner::get_name() const
+    Glib::ustring GraphQlScanner::get_name() const
     {
         return name;
     }
@@ -105,14 +107,21 @@ namespace flashpoint::lib::graphql {
         position++;
     }
 
+    GraphQlToken GraphQlScanner::peek_next_token()
+    {
+        save();
+        GraphQlToken token = next_token();
+        revert();
+        return token;
+    }
+
     void GraphQlScanner::save()
     {
-        SavedTextCursor saved_text_cursor {
+        saved_text_cursors.emplace(
             position,
             start_position,
-            end_position,
-        };
-        saved_text_cursors.push(saved_text_cursor);
+            end_position
+        );
     }
 
     void GraphQlScanner::revert()
@@ -124,17 +133,7 @@ namespace flashpoint::lib::graphql {
         saved_text_cursors.pop();
     }
 
-    void GraphQlScanner::scan_expected(GraphQlToken token)
-    {
-        save();
-        if (next_token() == token) {
-            increment_position();
-            return;
-        }
-        revert();
-    }
-
-    bool GraphQlScanner::scan_optional(GraphQlToken token)
+    bool GraphQlScanner::try_scan(GraphQlToken token)
     {
         save();
         if (next_token() == token) {
@@ -145,7 +144,29 @@ namespace flashpoint::lib::graphql {
         return false;
     }
 
-    unsigned int GraphQlScanner::length() const
+    bool GraphQlScanner::scan_expected(GraphQlToken token)
+    {
+        if (next_token() == token) {
+            return true;
+        }
+        return false;
+    }
+
+    void GraphQlScanner::scan_rest_of_line()
+    {
+        while (position < size && !is_line_break(current_char())) {
+            increment_position();
+        }
+    }
+
+
+    inline bool GraphQlScanner::is_line_break(const char32_t& ch) const
+    {
+        return ch == NewLine || ch == CarriageReturn;
+    }
+
+
+    inline unsigned long long GraphQlScanner::length() const
     {
         return position - start_position;
     }

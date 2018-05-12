@@ -44,30 +44,21 @@ namespace flashpoint::lib {
         Test,
     };
 
-    struct DiagnosticTemplate {
-        std::string message_template;
-    };
-
     struct Span {
         unsigned int start;
         unsigned int end;
     };
 
     struct SpanLocation {
-        unsigned int line;
-        unsigned int column;
-        unsigned int length;
-        unsigned int position;
+        unsigned long long line;
+        unsigned long long column;
+        unsigned long long length;
+        unsigned long long position;
     };
 
     struct Location {
         unsigned int line;
         unsigned int column;
-    };
-
-    struct Diagnostic {
-        std::string message;
-        SpanLocation location;
     };
 
     struct Argument {

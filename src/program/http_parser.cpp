@@ -63,7 +63,7 @@ namespace flashpoint::program {
         scanner.scan_expected(Character::Space);
         scanner.scan_http_version();
         scanner.scan_expected(Character::CarriageReturn);
-        scanner.scan_expected(Character::LineFeed);
+        scanner.scan_expected(Character::NewLine);
         return RequestLine {
             method,
             path,
