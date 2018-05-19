@@ -17,10 +17,16 @@ namespace flashpoint::test {
         SuccessError,
     };
 
+    class BaselineAssertionError : public std::runtime_error {
+    public:
+        BaselineAssertionError(const std::string& message) throw();
+        virtual char const* what() const throw();
+    };
+
     struct Test {
         std::string name;
         ProcedureType procedure_type;
-        std::function<void(Test* t, std::function<void()>, std::function<void(std::string error)>)> procedure_with_success_and_error;
+        std::function<void(Test* t, std::function<void()>, std::function<void(const std::string& error)>)> procedure_with_done_and_error;
         std::function<void(Test* t, std::function<void()>)> procedure_with_done;
         std::function<void(Test* t)> procedure;
 

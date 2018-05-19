@@ -1,0 +1,7 @@
+type Object {
+    property: String
+}
+
+type Query {
+    property: Object
+}

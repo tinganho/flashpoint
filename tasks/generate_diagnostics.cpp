@@ -50,14 +50,14 @@ bool is_unique(std::string key) {
 
 std::string format_diagnostic_key(std::string key) {
     std::string k = boost::regex_replace(key, boost::regex("\\s+"), "_");
-    k = boost::regex_replace(k, boost::regex("[\\.|\\'|:|,|.]"), "");
+    k = boost::regex_replace(k, boost::regex("['|\"|?|:|,|.]"), "");
     k = boost::regex_replace(k, boost::regex("{(\\d+)}"), "$1");
     k = boost::regex_replace(k, boost::regex("_+"), "_");
     k = boost::regex_replace(k, boost::regex("^_+|_+$"), "");
     boost::match_results<std::string::const_iterator> results;
-    if (boost::regex_search(k, boost::regex("[^a-zA-Z\\d_]"))) {
-        throw std::invalid_argument("Your 'diagnostics.json' file contains non-alpha numeric characters: " + key);
-    }
+//    if (boost::regex_search(k, boost::regex("[^a-zA-Z\\d_]"))) {
+//        throw std::invalid_argument("Your 'diagnostics.json' file contains non-alpha numeric characters: " + key);
+//    }
 
     return k;
 }
@@ -72,11 +72,12 @@ void generate_diagnostic(const char* folder, const char* file) {
     Json::Reader reader;
     std::string header_file = start_wrap_header;
     std::string source_file = start_wrap_source;
-    source_file = boost::regex_replace(source_file, boost::regex("\{\{header_file\}\}"), std::string(file) + ".h");
+    source_file = boost::regex_replace(source_file, boost::regex("{{header_file}}"), std::string(file) + ".h");
     reader.parse(remove_comments(json).c_str(), diagnostics);
     for (Json::ValueIterator it = diagnostics.begin(); it != diagnostics.end(); ++it) {
-        std::string unformatted_key = it.key().asString();
-        std::string formatted_key = format_diagnostic_key(unformatted_key);
+        auto key = it.key().asString();
+        std::string unformatted_key = boost::regex_replace(key, boost::regex("\\\""), "\\\\\\\"");
+        std::string formatted_key = format_diagnostic_key(key);
         if (!is_unique(formatted_key)) {
             throw std::invalid_argument("Duplicate formatted key: " + formatted_key + ".");
         }

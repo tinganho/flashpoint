@@ -1,0 +1,23 @@
+type ObjectBoolean {
+    property: Boolean
+}
+
+type ObjectBooleanNonNull {
+    property: Boolean!
+}
+
+type ObjectBooleanList {
+    property: [Boolean]
+}
+
+type ObjectBooleanNonNullList {
+    property: [Boolean!]
+}
+
+type ObjectBooleanListNonNull {
+    property: [Boolean]!
+}
+
+type ObjectBooleanNonNullListNonNull {
+    property: [Boolean!]!
+}

@@ -1,0 +1,20 @@
+type ObjectBoolean {
+    property: Boolean
+}
+
+type ObjectInt {
+    property: Int
+}
+
+type ObjectFloat {
+    property: Float
+}
+
+type ObjectString {
+    property: String
+}
+
+type ObjectID {
+    property: ID
+}
+

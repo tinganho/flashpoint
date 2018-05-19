@@ -10,9 +10,7 @@ namespace flashpoint::program {
 
     HttpParser::HttpParser(char* text, unsigned int size):
         scanner(text, size)
-    {
-
-    }
+    { }
 
     std::unique_ptr<HttpRequest> HttpParser::parse()
     {

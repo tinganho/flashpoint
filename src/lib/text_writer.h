@@ -90,7 +90,9 @@ namespace flashpoint::lib {
 		unsigned long column;
 		unsigned int indentation;
 		const unsigned int indentation_step;
-		void print_indentation();
+
+		void
+        print_indentation();
 	};
 
 }// Lya

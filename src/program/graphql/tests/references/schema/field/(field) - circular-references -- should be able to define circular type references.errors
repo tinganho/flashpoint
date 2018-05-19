@@ -1,0 +1,7 @@
+type Object1 {
+    property: Object2
+}
+
+type Object2 {
+    property: Object1
+}

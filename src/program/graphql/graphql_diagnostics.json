@@ -1,4 +1,12 @@
 {
-  // Core
-  "Expected '{0}', but got '{1}'.": {}
+  "Expected '{0}', but got '{1}'.": {},
+  "Expected operation definition or fragment definition.": {},
+  "Expected field, inline fragment or fragment spread.": {},
+  "Unexpected end of selection set. Missing closing brace '{0}' for selection set.": {},
+  "Expected at least a field, inline fragment or fragment spread.": {},
+  "Expected field definition.": {},
+  "Field '{0}' doesn't exist on type '{1}'.": {},
+  "Expected type definition, instead got '{0}'.": {},
+  "Type '{0}' is not defined.": {},
+  "Duplicate type '{0}'": {}
 }

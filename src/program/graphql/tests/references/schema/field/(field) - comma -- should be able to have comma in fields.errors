@@ -1,0 +1,23 @@
+type CommaBeforeProperty {
+    ,property: Int
+}
+
+type CommaAfterProperty {
+    property, : Int
+}
+
+type CommaBeforeType {
+    property: ,Int
+}
+
+type CommaAfterType {
+    property: Int,
+}
+
+type CommasEveryWhere {
+    ,property,:, Int,
+}
+
+type MultipleCommas {
+    ,,,,property: Int
+}

@@ -13,6 +13,7 @@
 #include <exception>
 #include <json/json.h>
 #include <glob.h>
+#include <sstream>
 #include "types.h"
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
@@ -35,7 +36,7 @@ namespace flashpoint::lib {
     void write_file(const path& file, const char* content);
 
     void create_folder(const path& folder);
-    void remove_folder(const std::string& path);
+    void remove_folder(const path& path);
     std::string folder_path(const std::string &path);
     bool copy_folder(const path& source, const path& destination);
 
@@ -46,7 +47,7 @@ namespace flashpoint::lib {
 
     std::vector<std::string> find_files(const path& pattern);
     std::vector<std::string> find_files(const path& pattern, const path& cwd);
-
+    std::string join_vector(std::vector<std::string> vec, std::string delimiter);
     std::string replace_string(const std::string& target, const std::string& pattern, const std::string& replacement);
     std::string replace_all(std::string str, const std::string& from, const std::string& to);
 
@@ -66,7 +67,41 @@ namespace flashpoint::lib {
 
     template<typename Out>
     void split(const std::string& s, char delimiter, Out result);
-    std::vector<std::string> split_string(const std::string& s, char delimiter);
+
+    template <typename T>
+    std::vector<T> split_string(const T& s, char delimiter);
+    template<typename T>
+    std::vector<T> split_string(const T &s, const std::string& delimiter);
+
+    template<typename Out>
+    void split(const std::string& s, char delimiter, Out result) {
+        std::stringstream ss;
+        ss.str(s);
+        std::string item;
+        while (getline(ss, item, delimiter)) {
+            *(result++) = item;
+        }
+    }
+
+    template<typename T>
+    std::vector<T> split_string(const T& s, char delimiter) {
+        std::vector<std::string> elements;
+        split(s, delimiter, back_inserter(elements));
+        return elements;
+    }
+
+    template<typename T>
+    std::vector<T> split_string(const T &s, const std::string& delimiter) {
+        std::vector<T> elements;
+        std::string::size_type prev_pos = 0, pos = 0;
+        while ((pos = s.find(delimiter, pos)) != std::string::npos)
+        {
+            elements.emplace_back(s.substr(prev_pos, pos-prev_pos));
+            prev_pos = pos + delimiter.size();
+        }
+        elements.emplace_back(s.substr(prev_pos, pos-prev_pos));
+        return elements;
+    }
 
     void sleep(int ms);
     namespace Debug {

@@ -86,8 +86,8 @@ namespace flashpoint::lib {
         file.close();
     }
 
-    void remove_folder(const std::string &path) {
-        boost::filesystem::remove_all(boost::filesystem::path(path));
+    void remove_folder(const path& path) {
+        boost::filesystem::remove_all(path);
     }
 
     bool copy_folder(const path& source, const path& destination) {
@@ -161,6 +161,16 @@ namespace flashpoint::lib {
         create_directories(folder);
     }
 
+    std::string join_vector(std::vector<std::string> vec, std::string delimiter) {
+        std::stringstream ss;
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if(i != 0)
+                ss << delimiter;
+            ss << vec[i];
+        }
+        return ss.str();
+    }
+
     std::vector<std::string> find_files(const path& pattern) {
         std::string _pattern = pattern.string();
         glob::Glob glob(_pattern);
@@ -197,7 +207,7 @@ namespace flashpoint::lib {
     }
 
     path root_dir() {
-        return resolve_paths(boost::dll::program_location(), "../../");
+        return weakly_canonical(resolve_paths(boost::dll::program_location(), "../../"));
     }
 
     std::vector<std::string> to_vector_of_strings(const Json::Value& vec) {
@@ -208,19 +218,5 @@ namespace flashpoint::lib {
         return res;
     }
 
-    template<typename Out>
-    void split(const std::string& s, char delimiter, Out result) {
-        std::stringstream ss;
-        ss.str(s);
-        std::string item;
-        while (getline(ss, item, delimiter)) {
-            *(result++) = item;
-        }
-    }
 
-    std::vector<std::string> split_string(const std::string& s, char delimiter) {
-        std::vector<std::string> elements;
-        split(s, delimiter, back_inserter(elements));
-        return elements;
-    }
 } // Lya::Utils

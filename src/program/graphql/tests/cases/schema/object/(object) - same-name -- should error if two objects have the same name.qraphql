@@ -1,0 +1,7 @@
+type Object {
+    property: Int
+}
+
+type Object {
+    property: Int
+}
