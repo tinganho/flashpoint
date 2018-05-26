@@ -1,0 +1,20 @@
+type Single {
+    field(argument: Int): String
+}
+
+type Multiple {
+    field(argument1: Int, argument2: Int): String
+}
+
+type CommaLessList {
+    field(argument1: Int argument2: Int): String
+}
+
+type ArgumentTypes {
+    field(bool: Boolean, int: Int, float: Float, string: String, id: ID, inputObject: InputObject): String
+}
+
+input InputObject {
+    field: Boolean
+}
+

@@ -1,0 +1,13 @@
+type Object1 implements Interface {
+                        ~~~~~~~~~ (1, 25, 9)
+!!! Interface 'Interface' is not defined.
+    objectField: Int
+}
+
+type Object2 implements Interface1 & Interface2 {
+                        ~~~~~~~~~~ (5, 25, 10)
+!!! Interface 'Interface1' is not defined.
+                                     ~~~~~~~~~~ (5, 38, 10)
+!!! Interface 'Interface2' is not defined.
+    objectField: Int
+}

@@ -1,0 +1,7 @@
+type Object {
+    field: Int
+}
+
+input InputObject {
+    field: Object
+}

@@ -1,0 +1,11 @@
+input O! {
+       ~ (1, 8, 1)
+!!! Expected '{', but got '!'.
+
+}
+
+input T- {
+       ~ (5, 8, 1)
+!!! Expected '{', but got '-'.
+
+}

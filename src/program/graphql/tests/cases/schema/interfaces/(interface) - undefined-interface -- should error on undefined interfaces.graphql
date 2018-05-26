@@ -1,0 +1,7 @@
+type Object1 implements Interface {
+    objectField: Int
+}
+
+type Object2 implements Interface1 & Interface2 {
+    objectField: Int
+}

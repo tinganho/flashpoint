@@ -1,0 +1,19 @@
+type Object1 {
+    property: unknown
+}
+
+type Object2 {
+    property: [unknown]
+}
+
+type Object3 {
+    property: [unknown!]
+}
+
+type Object4 {
+    property: [unknown]!
+}
+
+type Object5 {
+    property: [unknown!]!
+}

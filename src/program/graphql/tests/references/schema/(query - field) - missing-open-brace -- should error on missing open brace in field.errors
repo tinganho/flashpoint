@@ -1,7 +1,0 @@
-query {
-~~~~~ (1, 1, 5)
-!!! Expected operation definition or fragment definition.
-    books
-        name
-    }
-}

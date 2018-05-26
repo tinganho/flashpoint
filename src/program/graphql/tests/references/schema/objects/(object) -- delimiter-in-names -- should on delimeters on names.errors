@@ -1,0 +1,11 @@
+type O! {
+      ~ (1, 7, 1)
+!!! Expected '{', but got '!'.
+
+}
+
+type T- {
+      ~ (5, 7, 1)
+!!! Expected '{', but got '-'.
+
+}

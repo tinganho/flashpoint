@@ -1,0 +1,7 @@
+input Single {
+    field(argument: Int): String
+}
+
+input Multiple {
+    field(argument1: Int, argument2: Int): String
+}

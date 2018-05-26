@@ -50,7 +50,7 @@ bool is_unique(std::string key) {
 
 std::string format_diagnostic_key(std::string key) {
     std::string k = boost::regex_replace(key, boost::regex("\\s+"), "_");
-    k = boost::regex_replace(k, boost::regex("['|\"|?|:|,|.]"), "");
+    k = boost::regex_replace(k, boost::regex("['|\"|?|:|,|.|(|)]"), "");
     k = boost::regex_replace(k, boost::regex("{(\\d+)}"), "$1");
     k = boost::regex_replace(k, boost::regex("_+"), "_");
     k = boost::regex_replace(k, boost::regex("^_+|_+$"), "");

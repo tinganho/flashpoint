@@ -1,0 +1,7 @@
+input Object {
+    property: Int
+}
+
+input Object {
+    property: Int
+}

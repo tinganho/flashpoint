@@ -39,22 +39,31 @@ namespace flashpoint::program::graphql {
 
     enum class GraphQlToken {
         Unknown,
-        Name,
+        G_Name,
 
         WhiteSpace,
         LineTerminator,
         Comment,
+        G_Description,
 
         // Operation keywords
-        QueryKeyword,
         MutationKeyword,
+        QueryKeyword,
         SubscriptionKeyword,
 
-        OnKeyword,
+        // Declaration keywords
+        EnumKeyword,
         FragmentKeyword,
+        InputKeyword,
+        InterfaceKeyword,
         TypeKeyword,
         UnionKeyword,
-        EnumKeyword,
+
+        // Operator keywords
+        Ampersand,
+        OnKeyword,
+        Pipe,
+        ImplementsKeyword,
 
         // Scalar type keywords
         IDKeyword,
@@ -83,7 +92,6 @@ namespace flashpoint::program::graphql {
         OpenBrace,
         OpenBracket,
         OpenParen,
-        Pipe,
 
         EndOfDocument,
     };
@@ -100,6 +108,8 @@ namespace flashpoint::program::graphql {
         { GraphQlToken::OpenParen, "(" },
         { GraphQlToken::CloseParen, ")" },
         { GraphQlToken::Exclamation, "!" },
+        { GraphQlToken::G_Name, "name" },
+        { GraphQlToken::Unknown, "unknown" },
     };
 
     struct PositionToLine {
@@ -132,7 +142,7 @@ namespace flashpoint::program::graphql {
         get_token_length();
 
         GraphQlToken
-        next_token();
+        take_next_token();
 
         GraphQlToken
         try_scan(const GraphQlToken& token);
@@ -170,18 +180,38 @@ namespace flashpoint::program::graphql {
         GraphQlToken
         peek_next_token();
 
+        void
+        skip_block();
+
     private:
         char32_t ch;
         const Glib::ustring* source;
         unsigned long long end_position;
         std::stack<SavedTextCursor> saved_text_cursors;
-        char32_t current_char() const;
-        void increment_position();
-        bool is_name_start(const char32_t &ch) const;
-        bool is_name_part(const char32_t &ch) const;
-        GraphQlToken scan_string_literal();
-        GraphQlToken get_name_from_value(std::size_t size, const char *token);
-        bool is_line_break(const char32_t& ch) const;
+
+        char32_t
+        current_char() const;
+
+        void
+        increment_position();
+
+        bool
+        is_name_start(const char32_t &ch) const;
+
+        bool
+        is_name_part(const char32_t &ch) const;
+
+        bool
+        is_integer(const char32_t &ch) const;
+
+        GraphQlToken
+        scan_string_literal();
+
+        GraphQlToken
+        get_name_from_value(std::size_t size, const char *token);
+
+        bool
+        is_line_break(const char32_t& ch) const;
     };
 }
 

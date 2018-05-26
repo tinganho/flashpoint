@@ -23,21 +23,21 @@ namespace flashpoint::program::graphql {
         Location
         get_token_location();
 
-        Location
-        get_token_location_from_syntax(Syntax* syntax);
-
     private:
         
         MemoryPool* memory_pool;
         Glib::ustring object_name;
         MemoryPoolTicket* ticket;
         GraphQlScanner* scanner;
-        std::map<Glib::ustring, Object*> object_types;
         Object* current_object_type;
-        std::vector<Type*> forward_references;
+        std::map<Glib::ustring, Symbol*> symbols;
+        std::map<Glib::ustring, Interface*> interfaces;
+        std::vector<Type*> forward_type_references;
+        std::vector<Name*> forward_interface_references;
+        std::vector<Object*> objects_with_implementations;
 
         GraphQlToken
-        next_token();
+        take_next_token();
 
         Glib::ustring
         get_token_value() const;
@@ -51,6 +51,33 @@ namespace flashpoint::program::graphql {
         Syntax*
         parse_schema_primary_token(GraphQlToken token);
 
+        Object*
+        parse_object();
+
+        InputObject*
+        parse_input_object();
+
+        Interface*
+        parse_interface();
+
+        Implementations*
+        parse_implementations();
+
+        Name *
+        parse_object_name(ObjectLike *object, SymbolKind);
+
+        FieldsDefinition*
+        parse_fields_definition(ObjectLike* object);
+
+        FieldsDefinition*
+        parse_fields_definition_after_open_brace(ObjectLike* object);
+
+        InputFieldsDefinition*
+        parse_input_fields_definition(InputObject* object);
+
+        Name*
+        parse_input_object_name(InputObject* object);
+
         Arguments*
         parse_arguments();
 
@@ -58,7 +85,7 @@ namespace flashpoint::program::graphql {
         parse_type();
 
         Type*
-        parse_type_definition();
+        parse_type_annotation(bool in_input_location);
 
         Syntax*
         parse_value();
@@ -70,16 +97,16 @@ namespace flashpoint::program::graphql {
         parse_selection_set();
 
         SelectionSet*
-        parse_selection_set_after_first_token();
+        parse_selection_set_after_open_brace();
 
         Name*
         parse_expected_name();
 
         Name*
-        parse_expected_name(const char* token_name);
-
-        Name*
         parse_optional_name();
+
+        ArgumentsDefinition*
+        parse_arguments_definition();
 
         inline bool
         scan_optional(const GraphQlToken &);
@@ -88,10 +115,13 @@ namespace flashpoint::program::graphql {
         scan_expected(const GraphQlToken&);
 
         inline bool
-        scan_expected(const GraphQlToken&, const char *token_name);
+        scan_expected(const GraphQlToken& token, DiagnosticMessageTemplate& _template);
 
         void
         check_forward_references();
+
+        void
+        check_object_implementations();
 
         Location
         get_location_from_syntax(Syntax* syntax);
@@ -99,6 +129,9 @@ namespace flashpoint::program::graphql {
         template<class T, class ... Args>
         inline T*
         create_syntax(SyntaxKind kind, Args ... args);
+
+        Symbol*
+        create_symbol(Glib::ustring* name, Declaration* declaration, SymbolKind kind);
 
         inline GraphQlToken
         current_token();

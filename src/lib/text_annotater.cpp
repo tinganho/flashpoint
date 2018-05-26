@@ -33,12 +33,6 @@ namespace flashpoint::lib {
 		if (it != annotations.end()) {
 			auto& vec = it->second;
 			auto last_annotation = vec.back().location;
-			if (location.line < last_annotation.line) {
-				throw std::invalid_argument("You cannot insert an annotation that has a position lower than the last annotation.");
-			}
-            if (location.line == last_annotation.line && location.column < last_annotation.column) {
-                throw std::invalid_argument("You cannot insert an annotation that has a position lower than the last annotation.");
-            }
 			vec.push_back(annotation);
 		}
 		else {
@@ -55,8 +49,18 @@ namespace flashpoint::lib {
 			writer.newline();
 			std::size_t size = lines[i].size();
 			auto it = annotations.find(i + 1);
+
 			if (it != annotations.end()) {
 				std::vector<Annotation> annotations = it->second;
+                std::sort(annotations.begin(), annotations.end(), [](const Annotation& a, const Annotation& b) {
+                    if (a.location.line < b.location.line) {
+                        return true;
+                    }
+                    else if (a.location.column < b.location.column) {
+                        return true;
+                    }
+                    return false;
+                });
 				for (const auto & annotation : annotations) {
 					auto location = annotation.location;
 					for (int i1 = 1; i1 < location.column; i1++) {
@@ -80,7 +84,7 @@ namespace flashpoint::lib {
 				}
 			}
 		}
-            writer.restore();
+		writer.restore();
 		return *writer.text;
 	}
 };

@@ -1,0 +1,11 @@
+input Single {
+    field(argument: Int): String
+         ~ (2, 10, 1)
+!!! Expected ':', but got '('.
+}
+
+input Multiple {
+    field(argument1: Int, argument2: Int): String
+         ~ (6, 10, 1)
+!!! Expected ':', but got '('.
+}

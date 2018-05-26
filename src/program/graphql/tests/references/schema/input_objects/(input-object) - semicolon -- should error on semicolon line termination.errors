@@ -1,0 +1,5 @@
+input Query {
+    property: Int;
+                 ~ (2, 18, 1)
+!!! Expected field definition.
+}

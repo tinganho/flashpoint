@@ -1,5 +1,0 @@
-type Query {
-    property: unknown
-              ~~~~~~~ (2, 15, 8)
-!!! Type 'unknown' is not defined.
-}

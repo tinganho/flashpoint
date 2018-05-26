@@ -3,6 +3,41 @@
 
 namespace flashpoint::program::graphql {
 
+    void Argument::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void Arguments::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void ArgumentsDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void InputValueDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void InputFieldDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void InputFieldsDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void InputObject::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
     void Name::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
@@ -53,16 +88,6 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
-    void Argument::accept(GraphQlSyntaxVisitor* visitor) const
-    {
-        visitor->visit(this);
-    }
-
-    void Arguments::accept(GraphQlSyntaxVisitor* visitor) const
-    {
-        visitor->visit(this);
-    }
-
     void QueryField::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
@@ -99,6 +124,16 @@ namespace flashpoint::program::graphql {
     }
 
     void Object::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void Interface::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void Implementations::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

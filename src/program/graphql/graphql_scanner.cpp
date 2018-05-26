@@ -25,7 +25,7 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
-    GraphQlScanner::next_token()
+    GraphQlScanner::take_next_token()
     {
         set_token_start_position();
         while (position < size) {
@@ -63,6 +63,12 @@ namespace flashpoint::program::graphql {
                         start_column++;
                     }
                     continue;
+                case Ampersand:
+                    return GraphQlToken::Ampersand;
+                case OpenParen:
+                    return GraphQlToken::OpenParen;
+                case CloseParen:
+                    return GraphQlToken::CloseParen;
                 case OpenBracket:
                     return GraphQlToken::OpenBracket;
                 case CloseBracket:
@@ -78,7 +84,7 @@ namespace flashpoint::program::graphql {
                 case DoubleQuote:
                     return scan_string_literal();
                 default:
-                    if (is_name_start(current_char())) {
+                    if (is_name_start(ch)) {
                         std::size_t name_size = 1;
                         while (position < size && is_name_part(current_char())) {
                             increment_position();
@@ -90,6 +96,32 @@ namespace flashpoint::program::graphql {
             }
         }
         return GraphQlToken::EndOfDocument;
+    }
+
+    void GraphQlScanner::skip_block()
+    {
+        int matched_braces = 0;
+        bool encountered_brace = false;
+        while (true) {
+            auto token = take_next_token();
+            switch (token) {
+                case GraphQlToken::OpenBrace:
+                    matched_braces++;
+                    encountered_brace = true;
+                    break;
+                case GraphQlToken::CloseBrace:
+                    matched_braces--;
+                    encountered_brace = true;
+                    break;
+                case GraphQlToken::EndOfDocument:
+                    return;
+                default:;
+            }
+            if (encountered_brace && matched_braces <= 0) {
+                return;
+            }
+        }
+        throw std::logic_error("Should not reach here.");
     }
 
     Glib::ustring
@@ -119,15 +151,20 @@ namespace flashpoint::program::graphql {
                 }
                 break;
             case 5:
-                if (value[0] == 'q') {
-                    if (strcmp(value + 1, "uery") == 0) {
-                        return GraphQlToken::QueryKeyword;
-                    }
-                }
-                if (value[0] == 'F') {
-                    if (strcmp(value + 1, "loat") == 0) {
-                        return GraphQlToken::FloatKeyword;
-                    }
+                switch (value[0]) {
+                    case q:
+                        if (strcmp(value + 1, "uery") == 0) {
+                            return GraphQlToken::QueryKeyword;
+                        }
+                    case F:
+                        if (strcmp(value + 1, "loat") == 0) {
+                            return GraphQlToken::FloatKeyword;
+                        }
+                    case i:
+                        if (strcmp(value + 1, "nput") == 0) {
+                            return GraphQlToken::InputKeyword;
+                        }
+                    default:;
                 }
                 break;
             case 6:
@@ -145,6 +182,16 @@ namespace flashpoint::program::graphql {
                     return GraphQlToken::MutationKeyword;
                 }
                 break;
+            case 9:
+                if (strcmp(value, "interface") == 0) {
+                    return GraphQlToken::InterfaceKeyword;
+                }
+                break;
+            case 10:
+                if (strcmp(value, "implements") == 0) {
+                    return GraphQlToken::ImplementsKeyword;
+                }
+                break;
             case 12:
                 if (strcmp(value, "subscription") == 0) {
                     return GraphQlToken::SubscriptionKeyword;
@@ -153,7 +200,7 @@ namespace flashpoint::program::graphql {
             default:;
         }
         name = value;
-        return GraphQlToken::Name;
+        return GraphQlToken::G_Name;
     }
 
     void
@@ -174,7 +221,7 @@ namespace flashpoint::program::graphql {
     Location
     GraphQlScanner::binary_search_for_line(std::size_t start, std::size_t end, std::size_t position)
     {
-        if (end >= start) {
+        if (end > start) {
             auto mid = start + (end - start) / 2;
             auto position_line = position_to_line_list[mid];
             if (position >= position_line.position && position < position_to_line_list[mid + 1].position) {
@@ -191,8 +238,18 @@ namespace flashpoint::program::graphql {
 
             return binary_search_for_line(mid + 1, end, position);
         }
+        else if (end == start) {
+            auto position_line = position_to_line_list[end];
+            if (position >= position_line.position && position < size) {
+                return Location {
+                    position_line.line,
+                    position - position_line.position + 1,
+                    0,
+                };
+            }
+        }
 
-        throw std::logic_error("Should not reach here");
+        throw std::logic_error("Could not find position: " + std::to_string(position));
     }
 
     GraphQlToken
@@ -202,6 +259,12 @@ namespace flashpoint::program::graphql {
             increment_position();
         }
         return GraphQlToken::Unknown;
+    }
+
+    bool
+    GraphQlScanner::is_integer(const char32_t &ch) const
+    {
+        return ch >= _0 && ch <= _9;
     }
 
     bool
@@ -233,7 +296,7 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::peek_next_token()
     {
         save();
-        GraphQlToken token = next_token();
+        GraphQlToken token = take_next_token();
         revert();
         return token;
     }
@@ -268,7 +331,7 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::try_scan(const GraphQlToken& token)
     {
         save();
-        auto result = next_token();
+        auto result = take_next_token();
         if (result == token) {
             return token;
         }
@@ -279,7 +342,7 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::scan_expected(const GraphQlToken& token)
     {
-        GraphQlToken result = next_token();
+        GraphQlToken result = take_next_token();
         if (result == token) {
             return token;
         }
@@ -293,7 +356,6 @@ namespace flashpoint::program::graphql {
             increment_position();
         }
     }
-
 
     inline
     bool

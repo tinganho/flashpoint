@@ -1,0 +1,5 @@
+type Object {
+    field1: Int
+    field2: Int
+    fieldN: Int
+}

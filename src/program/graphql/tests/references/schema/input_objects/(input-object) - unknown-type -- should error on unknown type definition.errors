@@ -1,0 +1,29 @@
+input Object1 {
+    property: unknown
+              ~~~~~~~ (2, 15, 7)
+!!! Type 'unknown' is not defined.
+}
+
+input Object2 {
+    property: [unknown]
+               ~~~~~~~ (6, 16, 7)
+!!! Type 'unknown' is not defined.
+}
+
+input Object3 {
+    property: [unknown!]
+               ~~~~~~~ (10, 16, 7)
+!!! Type 'unknown' is not defined.
+}
+
+input Object4 {
+    property: [unknown]!
+               ~~~~~~~ (14, 16, 7)
+!!! Type 'unknown' is not defined.
+}
+
+input Object5 {
+    property: [unknown!]!
+               ~~~~~~~ (18, 16, 7)
+!!! Type 'unknown' is not defined.
+}

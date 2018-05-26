@@ -3,11 +3,13 @@
 
 #include <string>
 #include <functional>
+#include <lib/text_writer.h>
 #include <boost/filesystem/path.hpp>
 #include <uv.h>
 #include <experimental/optional>
 
 using namespace boost::filesystem;
+using namespace flashpoint::lib;
 
 namespace flashpoint::test {
     struct TestCase {
@@ -44,6 +46,7 @@ namespace flashpoint::test {
 
     private:
         uv_loop_t* loop;
+        std::size_t current_line = 1;
 
         void
         visit_tests_by_path(
@@ -59,6 +62,26 @@ namespace flashpoint::test {
 
         bool
         assert_baselines(const char* current, const char* reference, std::stringstream& error_message);
+
+        void
+        append_mutation_chunk(const std::string &message, bool is_insertion,
+                              TextWriter &tw);
+
+        std::string
+        append_all_lines_except_last_line(const std::string &chunk, TextWriter &tw);
+
+        std::tuple<std::string, bool>
+        append_all_lines(const std::string &message, TextWriter &tw);
+
+        std::tuple<std::string, std::vector<std::string>, std::size_t>
+        get_first_and_rest_lines(const std::string& chunk);
+
+        std::string
+        line_number();
+
+
+        std::string
+        line_number(std::size_t line);
     };
 }
 

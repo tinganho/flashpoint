@@ -1,0 +1,19 @@
+input Object1 {
+    property: unknown
+}
+
+input Object2 {
+    property: [unknown]
+}
+
+input Object3 {
+    property: [unknown!]
+}
+
+input Object4 {
+    property: [unknown]!
+}
+
+input Object5 {
+    property: [unknown!]!
+}

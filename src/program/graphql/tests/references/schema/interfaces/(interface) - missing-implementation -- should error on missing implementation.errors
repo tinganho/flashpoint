@@ -1,0 +1,21 @@
+interface Interface1 {
+    interfaceField1: Int
+}
+
+interface Interface2 {
+    interfaceField2: Int
+}
+
+type Object1 implements Interface1 {
+     ~~~~~~~ (9, 6, 7)
+!!! The field 'interfaceField1' in interface 'Interface1' is not implemented.
+    objectField: Int
+}
+
+type Object2 implements Interface1 & Interface2 {
+     ~~~~~~~ (13, 6, 7)
+!!! The field 'interfaceField1' in interface 'Interface1' is not implemented.
+     ~~~~~~~ (13, 6, 7)
+!!! The field 'interfaceField2' in interface 'Interface2' is not implemented.
+    objectField: Int
+}

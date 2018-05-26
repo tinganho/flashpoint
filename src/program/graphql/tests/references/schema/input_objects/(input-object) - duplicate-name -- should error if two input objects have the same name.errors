@@ -1,0 +1,11 @@
+input Object {
+      ~~~~~~ (1, 7, 6)
+!!! Duplicate type 'Object'.
+    property: Int
+}
+
+input Object {
+      ~~~~~~ (5, 7, 6)
+!!! Duplicate type 'Object'.
+    property: Int
+}

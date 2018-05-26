@@ -1,0 +1,7 @@
+interface Interface {
+    field: Int
+}
+
+input Input {
+    field: Interface
+}

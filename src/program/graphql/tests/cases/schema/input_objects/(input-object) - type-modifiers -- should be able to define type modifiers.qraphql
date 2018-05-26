@@ -1,0 +1,23 @@
+input ObjectBoolean {
+    property: Boolean
+}
+
+input ObjectBooleanNonNull {
+    property: Boolean!
+}
+
+input ObjectBooleanList {
+    property: [Boolean]
+}
+
+input ObjectBooleanNonNullList {
+    property: [Boolean!]
+}
+
+input ObjectBooleanListNonNull {
+    property: [Boolean]!
+}
+
+input ObjectBooleanNonNullListNonNull {
+    property: [Boolean!]!
+}

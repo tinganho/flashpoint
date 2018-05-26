@@ -1,0 +1,9 @@
+interface Interface {
+    field: Int
+}
+
+input Input {
+    field: Interface
+           ~~~~~~~~~ (6, 12, 9)
+!!! Cannot add an (output) type to an input location.
+}
