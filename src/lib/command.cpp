@@ -28,8 +28,9 @@ namespace flashpoint::lib {
                 auto size = strlen(arg);
                 for (std::size_t i = 0; i < size; i++) {
                     if (arg[i] == '=') {
-                        value = new char[size - (i + 1)];
+                        value = new char[size - i];
                         strcpy(value, arg + i + 1);
+                        value[size - i - 1] = '\0';
                         has_equal_value = true;
                         strncpy(flag, arg + 2, i - 2);
                         flag[i - 2] = '\0';

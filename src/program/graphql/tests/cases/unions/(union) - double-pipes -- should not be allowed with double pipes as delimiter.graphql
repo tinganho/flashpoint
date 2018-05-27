@@ -1,0 +1,9 @@
+type Object1 {
+    field: Int
+}
+
+type Object2 {
+    field: Int
+}
+
+union Union = Object1 || Object2

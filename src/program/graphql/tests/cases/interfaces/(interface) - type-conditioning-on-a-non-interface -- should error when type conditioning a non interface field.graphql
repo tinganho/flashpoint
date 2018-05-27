@@ -1,0 +1,19 @@
+type Object {
+    field: Int
+}
+
+type ConditionObject {
+    conditionObjectField: Int
+}
+
+type Query {
+    object: Object
+}
+====
+{
+    object {
+        ... on ConditionObject {
+            conditionObjectField
+        }
+    }
+}

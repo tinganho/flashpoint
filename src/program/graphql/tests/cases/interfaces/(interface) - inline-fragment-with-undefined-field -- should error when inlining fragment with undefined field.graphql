@@ -1,0 +1,26 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type SubObject1 implements Interface {
+    interfaceField: Int
+    subObject1Field: Int
+}
+
+type SubObject2 implements Interface {
+    interfaceField: Int
+    subObject2Field: Int
+}
+
+type Query {
+    interface: Interface
+}
+====
+query {
+    interface {
+        interfaceField
+        ... on SubObject1 {
+            undefined
+        }
+    }
+}

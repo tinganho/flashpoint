@@ -1,0 +1,24 @@
+type Object1 {
+    object1Field: Int
+}
+
+type Object2 {
+    object2Field: Int
+}
+
+union Union = Object1 | Object2
+
+type Query {
+    union: Union
+}
+====
+{
+    union {
+        ... on Object1 {
+            object1Field
+        }
+        ... on Object2 {
+            object2Field
+        }
+    }
+}

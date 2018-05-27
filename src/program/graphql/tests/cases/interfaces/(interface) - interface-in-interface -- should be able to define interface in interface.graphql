@@ -1,0 +1,17 @@
+interface SubInterface {
+    subInterfaceField: Int
+}
+
+interface Interface {
+    subInterface: SubInterface
+}
+
+type Query {
+    interface: Interface
+}
+====
+{
+    interface {
+        subInterface
+    }
+}

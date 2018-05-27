@@ -1,0 +1,31 @@
+type Object1 {
+    type: Int
+}
+
+type Object2 {
+    input: Int
+}
+
+type Object3 {
+    interface: Int
+}
+
+type Object4 {
+    implements: Int
+}
+
+type Object5 {
+    on: Int
+}
+
+type Object6 {
+    true: Int
+}
+
+type Object7 {
+    false: Int
+}
+
+type Object8 {
+    null: Int
+}

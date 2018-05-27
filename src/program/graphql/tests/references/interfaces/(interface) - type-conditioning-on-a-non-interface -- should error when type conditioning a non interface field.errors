@@ -1,0 +1,21 @@
+type Object {
+    field: Int
+}
+
+type ConditionObject {
+    conditionObjectField: Int
+}
+
+type Query {
+    object: Object
+}
+====
+{
+    object {
+        ... on ConditionObject {
+               ~~~~~~~~~~~~~~~ (3, 16, 15)
+!!! The object 'ConditionObject' does not match the object 'Object'.
+            conditionObjectField
+        }
+    }
+}

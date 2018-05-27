@@ -20,4 +20,11 @@ namespace flashpoint::program {
         std::string message2 = boost::regex_replace(message1, boost::regex("\\{1\\}"), arg2);
         return DiagnosticMessage { message2, location };
     }
+
+    DiagnosticMessage create_diagnostic(const Location& location, const DiagnosticMessageTemplate& d, const std::string& arg1, const std::string& arg2, const std::string& arg3) {
+        std::string message1 = boost::regex_replace(d.message_template, boost::regex("\\{0\\}"), arg1);
+        std::string message2 = boost::regex_replace(message1, boost::regex("\\{1\\}"), arg2);
+        std::string message3 = boost::regex_replace(message2, boost::regex("\\{2\\}"), arg3);
+        return DiagnosticMessage { message3, location };
+    }
 }

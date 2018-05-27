@@ -1,0 +1,19 @@
+type Object {
+    field: Int
+}
+
+union Union = Object
+
+type Query {
+    union: Union
+}
+====
+{
+    union {
+        ... on Object {
+            undefined
+            ~~~~~~~~~ (4, 13, 9)
+!!! Field 'undefined' does not exist on type 'Object'.
+        }
+    }
+}

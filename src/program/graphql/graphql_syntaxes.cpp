@@ -88,17 +88,17 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
-    void QueryField::accept(GraphQlSyntaxVisitor* visitor) const
+    void Field::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void InlineFragment::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
 
     void SelectionSet::accept(GraphQlSyntaxVisitor* visitor) const
-    {
-        visitor->visit(this);
-    }
-
-    void Selection::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
@@ -144,6 +144,11 @@ namespace flashpoint::program::graphql {
     }
 
     void FieldsDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void Union::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

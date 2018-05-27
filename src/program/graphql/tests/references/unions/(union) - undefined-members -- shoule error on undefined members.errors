@@ -1,0 +1,33 @@
+type Object {
+    field: Int
+}
+
+union OneUndefined = Undefined1
+                     ~~~~~~~~~~ (5, 22, 10)
+!!! Type 'Undefined1' is not defined.
+
+union AllUndefined = Undefined1 | Undefined2 | Undefined3
+                     ~~~~~~~~~~ (7, 22, 10)
+!!! Type 'Undefined1' is not defined.
+                                  ~~~~~~~~~~ (7, 35, 10)
+!!! Type 'Undefined2' is not defined.
+                                               ~~~~~~~~~~ (7, 48, 10)
+!!! Type 'Undefined3' is not defined.
+
+union TypeDefinedInMiddle = Undefined1 | Object | Undefined2
+                            ~~~~~~~~~~ (9, 29, 10)
+!!! Type 'Undefined1' is not defined.
+                                                  ~~~~~~~~~~ (9, 51, 10)
+!!! Type 'Undefined2' is not defined.
+
+union TypeDefinedInStart = Object | Undefined1 | Undefined2
+                                    ~~~~~~~~~~ (11, 37, 10)
+!!! Type 'Undefined1' is not defined.
+                                                 ~~~~~~~~~~ (11, 50, 10)
+!!! Type 'Undefined2' is not defined.
+
+union TypeDefinedInEnd = Undefined1 | Undefined2 | Object
+                         ~~~~~~~~~~ (13, 26, 10)
+!!! Type 'Undefined1' is not defined.
+                                      ~~~~~~~~~~ (13, 39, 10)
+!!! Type 'Undefined2' is not defined.

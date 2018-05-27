@@ -1,0 +1,51 @@
+interface BooleanInterface {
+    field: Boolean
+}
+
+interface IntInterface {
+    field: Int
+}
+
+interface FloatInterface {
+    field: Float
+}
+
+interface StringInterface {
+    field: String
+}
+
+interface IDInterface {
+    field: ID
+}
+
+type Object {
+    field: Int
+}
+
+interface ObjectInterface {
+    field: Object
+}
+
+type Boolean implements BooleanInterface {
+    field: Boolean
+}
+
+type Int implements IntInterface {
+    field: Int
+}
+
+type Float implements FloatInterface {
+    field: Float
+}
+
+type String implements StringInterface {
+    field: String
+}
+
+type ID implements IDInterface {
+    field: ID
+}
+
+type ObjectType implements ObjectInterface {
+    field: Object
+}

@@ -25,7 +25,7 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
-    GraphQlScanner::take_next_token()
+    GraphQlScanner::take_next_token(bool treat_keyword_as_name)
     {
         set_token_start_position();
         while (position < size) {
@@ -83,12 +83,22 @@ namespace flashpoint::program::graphql {
                     return GraphQlToken::Exclamation;
                 case DoubleQuote:
                     return scan_string_literal();
+                case Dot:
+                    return scan_ellipses_after_first_dot();
+                case Pipe:
+                    return GraphQlToken::Pipe;
+                case Equal:
+                    return GraphQlToken::Equal;
+
                 default:
                     if (is_name_start(ch)) {
                         std::size_t name_size = 1;
                         while (position < size && is_name_part(current_char())) {
                             increment_position();
                             name_size++;
+                        }
+                        if (treat_keyword_as_name) {
+                            return GraphQlToken::G_Name;
                         }
                         return get_name_from_value(name_size, get_value().c_str());
                     }
@@ -103,7 +113,7 @@ namespace flashpoint::program::graphql {
         int matched_braces = 0;
         bool encountered_brace = false;
         while (true) {
-            auto token = take_next_token();
+            auto token = take_next_token(false);
             switch (token) {
                 case GraphQlToken::OpenBrace:
                     matched_braces++;
@@ -124,6 +134,26 @@ namespace flashpoint::program::graphql {
         throw std::logic_error("Should not reach here.");
     }
 
+    void
+    GraphQlScanner::skip_to(std::vector<GraphQlToken> tokens)
+    {
+        std::size_t n = 0;
+        while (true) {
+            save();
+            GraphQlToken token = take_next_token(false);
+            if (token == GraphQlToken::EndOfDocument) {
+                return;
+            }
+            if (std::find(tokens.begin(), tokens.end(), token) != tokens.end()) {
+                return;
+            }
+            n++;
+        }
+        if (n > 0) {
+            revert();
+        }
+    }
+
     Glib::ustring
     GraphQlScanner::get_name() const
     {
@@ -133,11 +163,20 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::get_name_from_value(std::size_t size, const char *value)
     {
-        // keywords are between 3 and 8 in size
         switch (size) {
             case 2:
-                if (strcmp(value, "ID") == 0) {
-                    return GraphQlToken::IDKeyword;
+                switch (value[0]) {
+                    case I:
+                        if (strcmp(value + 1, "D") == 0) {
+                            return GraphQlToken::IDKeyword;
+                        }
+                        break;
+                    case o:
+                        if (strcmp(value + 1, "n") == 0) {
+                            return GraphQlToken::OnKeyword;
+                        }
+                        break;
+                    default:;
                 }
                 break;
             case 3:
@@ -156,14 +195,22 @@ namespace flashpoint::program::graphql {
                         if (strcmp(value + 1, "uery") == 0) {
                             return GraphQlToken::QueryKeyword;
                         }
+                        break;
                     case F:
                         if (strcmp(value + 1, "loat") == 0) {
                             return GraphQlToken::FloatKeyword;
                         }
+                        break;
                     case i:
                         if (strcmp(value + 1, "nput") == 0) {
                             return GraphQlToken::InputKeyword;
                         }
+                        break;
+                    case u:
+                        if (strcmp(value + 1, "nion") == 0) {
+                            return GraphQlToken::UnionKeyword;
+                        }
+                        break;
                     default:;
                 }
                 break;
@@ -261,6 +308,22 @@ namespace flashpoint::program::graphql {
         return GraphQlToken::Unknown;
     }
 
+    GraphQlToken
+    GraphQlScanner::scan_ellipses_after_first_dot()
+    {
+        char32_t ch = current_char();
+        if (ch != Character::Dot) {
+            return GraphQlToken::Unknown;
+        }
+        increment_position();
+        ch = current_char();
+        if (ch != Character::Dot) {
+            return GraphQlToken::Unknown;
+        }
+        increment_position();
+        return GraphQlToken::Ellipses;
+    }
+
     bool
     GraphQlScanner::is_integer(const char32_t &ch) const
     {
@@ -296,7 +359,7 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::peek_next_token()
     {
         save();
-        GraphQlToken token = take_next_token();
+        GraphQlToken token = take_next_token(false);
         revert();
         return token;
     }
@@ -330,8 +393,15 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::try_scan(const GraphQlToken& token)
     {
+        return try_scan(token, false);
+    }
+
+
+    GraphQlToken
+    GraphQlScanner::try_scan(const GraphQlToken& token, bool treat_keyword_as_name)
+    {
         save();
-        auto result = take_next_token();
+        auto result = take_next_token(treat_keyword_as_name);
         if (result == token) {
             return token;
         }
@@ -342,7 +412,13 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::scan_expected(const GraphQlToken& token)
     {
-        GraphQlToken result = take_next_token();
+        return scan_expected(token, false);
+    }
+
+    GraphQlToken
+    GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_name)
+    {
+        GraphQlToken result = take_next_token(treat_keyword_as_name);
         if (result == token) {
             return token;
         }

@@ -1,0 +1,11 @@
+interface Object1 {
+    field: Int
+}
+
+interface Object2 {
+    field: Int
+}
+
+union Union =
+    | Object1
+    | Object2

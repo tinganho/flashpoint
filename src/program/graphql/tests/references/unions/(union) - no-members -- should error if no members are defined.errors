@@ -1,0 +1,11 @@
+interface Object1 {
+    field: Int
+}
+
+interface Object2 {
+    field: Int
+}
+
+union Union =
+              (9, 14, 0)
+!!! Expected 'name', but reached the end of document.

@@ -108,8 +108,9 @@ namespace flashpoint::program::graphql {
         { GraphQlToken::OpenParen, "(" },
         { GraphQlToken::CloseParen, ")" },
         { GraphQlToken::Exclamation, "!" },
+        { GraphQlToken::Pipe, "|" },
         { GraphQlToken::G_Name, "name" },
-        { GraphQlToken::Unknown, "unknown" },
+        { GraphQlToken::Unknown, "unknown" }
     };
 
     struct PositionToLine {
@@ -142,13 +143,19 @@ namespace flashpoint::program::graphql {
         get_token_length();
 
         GraphQlToken
-        take_next_token();
+        take_next_token(bool treat_keyword_as_name);
 
         GraphQlToken
         try_scan(const GraphQlToken& token);
 
         GraphQlToken
+        try_scan(const GraphQlToken& token, bool treat_keyword_as_name);
+
+        GraphQlToken
         scan_expected(const GraphQlToken& token);
+
+        GraphQlToken
+        scan_expected(const GraphQlToken& token, bool treat_keyword_as_name);
 
         void
         set_token_start_position();
@@ -183,6 +190,9 @@ namespace flashpoint::program::graphql {
         void
         skip_block();
 
+        void
+        skip_to(std::vector<GraphQlToken>);
+
     private:
         char32_t ch;
         const Glib::ustring* source;
@@ -206,6 +216,9 @@ namespace flashpoint::program::graphql {
 
         GraphQlToken
         scan_string_literal();
+
+        GraphQlToken
+        scan_ellipses_after_first_dot();
 
         GraphQlToken
         get_name_from_value(std::size_t size, const char *token);

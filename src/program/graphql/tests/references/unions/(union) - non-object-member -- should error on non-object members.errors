@@ -1,0 +1,15 @@
+interface Object1 {
+    field: Int
+}
+
+interface Object2 {
+    field: Int
+}
+
+union Union =
+    | Object1
+      ~~~~~~~ (10, 7, 7)
+!!! Only objects are allowed as members in a union.
+    | Object2
+      ~~~~~~~ (11, 7, 7)
+!!! Only objects are allowed as members in a union.

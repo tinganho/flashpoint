@@ -1,0 +1,11 @@
+type Object1 {
+    field: Int
+}
+
+type Object2 {
+    field: Int
+}
+
+union Union = Object1 || Object2
+                       ~ (9, 24, 1)
+!!! Expected 'name', but got '|'.

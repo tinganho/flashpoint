@@ -149,12 +149,16 @@ namespace flashpoint::test {
                 boost::algorithm::split_regex(source, test_case.source, boost::regex("====\n"));
                 DiagnosticWriter* diagnostic_writer;
                 if (source.size() > 1) {
-                    diagnostic_writer = new DiagnosticWriter(
-                        parser.add_schema(&source[0]), parser.execute(&source[1]));
+                    auto schema_document = parser.add_schema(&source[0]);
+                    if (schema_document->diagnostics.size() > 0) {
+                        diagnostic_writer = new DiagnosticWriter(schema_document);
+                    }
+                    else {
+                        diagnostic_writer = new DiagnosticWriter(schema_document, parser.execute(&source[1]));
+                    }
                 }
                 else {
-                    diagnostic_writer = new DiagnosticWriter(
-                        parser.add_schema(&source[0]));
+                    diagnostic_writer = new DiagnosticWriter(parser.add_schema(&source[0]));
                 }
                 auto current_errors_file_source = diagnostic_writer->to_string();
                 auto current_error_file = test_case.current_folder / (test_case.name + ".errors");

@@ -1,0 +1,13 @@
+type Object {
+    field: Int
+}
+
+union OneUndefined = Undefined1
+
+union AllUndefined = Undefined1 | Undefined2 | Undefined3
+
+union TypeDefinedInMiddle = Undefined1 | Object | Undefined2
+
+union TypeDefinedInStart = Object | Undefined1 | Undefined2
+
+union TypeDefinedInEnd = Undefined1 | Undefined2 | Object

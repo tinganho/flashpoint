@@ -1,0 +1,25 @@
+interface Interface {
+    field: Int
+}
+
+type Object implements Interface {
+    field: Int
+}
+
+interface NonInterfaceImplementation {
+    field: Int
+}
+
+type Query {
+    interface: Interface
+}
+====
+{
+    interface {
+        ... on NonInterfaceImplementation {
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~ (3, 16, 26)
+!!! The type 'NonInterfaceImplementation' is not an object.
+            field
+        }
+    }
+}

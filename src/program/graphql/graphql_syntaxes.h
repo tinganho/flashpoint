@@ -57,6 +57,7 @@ namespace flashpoint::program::graphql {
         S_Selection,
         S_SelectionSet,
         S_Type,
+        S_Union,
         S_TypeCondition,
         S_VariableDefinition,
         S_VariableDefinitions,
@@ -65,6 +66,7 @@ namespace flashpoint::program::graphql {
         S_FieldDefinition,
         S_InputFieldsDefinition,
         S_InputFieldDefinition,
+        S_InlineFragment,
 
         // Literals
         S_IntLiteral,
@@ -77,8 +79,8 @@ namespace flashpoint::program::graphql {
 
     struct Syntax {
         SyntaxKind kind;
-        unsigned int start;
-        unsigned int end;
+        std::size_t start;
+        std::size_t end;
 
         Syntax(SyntaxKind kind, unsigned int start, unsigned int _end):
             kind(kind),
@@ -235,15 +237,55 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    enum class TypeEnum {
-        T_Int,
-        T_String,
-        T_Float,
-        T_Boolean,
-        T_ID,
-        T_Enum,
-        T_Object,
+    struct Union : Declaration {
+        std::map<Glib::ustring, Name*> members;
+
+        D(Union, Declaration)
+        { }
+
+        new_operator(Union)
+
+        void accept(GraphQlSyntaxVisitor*) const;
     };
+
+    enum class TypeEnum : unsigned int {
+        T_None,
+        T_Int = 1 << 1,
+        T_String = 1 << 2,
+        T_Float = 1 << 3,
+        T_Boolean = 1 << 4,
+        T_ID = 1 << 5,
+
+        T_Enum = 1 << 6,
+        T_Object = 1 << 7,
+        T_Interface = 1 << 8,
+        T_Union = 1 << 9,
+
+        T_ScalarType =
+            static_cast<unsigned int>(T_Int) |
+            static_cast<unsigned int>(T_String) |
+            static_cast<unsigned int>(T_Float) |
+            static_cast<unsigned int>(T_Boolean) |
+            static_cast<unsigned int>(T_ID),
+
+        T_ObjectType =
+            static_cast<unsigned int>(T_Object) |
+            static_cast<unsigned int>(T_Union) |
+            static_cast<unsigned int>(T_Interface),
+
+        T_SymbolicType =
+            static_cast<unsigned int>(T_Enum) |
+            static_cast<unsigned int>(T_Object),
+    };
+
+
+    inline constexpr TypeEnum operator|(TypeEnum a, TypeEnum b) {
+        return static_cast<TypeEnum>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    }
+
+    inline constexpr TypeEnum operator&(TypeEnum a, TypeEnum b) {
+        return static_cast<TypeEnum>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+    }
 
     struct Type : Syntax {
         TypeEnum type;
@@ -462,26 +504,33 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct QueryField : Syntax {
+
+    struct Selection : Syntax {
+        SelectionSet* selection_set;
+
+        S(Selection)
+        { }
+    };
+
+    struct Field : Selection {
         Name* alias;
         Name* name;
         Arguments* arguments;
         Directive* directive;
-        SelectionSet* selection_set;
 
-        S(QueryField)
+        D(Field, Selection)
         { }
 
-        new_operator(QueryField)
+        new_operator(Field)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct FragmentSpread : Syntax {
+    struct FragmentSpread : Selection {
         Name* name;
         Directives* directives;
 
-        S(FragmentSpread)
+        D(FragmentSpread, Selection)
         { }
 
         new_operator(FragmentSpread)
@@ -489,24 +538,13 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct InlineFragment : Syntax {
+    struct InlineFragment : Selection {
         TypeCondition* type_condition;
 
-        S(InlineFragment)
+        D(InlineFragment, Selection)
         { }
 
         new_operator(InlineFragment)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct Selection : Syntax {
-        Syntax* field;
-
-        S(Selection)
-        { }
-
-        new_operator(Selection)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -637,7 +675,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const BooleanLiteral*) = 0;
         virtual void visit(const VariableDefinition*) = 0;
         virtual void visit(const VariableDefinitions*) = 0;
-        virtual void visit(const QueryField*) = 0;
+        virtual void visit(const Field*) = 0;
         virtual void visit(const SelectionSet*) = 0;
         virtual void visit(const Selection*) = 0;
         virtual void visit(const OperationDefinition*) = 0;
@@ -653,6 +691,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const FieldsDefinition*) = 0;
         virtual void visit(const InputFieldDefinition*) = 0;
         virtual void visit(const InputFieldsDefinition*) = 0;
+        virtual void visit(const Union*) = 0;
     };
 };
 

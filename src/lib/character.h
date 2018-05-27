@@ -80,7 +80,7 @@ namespace flashpoint::program {
         Backslash = 0x5C,             // \
         Backspace = 0x08,             // \b
         Backtick = 0x60,              // `
-        Bar = 0x7C,                   // |
+        Pipe = 0x7C,                   // |
         Caret = 0x5E,                 // ^
         CarriageReturn = 0x0D,        // \r
         CloseBrace = 0x7D,            // }

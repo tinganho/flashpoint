@@ -1,0 +1,17 @@
+type Object {
+    field: Int
+}
+
+union Union = Object
+
+type Query {
+    union: Union
+}
+====
+{
+    union {
+        ... on Object {
+            undefined
+        }
+    }
+}
