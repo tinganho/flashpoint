@@ -1,0 +1,10 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type Object implements Interface {
+    interfaceField: Int
+    propertyField: Int
+
+ (8, 1, 0)
+!!! Expected '}', but reached the end of document.

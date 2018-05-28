@@ -2,7 +2,6 @@
   "Expected '{0}', but got '{1}'.": {},
   "Expected operation definition or fragment definition.": {},
   "Expected field, inline fragment or fragment spread.": {},
-  "Unexpected end of selection set. Missing closing brace '{0}' for selection set.": {},
   "Unexpected end of implementations.": {},
   "Expected name of object": {},
   "Expected name of interface.": {},
@@ -31,5 +30,6 @@
   "Expected '{0}', but reached the end of document.": {},
   "Only objects are allowed as members in a union.": {},
   "Expected fragment spread or inline fragment.": {},
-  "The type '{0}' is not member of the union '{1}'.": {}
+  "The type '{0}' is not member of the union '{1}'.": {},
+  "Fragment '{0}' is not defined.": {}
 }

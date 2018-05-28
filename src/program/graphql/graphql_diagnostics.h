@@ -27,6 +27,7 @@ public:
     static DiagnosticMessageTemplate Expected_type_definition;
     static DiagnosticMessageTemplate Expected_type_name_instead_got_0;
     static DiagnosticMessageTemplate Field_0_does_not_exist_on_type_1;
+    static DiagnosticMessageTemplate Fragment_0_is_not_defined;
     static DiagnosticMessageTemplate Input_object_fields_cannot_have_arguments;
     static DiagnosticMessageTemplate Interface_0_is_not_defined;
     static DiagnosticMessageTemplate Only_objects_are_allowed_as_members_in_a_union;
@@ -40,7 +41,6 @@ public:
     static DiagnosticMessageTemplate Type_0_is_not_defined;
     static DiagnosticMessageTemplate Type_conditions_are_only_applicable_inside_object_interfaces_and_unions;
     static DiagnosticMessageTemplate Unexpected_end_of_implementations;
-    static DiagnosticMessageTemplate Unexpected_end_of_selection_set_Missing_closing_brace_0_for_selection_set;
 };
 
 }

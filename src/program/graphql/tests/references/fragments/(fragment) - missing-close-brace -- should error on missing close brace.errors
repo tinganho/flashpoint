@@ -1,0 +1,18 @@
+type Query {
+    field: Int
+}
+
+type Object {
+    field: Int
+}
+====
+query {
+    ...Fragment
+       ~~~~~~~~ (2, 8, 8)
+!!! Fragment 'Fragment' is not defined.
+}
+
+fragment Fragment on Object {
+    field
+          (6, 10, 0)
+!!! Expected '}', but reached the end of document.

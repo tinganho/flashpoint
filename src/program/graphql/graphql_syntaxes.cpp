@@ -113,7 +113,7 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
-    void QueryDocument::accept(GraphQlSyntaxVisitor* visitor) const
+    void ExecutableDefinition::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

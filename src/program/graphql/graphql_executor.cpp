@@ -33,7 +33,35 @@ namespace flashpoint::program::graphql {
         if (!diagnostics.empty()) {
             schema_document->diagnostics = diagnostics;
         }
+        finish_syntax(schema_document);
         return schema_document;
+    }
+
+    ExecutableDefinition*
+    GraphQlParser::execute(const Glib::ustring* query)
+    {
+        scanner = new GraphQlScanner(query);
+        GraphQlToken token = take_next_token();
+        auto executable_definition = create_syntax<ExecutableDefinition>(SyntaxKind::S_QueryDocument);
+        executable_definition->source = query;
+        while (token != GraphQlToken::EndOfDocument) {
+            auto definition = parse_executable_primary_token(token);
+            if (definition == nullptr) {
+                break;
+            }
+            if (definition->kind == SyntaxKind::S_FragmentDefinition) {
+                executable_definition->fragment_definitions.push_back(static_cast<FragmentDefinition*>(definition));
+            }
+            else {
+                executable_definition->operation_definitions.push_back(static_cast<OperationDefinition*>(definition));
+            }
+            token = take_next_token();
+        }
+        check_forward_fragment_references(executable_definition->fragment_definitions);
+        if (!diagnostics.empty()) {
+            executable_definition->diagnostics = diagnostics;
+        }
+        return executable_definition;
     }
 
     void GraphQlParser::check_forward_references()
@@ -123,25 +151,31 @@ namespace flashpoint::program::graphql {
         }
     }
 
-    QueryDocument*
-    GraphQlParser::execute(const Glib::ustring* query)
+    inline
+    void
+    GraphQlParser::check_forward_fragment_references(const std::vector<FragmentDefinition*>& fragment_definitions)
     {
-        scanner = new GraphQlScanner(query);
-        GraphQlToken token = take_next_token();
-        auto query_document = create_syntax<QueryDocument>(SyntaxKind::S_QueryDocument);
-        query_document->source = query;
-        while (token != GraphQlToken::EndOfDocument) {
-            auto operation_definition = parse_query_primary_token(token);
-            if (operation_definition == nullptr) {
-                break;
+        for (const auto& forward_fragment_reference : forward_fragment_references) {
+            const auto& name = std::get<0>(forward_fragment_reference);
+            FragmentDefinition* current_fragment_definition = nullptr;
+            for (const auto& fragment_definition : fragment_definitions) {
+                if (name->identifier == fragment_definition->name->identifier) {
+                    current_fragment_definition = fragment_definition;
+                    break;
+                }
             }
-            query_document->definitions.push_back(operation_definition);
-            token = take_next_token();
+            if (current_fragment_definition == nullptr) {
+                add_diagnostic(
+                    get_location_from_syntax(name),
+                    D::Fragment_0_is_not_defined,
+                    name->identifier
+                );
+                continue;
+            }
+            const auto& current_object_type = std::get<1>(forward_fragment_reference);
+            auto symbolsIt = symbols.find(current_fragment_definition->type->identifier);
+            check_fragment_assignment(name, static_cast<Object*>(symbolsIt->second->declaration), current_object_type);
         }
-        if (!diagnostics.empty()) {
-            query_document->diagnostics = diagnostics;
-        }
-        return query_document;
     }
 
     Object*
@@ -154,6 +188,9 @@ namespace flashpoint::program::graphql {
         }
         if (scan_optional(GraphQlToken::ImplementsKeyword)) {
             object->implementations = parse_implementations();
+            if (object->implementations == nullptr) {
+                return nullptr;
+            }
             object->fields_definition = parse_fields_definition_after_open_brace(object);
             objects_with_implementations.push_back(object);
         }
@@ -199,6 +236,9 @@ namespace flashpoint::program::graphql {
             if (post_token == GraphQlToken::Ampersand) {
                 continue;
             }
+            add_diagnostic(D::Expected_0_but_got_1, "{", get_token_value());
+            scanner->skip_block();
+            return nullptr;
         }
         return implementations;
     }
@@ -351,6 +391,7 @@ namespace flashpoint::program::graphql {
             auto field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_FieldDefinition);
             GraphQlToken field_token = take_next_token(/*treat_keyword_as_name*/ true);
             if (field_token == GraphQlToken::EndOfDocument) {
+                add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
                 return nullptr;
             }
             if (field_token == GraphQlToken::CloseBrace && has_at_least_one_field) {
@@ -392,6 +433,7 @@ namespace flashpoint::program::graphql {
             auto input_field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_InputFieldDefinition);
             GraphQlToken field_token = take_next_token();
             if (field_token == GraphQlToken::EndOfDocument) {
+                add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
                 return nullptr;
             }
             if (field_token == GraphQlToken::CloseBrace && has_at_least_one_field) {
@@ -506,12 +548,14 @@ namespace flashpoint::program::graphql {
         return finish_syntax(type);
     }
 
-    OperationDefinition* GraphQlParser::parse_query_primary_token(GraphQlToken token)
+    Syntax*
+    GraphQlParser::parse_executable_primary_token(GraphQlToken token)
     {
         switch (token) {
             case GraphQlToken::QueryKeyword: {
                 auto query = symbols.find("Query");
                 if (query == symbols.end()) {
+                    // TODO: add diagnostic
                     return nullptr;
                 }
                 current_object_types.push(dynamic_cast<Object*>(query->second->declaration));
@@ -520,6 +564,7 @@ namespace flashpoint::program::graphql {
             case GraphQlToken::MutationKeyword: {
                 auto query = symbols.find("Mutation");
                 if (query == symbols.end()) {
+                    // TODO: add diagnostic
                     return nullptr;
                 }
                 current_object_types.push(dynamic_cast<Object*>(query->second->declaration));
@@ -528,6 +573,7 @@ namespace flashpoint::program::graphql {
             case GraphQlToken::SubscriptionKeyword: {
                 auto query = symbols.find("Subscription");
                 if (query == symbols.end()) {
+                    // TODO: add diagnostic
                     return nullptr;
                 }
                 current_object_types.push(dynamic_cast<Object*>(query->second->declaration));
@@ -543,10 +589,46 @@ namespace flashpoint::program::graphql {
                 operation_definition->operation_type = OperationType::Query;
                 return parse_operation_definition_body_after_open_brace(operation_definition);
             }
+            case GraphQlToken::FragmentKeyword:
+                return parse_fragment_definition_after_fragment_keyword();
             default:
                 add_diagnostic(D::Expected_operation_definition_or_fragment_definition);
                 return nullptr;
         }
+    }
+
+    FragmentDefinition*
+    GraphQlParser::parse_fragment_definition_after_fragment_keyword()
+    {
+        auto fragment = create_syntax<FragmentDefinition>(SyntaxKind::S_FragmentDefinition);
+        if (!scan_expected(GraphQlToken::G_Name)) {
+            return nullptr;
+        }
+        fragment->name = create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
+        if (!scan_expected(GraphQlToken::OnKeyword)) {
+            return nullptr;
+        }
+        if (!scan_expected(GraphQlToken::G_Name)) {
+            return nullptr;
+        }
+        const auto& name = get_token_value();
+        const auto& it = symbols.find(name);
+        if (it == symbols.end()) {
+            add_diagnostic(D::Type_0_is_not_defined, name);
+            return nullptr;
+        }
+        const auto& object = static_cast<Object*>(it->second->declaration);
+        if (object->kind != SyntaxKind::S_Object) {
+            add_diagnostic(D::The_type_0_is_not_an_object, name);
+        }
+        current_object_types.push(object);
+        fragment->type = create_syntax<Name>(SyntaxKind::S_Name, name);
+        fragment->selection_set = parse_selection_set();
+        if (fragment->selection_set == nullptr) {
+            scanner->skip_block();
+            return nullptr;
+        }
+        return fragment;
     }
 
     OperationDefinition* GraphQlParser::parse_operation_definition(const OperationType& operation_type)
@@ -606,10 +688,11 @@ namespace flashpoint::program::graphql {
                             scanner->skip_block();
                             return nullptr;
                         }
-                        auto name = get_token_value();
-                        auto it = symbols.find(name);
+                        const auto& token_value = get_token_value();
+                        const auto& name = create_syntax<Name>(SyntaxKind::S_Name, token_value);
+                        auto it = symbols.find(token_value);
                         if (it == symbols.end()) {
-                            add_diagnostic(D::Type_0_is_not_defined, name);
+                            add_diagnostic(D::Type_0_is_not_defined, token_value);
                             scanner->skip_block();
                             break;
                         }
@@ -617,46 +700,20 @@ namespace flashpoint::program::graphql {
                         inline_fragment->start = start_position;
                         const auto& object = static_cast<Object*>(it->second->declaration);
                         if (object->kind != SyntaxKind::S_Object) {
-                            add_diagnostic(D::The_type_0_is_not_an_object, name);
+                            add_diagnostic(D::The_type_0_is_not_an_object, token_value);
                             scanner->skip_block();
                             break;
                         }
                         auto current_object_type = static_cast<Declaration*>(current_object_types.top());
-                        if (current_object_type->kind == SyntaxKind::S_Interface) {
-                            if (object->implementations == nullptr || object->implementations->implementations.count(current_object_type->name->identifier) == 0) {
-                                add_diagnostic(
-                                    D::The_object_0_does_not_implement_the_interface_1,
-                                    name,
-                                    current_object_type->name->identifier);
-                            }
-                        }
-                        else if (current_object_type->kind == SyntaxKind::S_Object) {
-                            if (current_object_type->name->identifier != object->name->identifier) {
-                                add_diagnostic(
-                                    D::The_object_0_does_not_match_the_object_1,
-                                    name,
-                                    current_object_type->name->identifier);
-                            }
-                        }
-                        else if (current_object_type->kind == SyntaxKind::S_Union) {
-                            const auto& members = static_cast<Union*>(current_object_type)->members;
-                            if (members.find(name) == members.end()) {
-                                add_diagnostic(
-                                    D::The_type_0_is_not_member_of_the_union_1,
-                                    name,
-                                    current_object_type->name->identifier);
-                            }
-                        }
-                        else {
-                            add_diagnostic(D::Type_conditions_are_only_applicable_inside_object_interfaces_and_unions);
-                        }
-                        current_object_types.push(dynamic_cast<ObjectLike*>(object));
+                        check_fragment_assignment(name, object, current_object_type);
+                        current_object_types.push(static_cast<ObjectLike*>(object));
                         inline_fragment->selection_set = parse_selection_set();
                         finish_syntax(inline_fragment);
                         selection_set->selections.push_back(inline_fragment);
                     }
-                    else if (token == GraphQlToken::G_Name){
-                        // Add code for fragment spread
+                    else if (token == GraphQlToken::G_Name) {
+                        auto name = create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
+                        forward_fragment_references.push_back({ name, current_object_types.top() });
                     }
                     else {
                         add_diagnostic(D::Expected_fragment_spread_or_inline_fragment);
@@ -672,7 +729,11 @@ namespace flashpoint::program::graphql {
                     auto field_definition_it = fields.find(token_value);
                     if (field_definition_it == fields.end()) {
                         add_diagnostic(D::Field_0_does_not_exist_on_type_1, token_value, current_object_type->name->identifier);
-                        scanner->skip_block();
+                        scanner->skip_to({
+                            GraphQlToken::G_Name,
+                            GraphQlToken::CloseBrace,
+                            GraphQlToken::Ellipses,
+                        });
                         continue;
                     }
                     auto field = create_syntax<Field>(SyntaxKind::S_Field);
@@ -704,10 +765,10 @@ namespace flashpoint::program::graphql {
 
                 case GraphQlToken::EndOfDocument: {
                     if (selection_set->selections.size() == 0) {
-                        add_diagnostic({ 0, 0, 0, true }, D::Expected_at_least_a_field_inline_fragment_or_fragment_spread);
+                        add_diagnostic(D::Expected_at_least_a_field_inline_fragment_or_fragment_spread);
                     }
                     else {
-                        add_diagnostic({ 0, 0, 0, true }, D::Unexpected_end_of_selection_set_Missing_closing_brace_0_for_selection_set, "}");
+                        add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
                     }
                     return nullptr;
                 }
@@ -720,6 +781,47 @@ namespace flashpoint::program::graphql {
         outer:
         finish_syntax(selection_set);
         return selection_set;
+    }
+
+    void
+    GraphQlParser::check_fragment_assignment(Name* name, Object* object, Declaration* current_object_type) {
+        if (current_object_type->kind == SyntaxKind::S_Interface) {
+            if (object->implementations == nullptr || object->implementations->implementations.count(current_object_type->name->identifier) == 0) {
+                add_diagnostic(
+                    get_location_from_syntax(name),
+                    D::The_object_0_does_not_implement_the_interface_1,
+                    object->name->identifier,
+                    current_object_type->name->identifier
+                );
+            }
+        }
+        else if (current_object_type->kind == SyntaxKind::S_Object) {
+            if (current_object_type->name->identifier != object->name->identifier) {
+                add_diagnostic(
+                    get_location_from_syntax(name),
+                    D::The_object_0_does_not_match_the_object_1,
+                    object->name->identifier,
+                    current_object_type->name->identifier
+                );
+            }
+        }
+        else if (current_object_type->kind == SyntaxKind::S_Union) {
+            const auto& members = static_cast<Union*>(current_object_type)->members;
+            if (members.find(object->name->identifier) == members.end()) {
+                add_diagnostic(
+                    get_location_from_syntax(name),
+                    D::The_type_0_is_not_member_of_the_union_1,
+                    object->name->identifier,
+                    current_object_type->name->identifier
+                );
+            }
+        }
+        else {
+            add_diagnostic(
+                get_location_from_syntax(name),
+                D::Type_conditions_are_only_applicable_inside_object_interfaces_and_unions
+            );
+        }
     }
 
     Arguments* GraphQlParser::parse_arguments()

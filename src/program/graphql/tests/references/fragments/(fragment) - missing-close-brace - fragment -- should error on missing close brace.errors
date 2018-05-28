@@ -1,0 +1,26 @@
+type Query {
+    field: Int
+}
+
+type Object {
+    field: Int
+}
+====
+query {
+    ...Fragment
+       ~~~~~~~~ (2, 8, 8)
+!!! The object 'Object' does not match the object 'Query'.
+}
+
+fragment Fragment on Object {
+    field
+
+fragment Fragment on Object {
+~~~~~~~~ (8, 1, 8)
+!!! Field 'fragment' does not exist on type 'Object'.
+         ~~~~~~~~ (8, 10, 8)
+!!! Field 'Fragment' does not exist on type 'Object'.
+                     ~~~~~~ (8, 22, 6)
+!!! Field 'Object' does not exist on type 'Object'.
+    field
+}

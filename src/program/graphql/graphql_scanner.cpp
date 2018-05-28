@@ -137,7 +137,6 @@ namespace flashpoint::program::graphql {
     void
     GraphQlScanner::skip_to(std::vector<GraphQlToken> tokens)
     {
-        std::size_t n = 0;
         while (true) {
             save();
             GraphQlToken token = take_next_token(false);
@@ -145,12 +144,9 @@ namespace flashpoint::program::graphql {
                 return;
             }
             if (std::find(tokens.begin(), tokens.end(), token) != tokens.end()) {
+                revert();
                 return;
             }
-            n++;
-        }
-        if (n > 0) {
-            revert();
         }
     }
 
@@ -225,8 +221,18 @@ namespace flashpoint::program::graphql {
                 }
                 break;
             case 8:
-                if (strcmp(value, "mutation") == 0) {
-                    return GraphQlToken::MutationKeyword;
+                switch (value[0]) {
+                    case m:
+                        if (strcmp(value + 1, "utation") == 0) {
+                            return GraphQlToken::MutationKeyword;
+                        }
+                        break;
+                    case f:
+                        if (strcmp(value + 1, "ragment") == 0) {
+                            return GraphQlToken::FragmentKeyword;
+                        }
+                        break;
+                    default:;
                 }
                 break;
             case 9:
@@ -448,7 +454,8 @@ namespace flashpoint::program::graphql {
         return position - start_position;
     }
 
-    Glib::ustring GraphQlScanner::get_value() const
+    Glib::ustring
+    GraphQlScanner::get_value() const
     {
         return source->substr(start_position, length());
     }

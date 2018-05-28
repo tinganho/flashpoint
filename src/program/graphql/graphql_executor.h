@@ -17,7 +17,7 @@ namespace flashpoint::program::graphql {
         SchemaDocument*
         add_schema(const Glib::ustring* schema);
 
-        QueryDocument*
+        ExecutableDefinition*
         execute(const Glib::ustring* query);
 
         Location
@@ -34,7 +34,10 @@ namespace flashpoint::program::graphql {
         std::map<Glib::ustring, Interface*> interfaces;
         std::vector<Type*> forward_type_references;
         std::vector<Name*> forward_interface_references;
+        std::vector<std::tuple<Name*, ObjectLike*>> forward_fragment_references;
         std::vector<Object*> objects_with_implementations;
+        std::vector<OperationDefinition*> operation_definitions;
+        std::vector<FragmentDefinition*> fragment_definitions;
         std::vector<Union*> unions;
 
         GraphQlToken
@@ -46,6 +49,12 @@ namespace flashpoint::program::graphql {
         Glib::ustring
         get_token_value() const;
 
+        FragmentDefinition*
+        parse_fragment_definition_after_fragment_keyword();
+
+        void
+        check_fragment_assignment(Name* name, Object* fragment_object, Declaration* current_object_type);
+
         OperationDefinition*
         parse_operation_definition(const OperationType& operation);
 
@@ -55,8 +64,8 @@ namespace flashpoint::program::graphql {
         OperationDefinition*
         parse_operation_definition_body_after_open_brace(OperationDefinition*);
 
-        OperationDefinition*
-        parse_query_primary_token(GraphQlToken token);
+        Syntax*
+        parse_executable_primary_token(GraphQlToken token);
 
         Syntax*
         parse_schema_primary_token(GraphQlToken token);
@@ -147,6 +156,10 @@ namespace flashpoint::program::graphql {
 
         void
         check_union_members();
+
+        inline
+        void
+        check_forward_fragment_references(const std::vector<FragmentDefinition*>&);
 
         Location
         get_location_from_syntax(Syntax* syntax);

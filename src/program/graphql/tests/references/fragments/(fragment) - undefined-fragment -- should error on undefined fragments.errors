@@ -1,0 +1,13 @@
+type Query {
+    field: Int
+}
+====
+query {
+    ...Undefined
+       ~~~~~~~~~ (2, 8, 9)
+!!! Fragment 'Undefined' is not defined.
+}
+
+fragment Fragment on Query {
+    field
+}

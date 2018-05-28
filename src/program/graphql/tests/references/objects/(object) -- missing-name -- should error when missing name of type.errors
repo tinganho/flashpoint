@@ -1,5 +1,0 @@
-type {
-     ~ (1, 6, 1)
-!!! Expected type name, instead got '{'.
-
-}

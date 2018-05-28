@@ -1,0 +1,32 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type Object1 implements Interface {
+    interfaceField: Int
+    object1Field: Int
+}
+
+type Object2 implements Interface {
+    interfaceField: Int
+    object2Field: Int
+}
+
+type Query {
+    interface: Interface
+}
+====
+query {
+    interface {
+        ...Fragment1
+        ...Fragment2
+    }
+}
+
+fragment Fragment1 on Object1 {
+    object1Field
+}
+
+fragment Fragment2 on Object2 {
+    object2Field
+}

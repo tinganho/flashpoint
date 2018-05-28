@@ -1,0 +1,4 @@
+input Object {
+    property: Int
+                  (2, 18, 0)
+!!! Expected '}', but reached the end of document.

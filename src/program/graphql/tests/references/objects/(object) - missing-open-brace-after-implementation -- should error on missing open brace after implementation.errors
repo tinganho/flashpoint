@@ -1,0 +1,10 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type Object implements Interface
+    interfaceField: Int
+    ~~~~~~~~~~~~~~ (6, 5, 14)
+!!! Expected '{', but got 'interfaceField'.
+    propertyField: Int
+}

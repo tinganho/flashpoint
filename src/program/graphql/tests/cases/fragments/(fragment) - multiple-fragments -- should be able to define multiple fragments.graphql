@@ -1,0 +1,16 @@
+type Query {
+    field: Int
+}
+====
+query {
+    ...Fragment1
+    ...Fragment2
+}
+
+fragment Fragment1 on Query {
+    field
+}
+
+fragment Fragment2 on Query {
+    field
+}

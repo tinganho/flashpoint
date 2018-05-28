@@ -1,0 +1,5 @@
+input Object
+    property: Int
+    ~~~~~~~~ (2, 5, 8)
+!!! Expected '{', but got 'property'.
+}

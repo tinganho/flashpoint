@@ -8,7 +8,7 @@ namespace flashpoint::test {
         query(nullptr)
     { }
 
-    DiagnosticWriter::DiagnosticWriter(SchemaDocument* schema, QueryDocument *query):
+    DiagnosticWriter::DiagnosticWriter(SchemaDocument* schema, ExecutableDefinition *query):
         schema(schema),
         query(query)
     { }

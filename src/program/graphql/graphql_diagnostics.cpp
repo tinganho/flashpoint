@@ -22,6 +22,7 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Expected_type_definition = DiagnosticMessageTemplate { "Expected type definition." };
     DiagnosticMessageTemplate D::Expected_type_name_instead_got_0 = DiagnosticMessageTemplate { "Expected type name, instead got '{0}'." };
     DiagnosticMessageTemplate D::Field_0_does_not_exist_on_type_1 = DiagnosticMessageTemplate { "Field '{0}' does not exist on type '{1}'." };
+    DiagnosticMessageTemplate D::Fragment_0_is_not_defined = DiagnosticMessageTemplate { "Fragment '{0}' is not defined." };
     DiagnosticMessageTemplate D::Input_object_fields_cannot_have_arguments = DiagnosticMessageTemplate { "Input object fields cannot have arguments." };
     DiagnosticMessageTemplate D::Interface_0_is_not_defined = DiagnosticMessageTemplate { "Interface '{0}' is not defined." };
     DiagnosticMessageTemplate D::Only_objects_are_allowed_as_members_in_a_union = DiagnosticMessageTemplate { "Only objects are allowed as members in a union." };
@@ -35,6 +36,5 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Type_0_is_not_defined = DiagnosticMessageTemplate { "Type '{0}' is not defined." };
     DiagnosticMessageTemplate D::Type_conditions_are_only_applicable_inside_object_interfaces_and_unions = DiagnosticMessageTemplate { "Type conditions are only applicable inside object, interfaces and unions." };
     DiagnosticMessageTemplate D::Unexpected_end_of_implementations = DiagnosticMessageTemplate { "Unexpected end of implementations." };
-    DiagnosticMessageTemplate D::Unexpected_end_of_selection_set_Missing_closing_brace_0_for_selection_set = DiagnosticMessageTemplate { "Unexpected end of selection set. Missing closing brace '{0}' for selection set." };
 
 } // flashpoint::program

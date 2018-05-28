@@ -10,11 +10,11 @@ namespace flashpoint::test {
     class DiagnosticWriter {
     public:
         DiagnosticWriter(SchemaDocument* schema);
-        DiagnosticWriter(SchemaDocument* schema, QueryDocument* query);
+        DiagnosticWriter(SchemaDocument* schema, ExecutableDefinition* query);
         std::string to_string();
     private:
         SchemaDocument* schema;
-        QueryDocument* query;
+        ExecutableDefinition* query;
     };
 }
 

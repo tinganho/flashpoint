@@ -1,0 +1,7 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type Object implements Interface {
+    interfaceField: Int
+    propertyField: Int

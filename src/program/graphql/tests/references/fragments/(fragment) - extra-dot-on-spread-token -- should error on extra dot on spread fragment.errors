@@ -1,0 +1,23 @@
+type Query {
+    field: Int
+}
+
+type Object {
+    field: Int
+}
+====
+query {
+    ....Fragment
+       ~ (2, 8, 1)
+!!! Expected fragment spread or inline fragment.
+}
+
+fragment Fragment on Object {
+~~~~~~~~ (5, 1, 8)
+!!! Field 'fragment' does not exist on type 'Query'.
+         ~~~~~~~~ (5, 10, 8)
+!!! Field 'Fragment' does not exist on type 'Query'.
+                     ~~~~~~ (5, 22, 6)
+!!! Field 'Object' does not exist on type 'Query'.
+    field
+}

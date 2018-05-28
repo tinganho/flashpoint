@@ -1,0 +1,14 @@
+type Query {
+    field: Int
+}
+
+type Object {
+    field: Int
+}
+====
+query {
+    ...Fragment
+}
+
+fragment Fragment on Object {
+    field

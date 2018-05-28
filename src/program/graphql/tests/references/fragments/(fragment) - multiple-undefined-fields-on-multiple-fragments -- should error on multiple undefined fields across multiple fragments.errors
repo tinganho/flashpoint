@@ -1,0 +1,36 @@
+interface Interface {
+    interfaceField: Int
+}
+
+type Object1 implements Interface {
+    interfaceField: Int
+    object1Field: Int
+}
+
+type Object2 implements Interface {
+    interfaceField: Int
+    object2Field: Int
+}
+
+type Query {
+    interface: Interface
+}
+====
+query {
+    interface {
+        ...Fragment1
+        ...Fragment2
+    }
+}
+
+fragment Fragment1 on Object1 {
+    undefined
+    ~~~~~~~~~ (9, 5, 9)
+!!! Field 'undefined' does not exist on type 'Object1'.
+}
+
+fragment Fragment2 on Object2 {
+    undefined
+    ~~~~~~~~~ (13, 5, 9)
+!!! Field 'undefined' does not exist on type 'Object2'.
+}

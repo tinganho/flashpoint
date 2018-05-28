@@ -43,30 +43,27 @@ namespace flashpoint::program::graphql {
         S_Argument,
         S_Arguments,
         S_ArgumentsDefinition,
+        S_FieldsDefinition,
+        S_FieldDefinition,
+        S_FragmentDefinition,
+        S_InlineFragment,
+        S_InputFieldsDefinition,
+        S_InputFieldDefinition,
         S_InputValueDefinition,
         S_InputObject,
         S_Interface,
         S_Implementations,
         S_Name,
-        S_NamedType,
         S_Field,
         S_Object,
         S_OperationDefinition,
         S_QueryDocument,
         S_SchemaDocument,
-        S_Selection,
         S_SelectionSet,
         S_Type,
         S_Union,
-        S_TypeCondition,
         S_VariableDefinition,
         S_VariableDefinitions,
-
-        S_FieldsDefinition,
-        S_FieldDefinition,
-        S_InputFieldsDefinition,
-        S_InputFieldDefinition,
-        S_InlineFragment,
 
         // Literals
         S_IntLiteral,
@@ -319,15 +316,6 @@ namespace flashpoint::program::graphql {
         new_operator(NamedType)
     };
 
-    struct TypeCondition : Syntax {
-        S(TypeCondition)
-        { }
-
-        new_operator(TypeCondition)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
     struct NullLiteral : Syntax {
         S(NullLiteral)
         { }
@@ -539,8 +527,6 @@ namespace flashpoint::program::graphql {
     };
 
     struct InlineFragment : Selection {
-        TypeCondition* type_condition;
-
         D(InlineFragment, Selection)
         { }
 
@@ -556,6 +542,20 @@ namespace flashpoint::program::graphql {
         { }
 
         new_operator(SelectionSet)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct FragmentDefinition : Syntax {
+        Name* name;
+        Name* type;
+        Directives* directives;
+        SelectionSet* selection_set;
+
+        S(FragmentDefinition)
+        { }
+
+        new_operator(FragmentDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -580,29 +580,16 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct FragmentDefinition : Syntax {
-        Name* name;
-        TypeCondition* type_condition;
-        Directives* directives;
-        SelectionSet* selection_set;
-
-        S(FragmentDefinition)
-        { }
-
-        new_operator(FragmentDefinition)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct QueryDocument : Syntax {
-        std::vector<Syntax*> definitions;
+    struct ExecutableDefinition : Syntax {
+        std::vector<OperationDefinition*> operation_definitions;
+        std::vector<FragmentDefinition*> fragment_definitions;
         std::vector<DiagnosticMessage> diagnostics;
         const Glib::ustring* source;
 
-        S(QueryDocument)
+        S(ExecutableDefinition)
         { }
 
-        new_operator(QueryDocument)
+        new_operator(ExecutableDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -630,11 +617,14 @@ namespace flashpoint::program::graphql {
         SL_Enum = 1 << 4,
         SL_Union = 1 << 5,
 
-        Input = static_cast<unsigned int>(SL_InputObject),
-        Output = static_cast<unsigned int>(SL_Object) |
-                 static_cast<unsigned int>(SL_Interface) |
-                 static_cast<unsigned int>(SL_Enum) |
-                 static_cast<unsigned int>(SL_Union),
+        Input =
+            static_cast<unsigned int>(SL_InputObject),
+
+        Output =
+            static_cast<unsigned int>(SL_Object) |
+            static_cast<unsigned int>(SL_Interface) |
+            static_cast<unsigned int>(SL_Enum) |
+            static_cast<unsigned int>(SL_Union),
     };
 
     inline constexpr SymbolKind operator|(SymbolKind a, SymbolKind b) {
@@ -680,7 +670,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const Selection*) = 0;
         virtual void visit(const OperationDefinition*) = 0;
         virtual void visit(const FragmentDefinition*) = 0;
-        virtual void visit(const QueryDocument*) = 0;
+        virtual void visit(const ExecutableDefinition*) = 0;
 
         virtual void visit(const SchemaDocument*) = 0;
         virtual void visit(const Implementations*) = 0;
