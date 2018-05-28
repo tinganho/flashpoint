@@ -10,7 +10,6 @@ class D {
 public:
     static DiagnosticMessageTemplate Cannot_add_an_output_type_to_an_input_location;
     static DiagnosticMessageTemplate Cannot_add_an_input_type_to_an_output_location;
-    static DiagnosticMessageTemplate Cannot_add_an_interface_in_type_location;
     static DiagnosticMessageTemplate Duplicate_type_0;
     static DiagnosticMessageTemplate Expected_0_but_got_1;
     static DiagnosticMessageTemplate Expected_0_but_reached_the_end_of_document;
@@ -18,7 +17,6 @@ public:
     static DiagnosticMessageTemplate Expected_field_definition;
     static DiagnosticMessageTemplate Expected_field_inline_fragment_or_fragment_spread;
     static DiagnosticMessageTemplate Expected_fragment_spread_or_inline_fragment;
-    static DiagnosticMessageTemplate Expected_interface_reference;
     static DiagnosticMessageTemplate Expected_name_of_argument;
     static DiagnosticMessageTemplate Expected_name_of_interface;
     static DiagnosticMessageTemplate Expected_name_of_object;
@@ -28,13 +26,11 @@ public:
     static DiagnosticMessageTemplate Expected_type_name_instead_got_0;
     static DiagnosticMessageTemplate Field_0_does_not_exist_on_type_1;
     static DiagnosticMessageTemplate Fragment_0_is_not_defined;
-    static DiagnosticMessageTemplate Input_object_fields_cannot_have_arguments;
     static DiagnosticMessageTemplate Interface_0_is_not_defined;
     static DiagnosticMessageTemplate Only_objects_are_allowed_as_members_in_a_union;
     static DiagnosticMessageTemplate The_field_0_in_interface_1_is_not_implemented;
     static DiagnosticMessageTemplate The_object_0_does_not_implement_the_interface_1;
     static DiagnosticMessageTemplate The_object_0_does_not_match_the_object_1;
-    static DiagnosticMessageTemplate The_object_0_is_not_part_of_the_union_1;
     static DiagnosticMessageTemplate The_type_0_is_not_an_object;
     static DiagnosticMessageTemplate The_type_0_is_not_member_of_the_union_1;
     static DiagnosticMessageTemplate Type_0_does_not_match_type_1_from_the_interface_2;
