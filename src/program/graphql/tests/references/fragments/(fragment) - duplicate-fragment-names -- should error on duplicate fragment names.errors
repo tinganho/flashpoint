@@ -1,0 +1,20 @@
+type Query {
+    field: Int
+}
+====
+query {
+    ...Fragment
+    ...Fragment
+}
+
+fragment Fragment on Query {
+         ~~~~~~~~ (6, 10, 8)
+!!! Duplicate fragment 'Fragment'.
+    field
+}
+
+fragment Fragment on Query {
+         ~~~~~~~~ (10, 10, 8)
+!!! Duplicate fragment 'Fragment'.
+    field
+}

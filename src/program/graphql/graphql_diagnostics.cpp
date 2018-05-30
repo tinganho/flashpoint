@@ -5,6 +5,7 @@ namespace flashpoint::program {
 
     DiagnosticMessageTemplate D::Cannot_add_an_output_type_to_an_input_location = DiagnosticMessageTemplate { "Cannot add an (output) type to an input location." };
     DiagnosticMessageTemplate D::Cannot_add_an_input_type_to_an_output_location = DiagnosticMessageTemplate { "Cannot add an input type to an output location." };
+    DiagnosticMessageTemplate D::Duplicate_fragment_0 = DiagnosticMessageTemplate { "Duplicate fragment '{0}'." };
     DiagnosticMessageTemplate D::Duplicate_type_0 = DiagnosticMessageTemplate { "Duplicate type '{0}'." };
     DiagnosticMessageTemplate D::Expected_0_but_got_1 = DiagnosticMessageTemplate { "Expected '{0}', but got '{1}'." };
     DiagnosticMessageTemplate D::Expected_0_but_reached_the_end_of_document = DiagnosticMessageTemplate { "Expected '{0}', but reached the end of document." };

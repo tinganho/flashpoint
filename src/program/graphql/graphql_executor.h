@@ -38,7 +38,10 @@ namespace flashpoint::program::graphql {
         std::vector<Object*> objects_with_implementations;
         std::vector<OperationDefinition*> operation_definitions;
         std::vector<FragmentDefinition*> fragment_definitions;
+        std::map<Glib::ustring, FragmentDefinition*> fragments;
+        std::set<Glib::ustring> duplicate_fragments;
         std::vector<Union*> unions;
+        std::set<Glib::ustring> duplicate_symbols;
 
         GraphQlToken
         take_next_token();

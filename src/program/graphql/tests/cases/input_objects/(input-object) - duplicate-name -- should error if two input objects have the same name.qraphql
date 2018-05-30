@@ -1,7 +1,19 @@
-input Object {
+input Object1 {
     property: Int
 }
 
-input Object {
+input Object1 {
+    property: Int
+}
+
+input Object2 {
+    property: Int
+}
+
+input Object2 {
+    property: Int
+}
+
+input Object2 {
     property: Int
 }

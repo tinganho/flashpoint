@@ -5,3 +5,19 @@ type Object {
 type Object {
     property: Int
 }
+
+type Object1 {
+    property: Int
+}
+
+type Object1 {
+    property: Int
+}
+
+type Object1 {
+    property: Int
+}
+
+type Object1 {
+    property: Int
+}

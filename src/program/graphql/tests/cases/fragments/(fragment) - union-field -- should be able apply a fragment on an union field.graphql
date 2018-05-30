@@ -1,0 +1,24 @@
+type Object1 {
+    object1Field: Int
+}
+
+type Object2 {
+    object2Field: Int
+}
+
+union Union = Object1 | Object2
+====
+query {
+    union {
+        ...Fragment1
+        ...Fragment2
+    }
+}
+
+fragment Fragment1 on Object1 {
+    object1Field
+}
+
+fragment Fragment2 on Object2 {
+    object2Field
+}

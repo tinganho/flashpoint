@@ -88,7 +88,11 @@ namespace flashpoint::program::graphql {
             for (const auto& implementationIt : object->implementations->implementations) {
                 auto interfaceIt = interfaces.find(implementationIt.first);
                 if (interfaceIt == interfaces.end()) {
-                    add_diagnostic(get_location_from_syntax(implementationIt.second), D::Interface_0_is_not_defined, implementationIt.first);
+                    add_diagnostic(
+                        get_location_from_syntax(implementationIt.second),
+                        D::Interface_0_is_not_defined,
+                        implementationIt.first
+                    );
                 }
                 else {
                     for (const auto& interfaceFieldIt : interfaceIt->second->fields) {
@@ -119,7 +123,8 @@ namespace flashpoint::program::graphql {
                                         D::Type_0_does_not_match_type_1_from_the_interface_2,
                                         get_type_name(objectType),
                                         get_type_name(interfaceType),
-                                        interfaceIt->second->name->identifier);
+                                        interfaceIt->second->name->identifier
+                                    );
                                     break;
                                 }
                             }
@@ -348,8 +353,11 @@ namespace flashpoint::program::graphql {
             symbols.emplace(token_value, create_symbol(&name->identifier, object, kind));
         }
         else {
-            add_diagnostic(get_location_from_syntax(result->second->declaration->name), D::Duplicate_type_0, *result->second->name);
             add_diagnostic(get_location_from_syntax(name), D::Duplicate_type_0, token_value);
+            if (duplicate_symbols.count(token_value) == 0) {
+                add_diagnostic(get_location_from_syntax(result->second->declaration->name), D::Duplicate_type_0, *result->second->name);
+                duplicate_symbols.insert(token_value);
+            }
         }
         return name;
     }
@@ -367,8 +375,11 @@ namespace flashpoint::program::graphql {
             symbols.emplace(token_value, create_symbol(&name->identifier, object, SymbolKind::SL_InputObject));
         }
         else {
-            add_diagnostic(get_location_from_syntax(result->second->declaration->name), D::Duplicate_type_0, *result->second->name);
             add_diagnostic(get_location_from_syntax(name), D::Duplicate_type_0, token_value);
+            if (duplicate_symbols.count(token_value) == 0) {
+                add_diagnostic(get_location_from_syntax(result->second->declaration->name), D::Duplicate_type_0, *result->second->name);
+                duplicate_symbols.insert(token_value);
+            }
         }
         return name;
     }
@@ -604,7 +615,22 @@ namespace flashpoint::program::graphql {
         if (!scan_expected(GraphQlToken::G_Name)) {
             return nullptr;
         }
-        fragment->name = create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
+        auto token_value = get_token_value();
+        fragment->name = create_syntax<Name>(SyntaxKind::S_Name, token_value);
+        const auto& fragments_it = fragments.find(token_value);
+        if (fragments_it != fragments.end()) {
+            add_diagnostic(D::Duplicate_fragment_0, token_value);
+            if (duplicate_fragments.find(token_value) == duplicate_fragments.end()) {
+                add_diagnostic(
+                    get_location_from_syntax(fragments_it->second->name),
+                    D::Duplicate_fragment_0,
+                    fragments_it->second->name->identifier
+                );
+            }
+        }
+        else {
+            fragments.emplace(token_value, fragment);
+        }
         if (!scan_expected(GraphQlToken::OnKeyword)) {
             return nullptr;
         }
@@ -713,7 +739,7 @@ namespace flashpoint::program::graphql {
                     }
                     else if (token == GraphQlToken::G_Name) {
                         auto name = create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
-                        forward_fragment_references.push_back({ name, current_object_types.top() });
+                        forward_fragment_references.emplace_back(name, current_object_types.top());
                     }
                     else {
                         add_diagnostic(D::Expected_fragment_spread_or_inline_fragment);

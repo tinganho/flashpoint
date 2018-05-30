@@ -27,5 +27,6 @@
   "Only objects are allowed as members in a union.": {},
   "Expected fragment spread or inline fragment.": {},
   "The type '{0}' is not member of the union '{1}'.": {},
-  "Fragment '{0}' is not defined.": {}
+  "Fragment '{0}' is not defined.": {},
+  "Duplicate fragment '{0}'.": {}
 }

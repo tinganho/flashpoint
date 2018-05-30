@@ -9,3 +9,27 @@ type Object {
 !!! Duplicate type 'Object'.
     property: Int
 }
+
+type Object1 {
+     ~~~~~~~ (9, 6, 7)
+!!! Duplicate type 'Object1'.
+    property: Int
+}
+
+type Object1 {
+     ~~~~~~~ (13, 6, 7)
+!!! Duplicate type 'Object1'.
+    property: Int
+}
+
+type Object1 {
+     ~~~~~~~ (17, 6, 7)
+!!! Duplicate type 'Object1'.
+    property: Int
+}
+
+type Object1 {
+     ~~~~~~~ (21, 6, 7)
+!!! Duplicate type 'Object1'.
+    property: Int
+}

@@ -1,0 +1,36 @@
+type Object1 {
+    object1Field: Int
+}
+
+type Object2 {
+    object2Field: Int
+}
+
+type Object3 {
+    object3Field: Int
+}
+
+union Union = Object1 | Object2
+
+type Query {
+    union: Union
+}
+====
+query {
+    union {
+        ...Fragment1
+        ...Fragment2
+           ~~~~~~~~~ (4, 12, 9)
+!!! The type 'Object3' is not member of the union 'Union'.
+    }
+}
+
+fragment Fragment1 on Object1 {
+    object1Field
+}
+
+fragment Fragment2 on Object3 {
+    object2Field
+    ~~~~~~~~~~~~ (13, 5, 12)
+!!! Field 'object2Field' does not exist on type 'Object3'.
+}

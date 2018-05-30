@@ -10,6 +10,7 @@ class D {
 public:
     static DiagnosticMessageTemplate Cannot_add_an_output_type_to_an_input_location;
     static DiagnosticMessageTemplate Cannot_add_an_input_type_to_an_output_location;
+    static DiagnosticMessageTemplate Duplicate_fragment_0;
     static DiagnosticMessageTemplate Duplicate_type_0;
     static DiagnosticMessageTemplate Expected_0_but_got_1;
     static DiagnosticMessageTemplate Expected_0_but_reached_the_end_of_document;

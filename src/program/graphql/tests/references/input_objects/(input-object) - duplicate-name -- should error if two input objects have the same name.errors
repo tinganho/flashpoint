@@ -1,11 +1,29 @@
-input Object {
-      ~~~~~~ (1, 7, 6)
-!!! Duplicate type 'Object'.
+input Object1 {
+      ~~~~~~~ (1, 7, 7)
+!!! Duplicate type 'Object1'.
     property: Int
 }
 
-input Object {
-      ~~~~~~ (5, 7, 6)
-!!! Duplicate type 'Object'.
+input Object1 {
+      ~~~~~~~ (5, 7, 7)
+!!! Duplicate type 'Object1'.
+    property: Int
+}
+
+input Object2 {
+      ~~~~~~~ (9, 7, 7)
+!!! Duplicate type 'Object2'.
+    property: Int
+}
+
+input Object2 {
+      ~~~~~~~ (13, 7, 7)
+!!! Duplicate type 'Object2'.
+    property: Int
+}
+
+input Object2 {
+      ~~~~~~~ (17, 7, 7)
+!!! Duplicate type 'Object2'.
     property: Int
 }
