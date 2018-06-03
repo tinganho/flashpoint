@@ -1,0 +1,13 @@
+type Query {
+    field: Int
+}
+
+type Subscription {
+    field: Int
+}
+
+schema {
+    query: Query
+    subscription: Subscription
+    subscription: Subscription
+}

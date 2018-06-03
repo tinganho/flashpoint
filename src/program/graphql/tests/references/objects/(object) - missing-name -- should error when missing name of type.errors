@@ -3,3 +3,6 @@ type {
 !!! Expected type name, instead got '{'.
 
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

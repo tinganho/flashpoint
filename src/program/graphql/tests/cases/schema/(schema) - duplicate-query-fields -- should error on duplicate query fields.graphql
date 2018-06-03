@@ -1,0 +1,8 @@
+type Query {
+    field: Int
+}
+
+schema {
+    query: Query
+    query: Query
+}

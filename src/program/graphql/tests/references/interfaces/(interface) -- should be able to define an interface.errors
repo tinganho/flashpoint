@@ -1,3 +1,7 @@
 interface Interface {
     field: Int
 }
+
+type Query {
+    interface: Interface
+}

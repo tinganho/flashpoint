@@ -18,7 +18,7 @@ namespace flashpoint::lib {
 		typedef std::map<std::size_t, std::vector<Annotation>> AnnotationMap;
 	public:
         explicit TextAnnotater(const std::string& source);
-		void annotate(const std::string& source, const Location& location);
+		void annotate(const std::string& source, Location& location);
 		void set_source(const std::string& source);
 		std::string to_string();
 	private:

@@ -1,0 +1,17 @@
+type Query {
+    field: Int
+}
+
+type Subscription {
+    field: Int
+}
+
+schema {
+    query: Query
+    subscription: Subscription
+    ~~~~~~~~~~~~ (11, 5, 12)
+!!! Duplicate field 'subscription'.
+    subscription: Subscription
+    ~~~~~~~~~~~~ (12, 5, 12)
+!!! Duplicate field 'subscription'.
+}

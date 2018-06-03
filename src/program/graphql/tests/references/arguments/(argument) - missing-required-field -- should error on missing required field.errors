@@ -1,0 +1,13 @@
+input Input {
+    field: Int!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { })
+                 ~~~ (2, 18, 3)
+!!! Missing required field 'field'.
+}

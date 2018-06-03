@@ -11,3 +11,11 @@ union TypeDefinedInMiddle = Undefined1 | Object | Undefined2
 union TypeDefinedInStart = Object | Undefined1 | Undefined2
 
 union TypeDefinedInEnd = Undefined1 | Undefined2 | Object
+
+type Query {
+    field1: OneUndefined
+    field2: AllUndefined
+    field3: TypeDefinedInMiddle
+    field4: TypeDefinedInStart
+    field5: TypeDefinedInEnd
+}

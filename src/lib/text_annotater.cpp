@@ -1,6 +1,7 @@
 
 #include <sstream>
 #include <string>
+#include <functional>
 #include "text_annotater.h"
 #include "text_writer.h"
 #include "utils.h"
@@ -27,7 +28,10 @@ namespace flashpoint::lib {
         annotations.clear();
     }
 
-	void TextAnnotater::annotate(const std::string& text, const Location& location) {
+	void TextAnnotater::annotate(const std::string& text, Location& location) {
+        if (location.end_of_source) {
+            location.line = lines.size();
+        }
 		auto it = annotations.find(location.line);
 		Annotation annotation { location, text };
 		if (it != annotations.end()) {
@@ -53,6 +57,12 @@ namespace flashpoint::lib {
 			if (it != annotations.end()) {
 				std::vector<Annotation> annotations = it->second;
                 std::sort(annotations.begin(), annotations.end(), [](const Annotation& a, const Annotation& b) {
+                    if (a.location.end_of_source) {
+                        return false;
+                    }
+                    if (b.location.end_of_source) {
+                        return true;
+                    }
                     if (a.location.line < b.location.line) {
                         return true;
                     }
@@ -61,7 +71,14 @@ namespace flashpoint::lib {
                     }
                     return false;
                 });
-				for (const auto & annotation : annotations) {
+                std::vector<Annotation> _annotations;
+                std::transform(annotations.begin(), annotations.end(), std::back_inserter(_annotations), [=](Annotation annotation) {
+                    if (annotation.location.end_of_source) {
+                        annotation.location.line = lines.size();
+                    }
+                    return annotation;
+                });
+				for (const auto & annotation : _annotations) {
 					auto location = annotation.location;
 					for (int i1 = 1; i1 < location.column; i1++) {
 						writer.write(" ");

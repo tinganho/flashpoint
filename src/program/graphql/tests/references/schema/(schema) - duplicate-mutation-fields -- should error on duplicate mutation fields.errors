@@ -1,0 +1,17 @@
+type Query {
+    field: Int
+}
+
+type Mutation {
+    field: Int
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+    ~~~~~~~~ (11, 5, 8)
+!!! Duplicate field 'mutation'.
+    mutation: Mutation
+    ~~~~~~~~ (12, 5, 8)
+!!! Duplicate field 'mutation'.
+}

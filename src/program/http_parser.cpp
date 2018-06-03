@@ -36,7 +36,6 @@ namespace flashpoint::program {
     void HttpParser::parse_body(long long length)
     {
         const char* body = scanner.scan_body(length);
-
     }
 
     std::unordered_map<HttpHeader, char*> HttpParser::parse_headers()

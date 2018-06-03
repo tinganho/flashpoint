@@ -1,5 +1,9 @@
-input Object {
+input Input {
     field1: Int
     field2: Int
     fieldN: Int
+}
+
+type Query {
+    input(input: Input): Int
 }

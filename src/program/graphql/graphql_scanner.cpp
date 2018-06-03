@@ -89,6 +89,19 @@ namespace flashpoint::program::graphql {
                     return GraphQlToken::Pipe;
                 case Equal:
                     return GraphQlToken::Equal;
+                case Minus:
+                case _0:
+                case _1:
+                case _2:
+                case _3:
+                case _4:
+                case _5:
+                case _6:
+                case _7:
+                case _8:
+                case _9:
+                    return scan_number();
+
 
                 default:
                     if (is_name_start(ch)) {
@@ -106,6 +119,85 @@ namespace flashpoint::program::graphql {
             }
         }
         return GraphQlToken::EndOfDocument;
+    }
+
+    GraphQlToken
+    GraphQlScanner::scan_number()
+    {
+        scan_integer_part();
+        switch (current_char()) {
+            case Character::Dot: {
+                increment_position();
+                char32_t ch = current_char();
+                if (!is_digit(ch)) {
+                    return GraphQlToken::Unknown;
+                }
+                increment_position();
+                scan_digit_list();
+                increment_position();
+                ch = current_char();
+                if (ch != Character::e && ch != Character::E) {
+                    return GraphQlToken::FloatLiteral;
+                }
+            }
+            case Character::e:
+            case Character::E: {
+                increment_position();
+                char32_t ch = current_char();
+                if (ch == Character::Minus || ch == Character::Plus) {
+                    increment_position();
+                    ch = current_char();
+                }
+                scan_digit_list();
+                return GraphQlToken::FloatLiteral;
+            }
+
+            default:
+                return GraphQlToken::IntegerLiteral;
+        }
+    }
+
+    Glib::ustring
+    GraphQlScanner::get_text_from_syntax(Syntax* syntax)
+    {
+        return source->substr(syntax->start, syntax->end - syntax->start);
+    }
+
+    GraphQlToken
+    GraphQlScanner::scan_integer_part()
+    {
+        auto ch = current_char();
+        if (ch == Character::Minus) {
+            ch = current_char();
+        }
+        if (ch == Character::_0) {
+            increment_position();
+            ch = current_char();
+            if (is_digit(ch)) {
+                return GraphQlToken::Unknown;
+            }
+            return GraphQlToken::IntegerLiteral;
+        }
+        else {
+            if (!is_digit(ch)) {
+                return GraphQlToken::Unknown;
+            }
+        }
+        scan_digit_list();
+        return GraphQlToken::IntegerLiteral;
+    }
+
+    void
+    GraphQlScanner::scan_digit_list()
+    {
+        while (is_digit(current_char())) {
+            increment_position();
+        }
+    }
+
+    bool GraphQlScanner::is_digit(char32_t ch)
+    {
+        return ch >= Character::_0 && ch <= Character::_9;
     }
 
     void GraphQlScanner::skip_block()
@@ -134,18 +226,18 @@ namespace flashpoint::program::graphql {
         throw std::logic_error("Should not reach here.");
     }
 
-    void
+    GraphQlToken
     GraphQlScanner::skip_to(std::vector<GraphQlToken> tokens)
     {
         while (true) {
             save();
             GraphQlToken token = take_next_token(false);
             if (token == GraphQlToken::EndOfDocument) {
-                return;
+                return token;
             }
             if (std::find(tokens.begin(), tokens.end(), token) != tokens.end()) {
                 revert();
-                return;
+                return token;
             }
         }
     }
@@ -181,8 +273,18 @@ namespace flashpoint::program::graphql {
                 }
                 break;
             case 4:
-                if (strcmp(value, "type") == 0) {
-                    return GraphQlToken::TypeKeyword;
+                switch (value[0]) {
+                    case t:
+                        if (strcmp(value + 1, "ype") == 0) {
+                            return GraphQlToken::TypeKeyword;
+                        }
+                        break;
+                    case n:
+                        if (strcmp(value + 1, "ull") == 0) {
+                            return GraphQlToken::NullKeyword;
+                        }
+                        break;
+                    default:;
                 }
                 break;
             case 5:
@@ -211,8 +313,18 @@ namespace flashpoint::program::graphql {
                 }
                 break;
             case 6:
-                if (strcmp(value, "String") == 0) {
-                    return GraphQlToken::StringKeyword;
+                switch (value[0]) {
+                    case S:
+                        if (strcmp(value + 1, "tring") == 0) {
+                            return GraphQlToken::StringKeyword;
+                        }
+                        break;
+                    case s:
+                        if (strcmp(value + 1, "chema") == 0) {
+                            return GraphQlToken::SchemaKeyword;
+                        }
+                        break;
+                    default:;
                 }
                 break;
             case 7:
@@ -266,13 +378,13 @@ namespace flashpoint::program::graphql {
     Location
     GraphQlScanner::get_token_location(Syntax* syntax)
     {
-        Location location = binary_search_for_line(0, position_to_line_list.size() - 1, syntax->start);
+        Location location = search_for_line(0, position_to_line_list.size() - 1, syntax->start);
         location.length = syntax->end - syntax->start;
         return location;
     }
 
     Location
-    GraphQlScanner::binary_search_for_line(std::size_t start, std::size_t end, std::size_t position)
+    GraphQlScanner::search_for_line(std::size_t start, std::size_t end, std::size_t position)
     {
         if (end > start) {
             auto mid = start + (end - start) / 2;
@@ -286,10 +398,10 @@ namespace flashpoint::program::graphql {
             }
 
             if (position < position_line.position) {
-                return binary_search_for_line(start, mid - 1, position);
+                return search_for_line(start, mid - 1, position);
             }
 
-            return binary_search_for_line(mid + 1, end, position);
+            return search_for_line(mid + 1, end, position);
         }
         else if (end == start) {
             auto position_line = position_to_line_list[end];
@@ -308,10 +420,74 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::scan_string_literal()
     {
-        while (position < size && current_char() != DoubleQuote) {
+        auto start = position;
+        string_literal = "";
+        while (true) {
+            if (position > size) {
+                break;
+            }
+            char32_t ch = current_char();
+            if (ch == Character::Backslash) {
+                string_literal += source->substr(start, position - start);
+                string_literal += scan_escape_sequence();
+            }
+            if (ch == Character::DoubleQuote) {
+                string_literal += source->substr(start, position - start);
+                increment_position();
+                break;
+            }
             increment_position();
         }
-        return GraphQlToken::Unknown;
+        return GraphQlToken::StringLiteral;
+    }
+
+    Glib::ustring
+    GraphQlScanner::scan_escape_sequence()
+    {
+        switch (current_char()) {
+            case Character::DoubleQuote:
+                return "\"";
+            case Character::Backslash:
+                return "\\";
+            case Character::b:
+                return "\b";
+            case Character::f:
+                return "\f";
+            case Character::n :
+                return "\n";
+            case Character::r:
+                return "\r";
+            case Character::t:
+                return "\t";
+            case Character::u:
+                return "\\u" + scan_hexadecimal_escape();
+
+        }
+    }
+
+    Glib::ustring
+    GraphQlScanner::scan_hexadecimal_escape()
+    {
+        std::size_t n = 0;
+        Glib::ustring value = "";
+        while (true) {
+            char32_t ch = current_char();
+            if (is_hexadecimal(ch)) {
+                value += ch;
+            }
+            if (n == 4) {
+                break;
+            }
+            n++;
+        }
+        return value;
+    }
+
+    bool
+    GraphQlScanner::is_hexadecimal(char32_t ch) {
+        return ch >= Character::_0 && ch <= Character::_9 ||
+            ch >= Character::a && ch <= Character::f ||
+            ch >= Character::A && ch <= Character::F;
     }
 
     GraphQlToken
@@ -331,7 +507,7 @@ namespace flashpoint::program::graphql {
     }
 
     bool
-    GraphQlScanner::is_integer(const char32_t &ch) const
+    GraphQlScanner::is_number(const char32_t &ch) const
     {
         return ch >= _0 && ch <= _9;
     }
@@ -458,5 +634,11 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::get_value() const
     {
         return source->substr(start_position, length());
+    }
+
+    Glib::ustring
+    GraphQlScanner::get_string_value()
+    {
+        return string_literal;
     }
 }

@@ -2,6 +2,6 @@ interface Interface {
     field: Int
 }
 
-type Input {
+type Query {
     field: Interface
 }

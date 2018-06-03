@@ -8,3 +8,6 @@ type Object implements Interface {
 
  (8, 1, 0)
 !!! Expected '}', but reached the end of document.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

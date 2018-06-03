@@ -1,0 +1,11 @@
+input Input {
+    field: Int
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { undefined1: 1, undefined2: 1 })
+}

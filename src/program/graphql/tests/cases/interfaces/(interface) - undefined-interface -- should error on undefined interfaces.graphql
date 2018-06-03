@@ -5,3 +5,8 @@ type Object1 implements Interface {
 type Object2 implements Interface1 & Interface2 {
     objectField: Int
 }
+
+type Query {
+    object1: Object1
+    object2: Object2
+}

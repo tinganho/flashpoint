@@ -1,0 +1,9 @@
+type Query {
+    field(argument1: Int, argument2: Int, argument3: Int): Int
+}
+====
+query {
+    field(argument1: 1, undefined: 1, argument3: 1)
+                        ~~~~~~~~~ (2, 25, 9)
+!!! Unknown argument 'undefined'.
+}

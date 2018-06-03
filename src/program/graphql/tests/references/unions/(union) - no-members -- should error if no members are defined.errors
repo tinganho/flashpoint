@@ -9,3 +9,6 @@ interface Object2 {
 union Union =
               (9, 14, 0)
 !!! Expected 'name', but reached the end of document.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

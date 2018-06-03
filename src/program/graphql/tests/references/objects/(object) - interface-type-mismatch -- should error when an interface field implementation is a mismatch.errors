@@ -18,38 +18,47 @@ interface ObjectInterface {
     field: Object1
 }
 
-type Int implements StringInterface {
+type _Int implements StringInterface {
     field: Int
-           ~~~ (22, 12, 4)
+           ~~~ (22, 12, 3)
 !!! Type 'Int' does not match type 'String' from the interface 'StringInterface'.
 }
 
-type String implements IntInterface {
+type _String implements IntInterface {
     field: String
-           ~~~~~~ (26, 12, 7)
+           ~~~~~~ (26, 12, 6)
 !!! Type 'String' does not match type 'Int' from the interface 'IntInterface'.
 }
 
-type Boolean implements IntInterface {
+type _Boolean implements IntInterface {
     field: Boolean
-           ~~~~~~~ (30, 12, 8)
+           ~~~~~~~ (30, 12, 7)
 !!! Type 'Boolean' does not match type 'Int' from the interface 'IntInterface'.
 }
 
-type Float implements IntInterface {
+type _Float implements IntInterface {
     field: Float
-           ~~~~~ (34, 12, 6)
+           ~~~~~ (34, 12, 5)
 !!! Type 'Float' does not match type 'Int' from the interface 'IntInterface'.
 }
 
-type ID implements IntInterface {
+type _ID implements IntInterface {
     field: ID
-           ~~ (38, 12, 3)
+           ~~ (38, 12, 2)
 !!! Type 'ID' does not match type 'Int' from the interface 'IntInterface'.
 }
 
-type ObjectType implements ObjectInterface {
+type _ObjectType implements ObjectInterface {
     field: Object2
-           ~~~~~~~ (42, 12, 8)
+           ~~~~~~~ (42, 12, 7)
 !!! Type 'Object2' does not match type 'Object1' from the interface 'ObjectInterface'.
+}
+
+type Query {
+    int: _Int
+    string: _String
+    boolean: _Boolean
+    float: _Float
+    id: ID
+    objectType: _ObjectType
 }

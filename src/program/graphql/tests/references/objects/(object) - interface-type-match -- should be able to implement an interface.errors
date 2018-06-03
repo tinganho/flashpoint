@@ -49,3 +49,6 @@ type ID implements IDInterface {
 type ObjectType implements ObjectInterface {
     field: Object
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

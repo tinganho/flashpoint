@@ -17,3 +17,7 @@ type ArgumentTypes {
 input InputObject {
     field: Boolean
 }
+
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

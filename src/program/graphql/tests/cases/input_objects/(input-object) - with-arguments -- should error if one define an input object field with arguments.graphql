@@ -5,3 +5,6 @@ input Single {
 input Multiple {
     field(argument1: Int, argument2: Int): String
 }
+type Query {
+
+}

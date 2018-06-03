@@ -27,3 +27,6 @@ input Object2 {
 !!! Duplicate type 'Object2'.
     property: Int
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

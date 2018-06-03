@@ -56,6 +56,7 @@ namespace flashpoint::program::graphql {
         FragmentKeyword,
         InputKeyword,
         InterfaceKeyword,
+        SchemaKeyword,
         TypeKeyword,
         UnionKeyword,
 
@@ -73,10 +74,12 @@ namespace flashpoint::program::graphql {
         BooleanKeyword,
         NullKeyword,
 
-        StringLiteral,
-        IntLiteral,
+        IntegerLiteral,
         FloatLiteral,
         BooleanLiteral,
+        EnumLiteral,
+        StringLiteral,
+        ObjectLiteral,
 
         // Punctuations
         At,
@@ -128,6 +131,7 @@ namespace flashpoint::program::graphql {
         GraphQlScanner(const Glib::ustring* source);
         std::size_t length() const;
         std::size_t start_position = 0;
+        std::size_t end_position = 0;
         std::size_t position = 0;
         std::size_t line = 1;
         std::size_t start_line = 1;
@@ -161,7 +165,7 @@ namespace flashpoint::program::graphql {
         set_token_start_position();
 
         Location
-        binary_search_for_line(std::size_t start, std::size_t end, std::size_t position);
+        search_for_line(std::size_t start, std::size_t end, std::size_t position);
 
         Location
         get_token_location(Syntax* syntax);
@@ -181,8 +185,16 @@ namespace flashpoint::program::graphql {
         void
         scan_rest_of_line();
 
+        Glib::ustring
+        get_text_from_syntax(Syntax*);
+
         void
         scan_comment_line();
+
+        GraphQlToken
+        scan_integer_part();
+
+        bool is_digit(char32_t ch);
 
         GraphQlToken
         peek_next_token();
@@ -190,13 +202,16 @@ namespace flashpoint::program::graphql {
         void
         skip_block();
 
-        void
+        GraphQlToken
         skip_to(std::vector<GraphQlToken>);
+
+        Glib::ustring
+        get_string_value();
 
     private:
         char32_t ch;
         const Glib::ustring* source;
-        unsigned long long end_position;
+        Glib::ustring string_literal;
         std::stack<SavedTextCursor> saved_text_cursors;
 
         char32_t
@@ -212,10 +227,16 @@ namespace flashpoint::program::graphql {
         is_name_part(const char32_t &ch) const;
 
         bool
-        is_integer(const char32_t &ch) const;
+        is_number(const char32_t &ch) const;
 
         GraphQlToken
         scan_string_literal();
+
+        Glib::ustring
+        scan_escape_sequence();
+
+        Glib::ustring
+        scan_hexadecimal_escape();
 
         GraphQlToken
         scan_ellipses_after_first_dot();
@@ -225,6 +246,15 @@ namespace flashpoint::program::graphql {
 
         bool
         is_line_break(const char32_t& ch) const;
+
+        GraphQlToken
+        scan_number();
+
+        void
+        scan_digit_list();
+
+        bool
+        is_hexadecimal(char32_t ch);
     };
 }
 

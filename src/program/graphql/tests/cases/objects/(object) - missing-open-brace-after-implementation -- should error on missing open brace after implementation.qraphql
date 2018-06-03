@@ -6,3 +6,7 @@ type Object implements Interface
     interfaceField: Int
     propertyField: Int
 }
+
+type Query {
+    object: Object
+}

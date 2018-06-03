@@ -16,7 +16,7 @@ namespace flashpoint::test {
     std::string DiagnosticWriter::to_string()
     {
         TextAnnotater annotater(*schema->source);
-        for (const auto diagnostic : schema->diagnostics) {
+        for (auto& diagnostic : schema->diagnostics) {
             annotater.annotate(diagnostic.message, diagnostic.location);
         }
         auto schema_source = annotater.to_string();
@@ -24,7 +24,7 @@ namespace flashpoint::test {
             return schema_source;
         }
         annotater.set_source(*query->source);
-        for (const auto diagnostic : query->diagnostics) {
+        for (auto& diagnostic : query->diagnostics) {
             annotater.annotate(diagnostic.message, diagnostic.location);
         }
         auto query_source = annotater.to_string();

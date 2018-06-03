@@ -16,3 +16,8 @@ type Object2 implements Interface1 & Interface2 {
     interfaceField2: Int
     objectField: Int
 }
+
+type Query {
+    object1: Object1
+    object2: Object2
+}

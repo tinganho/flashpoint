@@ -53,27 +53,37 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
-    void IntLiteral::accept(GraphQlSyntaxVisitor* visitor) const
+    void IntValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
 
-    void NullLiteral::accept(GraphQlSyntaxVisitor* visitor) const
+    void NullValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
 
-    void FloatLiteral::accept(GraphQlSyntaxVisitor* visitor) const
+    void FloatValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
 
-    void StringLiteral::accept(GraphQlSyntaxVisitor* visitor) const
+    void StringValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
 
-    void BooleanLiteral::accept(GraphQlSyntaxVisitor* visitor) const
+    void BooleanValue::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void ObjectField::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void ObjectValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
@@ -149,6 +159,11 @@ namespace flashpoint::program::graphql {
     }
 
     void Union::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void Schema::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

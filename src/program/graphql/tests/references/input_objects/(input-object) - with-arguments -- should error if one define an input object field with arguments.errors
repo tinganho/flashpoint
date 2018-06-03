@@ -9,3 +9,8 @@ input Multiple {
          ~ (6, 10, 1)
 !!! Expected ':', but got '('.
 }
+type Query {
+
+}
+~ (10, 1, 1)
+!!! Expected field definition.

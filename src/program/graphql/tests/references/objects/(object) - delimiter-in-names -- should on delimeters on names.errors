@@ -9,3 +9,6 @@ type T- {
 !!! Expected '{', but got '-'.
 
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

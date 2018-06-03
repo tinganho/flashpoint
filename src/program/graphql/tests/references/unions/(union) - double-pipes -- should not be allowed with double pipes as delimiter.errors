@@ -9,3 +9,10 @@ type Object2 {
 union Union = Object1 || Object2
                        ~ (9, 24, 1)
 !!! Expected 'name', but got '|'.
+
+type Query {
+    union: Union
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

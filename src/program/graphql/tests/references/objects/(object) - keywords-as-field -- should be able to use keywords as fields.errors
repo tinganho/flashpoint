@@ -29,3 +29,14 @@ type Object7 {
 type Object8 {
     null: Int
 }
+
+type Query {
+    object1: Object1
+    object2: Object2
+    object3: Object3
+    object4: Object4
+    object5: Object5
+    object6: Object6
+    object7: Object7
+    object8: Object8
+}

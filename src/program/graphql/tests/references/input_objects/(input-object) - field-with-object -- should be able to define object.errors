@@ -7,3 +7,7 @@ input InputObject {
            ~~~~~~ (6, 12, 6)
 !!! Cannot add an (output) type to an input location.
 }
+
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

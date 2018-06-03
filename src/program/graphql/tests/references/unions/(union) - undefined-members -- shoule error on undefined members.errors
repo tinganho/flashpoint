@@ -31,3 +31,11 @@ union TypeDefinedInEnd = Undefined1 | Undefined2 | Object
 !!! Type 'Undefined1' is not defined.
                                       ~~~~~~~~~~ (13, 39, 10)
 !!! Type 'Undefined2' is not defined.
+
+type Query {
+    field1: OneUndefined
+    field2: AllUndefined
+    field3: TypeDefinedInMiddle
+    field4: TypeDefinedInStart
+    field5: TypeDefinedInEnd
+}

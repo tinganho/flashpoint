@@ -7,3 +7,7 @@ type Object2 {
 }
 
 union Union = Object1 || Object2
+
+type Query {
+    union: Union
+}

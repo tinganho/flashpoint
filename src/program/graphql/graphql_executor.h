@@ -30,6 +30,8 @@ namespace flashpoint::program::graphql {
         MemoryPoolTicket* ticket;
         GraphQlScanner* scanner;
         std::stack<ObjectLike*> current_object_types;
+        FieldDefinition* current_field;
+        InputValueDefinition* current_argument;
         std::map<Glib::ustring, Symbol*> symbols;
         std::map<Glib::ustring, Interface*> interfaces;
         std::vector<Type*> forward_type_references;
@@ -42,6 +44,9 @@ namespace flashpoint::program::graphql {
         std::set<Glib::ustring> duplicate_fragments;
         std::vector<Union*> unions;
         std::set<Glib::ustring> duplicate_symbols;
+        std::set<Glib::ustring> parsed_arguments;
+        std::set<Glib::ustring> duplicate_arguments;
+        std::set<Glib::ustring> duplicate_fields;
 
         GraphQlToken
         take_next_token();
@@ -52,11 +57,20 @@ namespace flashpoint::program::graphql {
         Glib::ustring
         get_token_value() const;
 
+        Glib::ustring
+        get_string_value();
+
         FragmentDefinition*
         parse_fragment_definition_after_fragment_keyword();
 
         void
         check_fragment_assignment(Name* name, Object* fragment_object, Declaration* current_object_type);
+
+        Schema*
+        parse_schema();
+
+        Name*
+        parse_schema_field_after_colon();
 
         OperationDefinition*
         parse_operation_definition(const OperationType& operation);
@@ -112,8 +126,8 @@ namespace flashpoint::program::graphql {
         Type*
         parse_type_annotation(bool in_input_location);
 
-        Syntax*
-        parse_value();
+        Value*
+        parse_value(Type*);
 
         VariableDefinitions*
         parse_variable_definitions();
@@ -132,6 +146,9 @@ namespace flashpoint::program::graphql {
 
         ArgumentsDefinition*
         parse_arguments_definition();
+
+        ObjectField*
+        parse_object_field();
 
         inline bool
         scan_optional(const GraphQlToken &);
@@ -189,7 +206,26 @@ namespace flashpoint::program::graphql {
 
         bool
         token_is_primary(GraphQlToken);
+
+        inline
+        GraphQlToken
+        skip_to(const std::vector<GraphQlToken>& tokens);
     };
+
+    enum class RootType : unsigned int {
+        None,
+        Query = 1 << 1,
+        Mutation = 1 << 2,
+        Subscription = 1 << 3,
+    };
+
+    inline constexpr RootType operator|(RootType a, RootType b) {
+        return static_cast<RootType>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    }
+
+    inline constexpr RootType operator&(RootType a, RootType b) {
+        return static_cast<RootType>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+    }
 }
 
 

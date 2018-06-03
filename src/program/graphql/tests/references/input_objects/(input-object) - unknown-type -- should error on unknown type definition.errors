@@ -27,3 +27,6 @@ input Object5 {
                ~~~~~~~ (18, 16, 7)
 !!! Type 'unknown' is not defined.
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

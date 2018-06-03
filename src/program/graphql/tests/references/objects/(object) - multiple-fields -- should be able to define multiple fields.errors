@@ -3,3 +3,6 @@ type Object {
     field2: Int
     fieldN: Int
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

@@ -10,6 +10,7 @@
   "Field '{0}' does not exist on type '{1}'.": {},
   "Expected type annotation, instead got '{0}'.": {},
   "Expected type definition.": {},
+  "Expected object field name.": {},
   "Type '{0}' is not defined.": {},
   "Duplicate type '{0}'.": {},
   "Expected type name, instead got '{0}'.": {},
@@ -28,5 +29,13 @@
   "Expected fragment spread or inline fragment.": {},
   "The type '{0}' is not member of the union '{1}'.": {},
   "Fragment '{0}' is not defined.": {},
-  "Duplicate fragment '{0}'.": {}
+  "Duplicate fragment '{0}'.": {},
+  "A schema definition can only contain 'query', 'mutation' and 'subscription' fields.": {},
+  "Duplicate field '{0}'.": {},
+  "No query root operation type defined.": {},
+  "Unknown argument '{0}'.": {},
+  "Duplicate argument '{0}'.": {},
+  "The value '{0}' is not assignable to type '{1}'.": {},
+  "Type '{0}' is not assignable to type '{1}'.": {},
+  "Missing required field '{0}'.": {}
 }

@@ -1,0 +1,11 @@
+type Query {
+    field(argument1: Int, argument2: Int): Int
+}
+====
+query {
+    field(argument1: 1, argument1: 1)
+          ~~~~~~~~~ (2, 11, 9)
+!!! Duplicate argument 'argument1'.
+                        ~~~~~~~~~ (2, 25, 9)
+!!! Duplicate argument 'argument1'.
+}

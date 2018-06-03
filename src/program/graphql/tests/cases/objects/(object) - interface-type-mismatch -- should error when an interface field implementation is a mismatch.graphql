@@ -18,26 +18,35 @@ interface ObjectInterface {
     field: Object1
 }
 
-type Int implements StringInterface {
+type _Int implements StringInterface {
     field: Int
 }
 
-type String implements IntInterface {
+type _String implements IntInterface {
     field: String
 }
 
-type Boolean implements IntInterface {
+type _Boolean implements IntInterface {
     field: Boolean
 }
 
-type Float implements IntInterface {
+type _Float implements IntInterface {
     field: Float
 }
 
-type ID implements IntInterface {
+type _ID implements IntInterface {
     field: ID
 }
 
-type ObjectType implements ObjectInterface {
+type _ObjectType implements ObjectInterface {
     field: Object2
+}
+
+type Query {
+    int: _Int
+    string: _String
+    boolean: _Boolean
+    float: _Float
+    id: ID
+    objectType: _ObjectType
 }

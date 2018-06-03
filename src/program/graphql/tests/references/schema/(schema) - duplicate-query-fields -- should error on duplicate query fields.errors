@@ -1,0 +1,12 @@
+type Query {
+    field: Int
+}
+
+schema {
+    query: Query
+    ~~~~~ (6, 5, 5)
+!!! Duplicate field 'query'.
+    query: Query
+    ~~~~~ (7, 5, 5)
+!!! Duplicate field 'query'.
+}

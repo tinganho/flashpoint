@@ -1,0 +1,7 @@
+type Query {
+    field(argument1: Int, argument2: Int): Int
+}
+====
+query {
+    field(argument1: 1, argument1: 1)
+}

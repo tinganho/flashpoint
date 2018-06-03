@@ -21,3 +21,6 @@ type CommasEveryWhere {
 type MultipleCommas {
     ,,,,property: Int
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

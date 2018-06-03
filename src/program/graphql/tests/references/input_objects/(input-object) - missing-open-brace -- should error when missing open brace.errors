@@ -3,3 +3,6 @@ input Object
     ~~~~~~~~ (2, 5, 8)
 !!! Expected '{', but got 'property'.
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

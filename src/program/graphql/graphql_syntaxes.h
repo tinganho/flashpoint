@@ -14,7 +14,7 @@
     name(SyntaxKind kind, unsigned int start, unsigned int end, __VA_ARGS__) noexcept: \
         Syntax(kind, start, end)
 
-#define D(name, base, ...) \
+#define D(name, base) \
     name(SyntaxKind kind, unsigned int start, unsigned int end) noexcept: \
         base(kind, start, end)
 
@@ -58,6 +58,7 @@ namespace flashpoint::program::graphql {
         S_Object,
         S_OperationDefinition,
         S_QueryDocument,
+        S_Schema,
         S_SchemaDocument,
         S_SelectionSet,
         S_Type,
@@ -66,12 +67,14 @@ namespace flashpoint::program::graphql {
         S_VariableDefinitions,
 
         // Literals
-        S_IntLiteral,
-        S_FloatLiteral,
-        S_StringLiteral,
-        S_BooleanLiteral,
-        S_EnumLiteral,
-        S_NullLiteral,
+        S_NullValue,
+        S_BooleanValue,
+        S_IntValue,
+        S_FloatValue,
+        S_EnumValue,
+        S_StringValue,
+        S_ObjectField,
+        S_ObjectValue,
     };
 
     struct Syntax {
@@ -215,6 +218,7 @@ namespace flashpoint::program::graphql {
     struct InputObject : Declaration {
         InputFieldsDefinition* fields_definition;
         std::map<Glib::ustring, Syntax*> fields;
+        std::vector<Glib::ustring> required_fields;
 
         D(InputObject, Declaration)
         { }
@@ -316,104 +320,8 @@ namespace flashpoint::program::graphql {
         new_operator(NamedType)
     };
 
-    struct NullLiteral : Syntax {
-        S(NullLiteral)
-        { }
-
-        new_operator(NullLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct IntLiteral : Syntax {
-        int value;
-
-        C(IntLiteral, int value),
-            I(value)
-        { }
-
-        new_operator(IntLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct FloatLiteral : Syntax {
-        double value;
-
-        C(FloatLiteral, double value),
-            I(value)
-        { }
-
-        new_operator(FloatLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct StringLiteral : Syntax {
-        Glib::ustring value;
-
-        C(StringLiteral, Glib::ustring  value),
-            I(value)
-        { }
-
-        new_operator(StringLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct BooleanLiteral : Syntax {
-        bool value;
-
-        C(BooleanLiteral, bool value),
-            I(value)
-        { }
-
-        new_operator(BooleanLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct ObjectLiteral : Syntax {
-        bool value;
-
-        C(ObjectLiteral, bool value),
-            I(value)
-        { }
-
-        new_operator(ObjectLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    struct EnumLiteral : Syntax {
-        const char* value;
-
-        C(EnumLiteral, const char* value),
-            I(value)
-        { }
-
-        new_operator(EnumLiteral)
-
-        void accept(GraphQlSyntaxVisitor*) const;
-    };
-
-    enum class ValueType {
-        None,
-        Null,
-        Int,
-        Float,
-        String,
-        Boolean,
-        Enum,
-        SObject,
-        Argument,
-    };
-
     struct Value : Syntax {
-        Syntax* value;
-
-        C(Value, Syntax* value),
-            I(value)
+        S(Value)
         { }
 
         new_operator(Value)
@@ -421,6 +329,93 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
+    struct NullValue : Value {
+        D(NullValue, Value)
+        { }
+
+        new_operator(NullValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct FloatValue : Value {
+        double value;
+
+        D(FloatValue, Value)
+        { }
+
+        new_operator(FloatValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct IntValue : Value {
+        int value;
+
+        D(IntValue, Value)
+        { }
+
+        new_operator(IntValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct StringValue : Value {
+        Glib::ustring value;
+
+        D(StringValue, Value)
+        { }
+
+        new_operator(StringValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct BooleanValue : Value {
+        bool value;
+
+        D(BooleanValue, Value)
+        { }
+
+        new_operator(BooleanValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct EnumValue : Value {
+        const char* value;
+
+        D(EnumValue, Value)
+        { }
+
+        new_operator(EnumValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct ObjectField : Syntax {
+        Name* name;
+        Value* value;
+
+        S(ObjectField)
+        { }
+
+        new_operator(ObjectField)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+
+    };
+
+    struct ObjectValue : Value {
+        std::vector<ObjectField*> object_fields;
+
+        D(ObjectValue, Value)
+        { }
+
+        new_operator(ObjectValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
 
     struct VariableDefinition : Syntax {
         Name* name;
@@ -459,7 +454,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct Arguments : Syntax {
-        std::vector<Argument> arguments;
+        std::vector<Argument*> arguments;
 
         S(Arguments)
         { }
@@ -594,6 +589,26 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
+    struct Schema : Syntax {
+        Name* query;
+        Name* mutation;
+        Name* subscription;
+
+        Object* query_object;
+        Object* mutation_object;
+        Object* subscription_object;
+
+        Name* query_key;
+        Name* mutation_key;
+        Name* subscription_key;
+
+        S(Schema)
+        { }
+
+        new_operator(Schema)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
 
     struct SchemaDocument : Syntax {
         std::vector<Syntax*> definitions;
@@ -658,11 +673,14 @@ namespace flashpoint::program::graphql {
         virtual void visit(const Name*) = 0;
         virtual void visit(const Value*) = 0;
         virtual void visit(const Type*) = 0;
-        virtual void visit(const IntLiteral*) = 0;
-        virtual void visit(const NullLiteral*) = 0;
-        virtual void visit(const FloatLiteral*) = 0;
-        virtual void visit(const StringLiteral*) = 0;
-        virtual void visit(const BooleanLiteral*) = 0;
+        virtual void visit(const IntValue*) = 0;
+        virtual void visit(const NullValue*) = 0;
+        virtual void visit(const FloatValue*) = 0;
+        virtual void visit(const StringValue*) = 0;
+        virtual void visit(const BooleanValue*) = 0;
+        virtual void visit(const EnumValue*) = 0;
+        virtual void visit(const ObjectField*) = 0;
+        virtual void visit(const ObjectValue*) = 0;
         virtual void visit(const VariableDefinition*) = 0;
         virtual void visit(const VariableDefinitions*) = 0;
         virtual void visit(const Field*) = 0;
@@ -682,6 +700,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const InputFieldDefinition*) = 0;
         virtual void visit(const InputFieldsDefinition*) = 0;
         virtual void visit(const Union*) = 0;
+        virtual void visit(const Schema*) = 0;
     };
 };
 

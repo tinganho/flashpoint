@@ -1,0 +1,13 @@
+input Input {
+    field: Int
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { undefined: 1 })
+                   ~~~~~~~~~ (2, 20, 9)
+!!! Field 'undefined' does not exist on type 'Input'.
+}

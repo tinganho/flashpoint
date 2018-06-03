@@ -13,3 +13,7 @@ union Union =
     | Object2
       ~~~~~~~ (11, 7, 7)
 !!! Only objects are allowed as members in a union.
+
+type Query {
+    union: Union
+}

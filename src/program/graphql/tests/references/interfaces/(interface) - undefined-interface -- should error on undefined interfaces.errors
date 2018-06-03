@@ -11,3 +11,8 @@ type Object2 implements Interface1 & Interface2 {
 !!! Interface 'Interface2' is not defined.
     objectField: Int
 }
+
+type Query {
+    object1: Object1
+    object2: Object2
+}

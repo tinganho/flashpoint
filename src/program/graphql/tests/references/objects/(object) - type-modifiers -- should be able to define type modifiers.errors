@@ -21,3 +21,12 @@ type ObjectBooleanListNonNull {
 type ObjectBooleanNonNullListNonNull {
     property: [Boolean!]!
 }
+
+type Query {
+    object1: ObjectBoolean
+    object2: ObjectBooleanNonNull
+    object3: ObjectBooleanList
+    object4: ObjectBooleanNonNullList
+    object5: ObjectBooleanListNonNull
+    object6: ObjectBooleanNonNullListNonNull
+}

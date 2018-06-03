@@ -1,0 +1,12 @@
+type Query {
+    field: Int
+}
+
+type Unknown {
+    field: Int
+}
+
+schema {
+    query: Query
+    unknown: Unknown
+}

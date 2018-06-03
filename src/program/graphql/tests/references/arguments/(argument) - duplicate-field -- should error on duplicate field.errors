@@ -1,0 +1,15 @@
+input Input {
+    field: Int!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: 1, field: 2 })
+                   ~~~~~ (2, 20, 5)
+!!! Duplicate field 'field'.
+                             ~~~~~ (2, 30, 5)
+!!! Duplicate field 'field'.
+}

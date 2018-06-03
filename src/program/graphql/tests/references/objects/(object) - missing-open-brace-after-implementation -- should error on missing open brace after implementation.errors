@@ -8,3 +8,10 @@ type Object implements Interface
 !!! Expected '{', but got 'interfaceField'.
     propertyField: Int
 }
+
+type Query {
+    object: Object
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

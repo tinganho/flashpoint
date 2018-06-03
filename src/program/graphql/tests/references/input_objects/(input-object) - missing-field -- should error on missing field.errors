@@ -2,3 +2,6 @@ input Object {
 }
 ~ (2, 1, 1)
 !!! Expected field definition.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

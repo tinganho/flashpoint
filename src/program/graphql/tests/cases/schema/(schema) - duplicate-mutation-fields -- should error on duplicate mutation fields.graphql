@@ -1,0 +1,13 @@
+type Query {
+    field: Int
+}
+
+type Mutation {
+    field: Int
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+    mutation: Mutation
+}

@@ -21,3 +21,6 @@ input ObjectBooleanListNonNull {
 input ObjectBooleanNonNullListNonNull {
     property: [Boolean!]!
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.
