@@ -1106,11 +1106,10 @@ namespace flashpoint::program::graphql {
                 value->value = std::atof(get_token_value().c_str());
                 return value;
             }
-            case GraphQlToken::BooleanLiteral: {
-                auto value = create_syntax<BooleanValue>(SyntaxKind::S_BooleanValue);
-                value->value = get_token_value().at(0) == 't';
-                return value;
-            }
+            case GraphQlToken::TrueKeyword:
+                return parse_boolean_value(type, true);
+            case GraphQlToken::FalseKeyword:
+                return parse_boolean_value(type, false);
 //            case GraphQlToken::Name:
 //                return Value {
 //                    ValueType::Enum,
@@ -1122,6 +1121,20 @@ namespace flashpoint::program::graphql {
 //                finish_syntax(argument_literal);
 //                return std::make_pair(argument_literal, ValueKind::Argument);
             case GraphQlToken::OpenBrace: {
+                std::size_t start_position = scanner->start_position;
+                auto location = get_token_location();
+                if (type->type != TypeEnum::T_Object) {
+                    // TODO: Create a version of parse_value that doesn't do checking and proper object parsing
+                    scanner->skip_block();
+                    location.length += scanner->position - start_position - 1;
+                    add_diagnostic(
+                        location,
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        scanner->get_text_from_location(start_position, scanner->position),
+                        get_type_name(type)
+                    );
+                    return nullptr;
+                }
                 auto object_value = create_syntax<ObjectValue>(SyntaxKind::S_ObjectValue);
                 auto symbols_it = symbols.find(type->name->identifier);
                 if (symbols_it->second->kind != SymbolKind::SL_InputObject) {
@@ -1212,6 +1225,21 @@ namespace flashpoint::program::graphql {
                 return nullptr;
         }
     }
+
+    BooleanValue*
+    GraphQlParser::parse_boolean_value(Type* type, bool value) {
+        if (type->type != TypeEnum::T_Boolean) {
+            add_diagnostic(
+                    D::Type_0_is_not_assignable_to_type_1,
+                    "Boolean",
+                    get_type_name(type)
+            );
+        }
+        auto syntax = create_syntax<BooleanValue>(SyntaxKind::S_BooleanValue);
+        syntax->value = value;
+        return syntax;
+    }
+
 
     Location
     GraphQlParser::get_token_location()
@@ -1389,44 +1417,42 @@ namespace flashpoint::program::graphql {
     Glib::ustring
     GraphQlParser::get_type_name(Type *type)
     {
-        if (type->name != nullptr) {
-            return type->name->identifier;
+        Glib::ustring display_type = "";
+        if (type->is_list_type) {
+            display_type += "[";
         }
-        else {
-            Glib::ustring display_type = "";
-            if (type->is_list_type) {
-                display_type += "[";
-            }
-            switch (type->type) {
-                case TypeEnum::T_Boolean:
-                    display_type += "Boolean";
-                    break;
-                case TypeEnum::T_Int:
-                    display_type += "Int";
-                    break;
-                case TypeEnum::T_Float:
-                    display_type += "Float";
-                    break;
-                case TypeEnum::T_String:
-                    display_type += "String";
-                    break;
-                case TypeEnum::T_ID:
-                    display_type += "ID";
-                    break;
-                default:
-                    throw std::logic_error("Should not reach here.");
-            }
-            if (type->is_non_null) {
-                display_type += "!";
-            }
-            if (type->is_list_type) {
-                display_type += "]";
-            }
-            if (type->is_non_null_list) {
-                display_type += "!";
-            }
-            return display_type;
+        switch (type->type) {
+            case TypeEnum::T_Boolean:
+                display_type += "Boolean";
+                break;
+            case TypeEnum::T_Int:
+                display_type += "Int";
+                break;
+            case TypeEnum::T_Float:
+                display_type += "Float";
+                break;
+            case TypeEnum::T_String:
+                display_type += "String";
+                break;
+            case TypeEnum::T_ID:
+                display_type += "ID";
+                break;
+            case TypeEnum::T_Object:
+                display_type += type->name->identifier;
+                break;
+            default:
+                throw std::logic_error("Should not reach here.");
         }
+        if (type->is_non_null) {
+            display_type += "!";
+        }
+        if (type->is_list_type) {
+            display_type += "]";
+        }
+        if (type->is_non_null_list) {
+            display_type += "!";
+        }
+        return display_type;
     }
 
     void

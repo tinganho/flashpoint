@@ -275,8 +275,18 @@ namespace flashpoint::program::graphql {
             case 4:
                 switch (value[0]) {
                     case t:
-                        if (strcmp(value + 1, "ype") == 0) {
-                            return GraphQlToken::TypeKeyword;
+                        switch (value[1]) {
+                            case r:
+                                if (strcmp(value + 2, "ue") == 0) {
+                                    return GraphQlToken::TrueKeyword;
+                                }
+                                break;
+                            case y:
+                                if (strcmp(value + 2, "pe") == 0) {
+                                    return GraphQlToken::TypeKeyword;
+                                }
+                                break;
+                            default:;
                         }
                         break;
                     case n:
@@ -292,6 +302,11 @@ namespace flashpoint::program::graphql {
                     case q:
                         if (strcmp(value + 1, "uery") == 0) {
                             return GraphQlToken::QueryKeyword;
+                        }
+                        break;
+                    case f:
+                        if (strcmp(value + 1, "alse") == 0) {
+                            return GraphQlToken::FalseKeyword;
                         }
                         break;
                     case F:
@@ -640,5 +655,11 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::get_string_value()
     {
         return string_literal;
+    }
+
+    Glib::ustring
+    GraphQlScanner::get_text_from_location(std::size_t start, std::size_t end)
+    {
+        return source->substr(start, end - start);
     }
 }

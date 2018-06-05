@@ -73,6 +73,8 @@ namespace flashpoint::program::graphql {
         StringKeyword,
         BooleanKeyword,
         NullKeyword,
+        TrueKeyword,
+        FalseKeyword,
 
         IntegerLiteral,
         FloatLiteral,
@@ -207,6 +209,9 @@ namespace flashpoint::program::graphql {
 
         Glib::ustring
         get_string_value();
+
+        Glib::ustring
+        get_text_from_location(std::size_t start, std::size_t end);
 
     private:
         char32_t ch;

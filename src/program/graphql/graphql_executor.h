@@ -102,7 +102,7 @@ namespace flashpoint::program::graphql {
         Implementations*
         parse_implementations();
 
-        Name *
+        Name*
         parse_object_name(ObjectLike *object, SymbolKind);
 
         FieldsDefinition*
@@ -128,6 +128,9 @@ namespace flashpoint::program::graphql {
 
         Value*
         parse_value(Type*);
+
+        BooleanValue*
+        parse_boolean_value(Type* type, bool value);
 
         VariableDefinitions*
         parse_variable_definitions();
