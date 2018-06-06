@@ -1,0 +1,13 @@
+type Query {
+    field(input: [Int!]): Int
+}
+====
+query {
+    field(input: [1, 1, 1)
+                         ~ (2, 26, 1)
+!!! Expected value, instead got ')'.
+}
+  (3, 2, 0)
+!!! Expected ']', but got ''.
+  (3, 2, 0)
+!!! Expected '}', but reached the end of document.

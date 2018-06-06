@@ -1,0 +1,13 @@
+input Input {
+    field: Boolean!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: 1.0 })
+                          ~~~~ (2, 27, 4)
+!!! Type 'Float' is not assignable to type 'Boolean!'.
+}

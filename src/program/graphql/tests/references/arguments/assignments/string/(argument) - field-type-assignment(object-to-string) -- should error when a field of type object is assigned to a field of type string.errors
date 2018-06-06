@@ -1,0 +1,13 @@
+input Input {
+    field: String!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: { field: 1 } })
+                          ~~~~~~~~~~~~ (2, 27, 12)
+!!! The value '{ field: 1 }' is not assignable to type 'String!'.
+}

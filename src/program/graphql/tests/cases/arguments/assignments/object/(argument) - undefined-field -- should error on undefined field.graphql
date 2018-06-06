@@ -1,0 +1,17 @@
+input Input1 {
+    field1: Int
+    field2: Int
+    field3: Int
+}
+
+type Query {
+    field1(input: Input1): Int
+    field2(input: Input1): Int
+    field3(input: Input1): Int
+}
+====
+query {
+    field1(input: { undefined: 1, field2: 1, field3: 1 })
+    field2(input: { field1: 1, undefined: 1, field3: 1 })
+    field3(input: { field1: 1, field2: 1, undefined: 1 })
+}

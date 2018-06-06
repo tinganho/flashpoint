@@ -37,5 +37,6 @@
   "Duplicate argument '{0}'.": {},
   "The value '{0}' is not assignable to type '{1}'.": {},
   "Type '{0}' is not assignable to type '{1}'.": {},
-  "Missing required field '{0}'.": {}
+  "Missing required field '{0}'.": {},
+  "Expected value, instead got '{0}'.": {}
 }

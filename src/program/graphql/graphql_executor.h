@@ -47,6 +47,7 @@ namespace flashpoint::program::graphql {
         std::set<Glib::ustring> parsed_arguments;
         std::set<Glib::ustring> duplicate_arguments;
         std::set<Glib::ustring> duplicate_fields;
+        GraphQlToken current_value_token;
 
         GraphQlToken
         take_next_token();

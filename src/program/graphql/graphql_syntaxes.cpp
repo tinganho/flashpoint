@@ -88,6 +88,11 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
+    void ListValue::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
     void VariableDefinition::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);

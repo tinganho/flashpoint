@@ -1,0 +1,9 @@
+type Query {
+    field(input: Int): Int
+}
+====
+query {
+    field(input:: 1)
+                ~ (2, 17, 1)
+!!! Expected value, instead got ':'.
+}

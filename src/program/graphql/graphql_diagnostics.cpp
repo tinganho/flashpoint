@@ -24,6 +24,7 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Expected_type_annotation_instead_got_0 = DiagnosticMessageTemplate { "Expected type annotation, instead got '{0}'." };
     DiagnosticMessageTemplate D::Expected_type_definition = DiagnosticMessageTemplate { "Expected type definition." };
     DiagnosticMessageTemplate D::Expected_type_name_instead_got_0 = DiagnosticMessageTemplate { "Expected type name, instead got '{0}'." };
+    DiagnosticMessageTemplate D::Expected_value_instead_got_0 = DiagnosticMessageTemplate { "Expected value, instead got '{0}'." };
     DiagnosticMessageTemplate D::Field_0_does_not_exist_on_type_1 = DiagnosticMessageTemplate { "Field '{0}' does not exist on type '{1}'." };
     DiagnosticMessageTemplate D::Fragment_0_is_not_defined = DiagnosticMessageTemplate { "Fragment '{0}' is not defined." };
     DiagnosticMessageTemplate D::Interface_0_is_not_defined = DiagnosticMessageTemplate { "Interface '{0}' is not defined." };

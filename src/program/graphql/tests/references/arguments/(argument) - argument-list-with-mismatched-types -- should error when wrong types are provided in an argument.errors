@@ -1,0 +1,9 @@
+type Query {
+    field(input: [Int!]): Int
+}
+====
+query {
+    field(input: [1, 1, "String"])
+                        ~~~~~~~~ (2, 25, 8)
+!!! Type 'String' is not assignable to type 'Int!'.
+}

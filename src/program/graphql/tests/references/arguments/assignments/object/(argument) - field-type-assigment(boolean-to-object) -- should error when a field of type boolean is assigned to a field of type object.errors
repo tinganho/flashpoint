@@ -1,0 +1,17 @@
+input Object {
+    field: Int
+}
+
+input Input {
+    field: Object!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: true })
+                          ~~~~ (2, 27, 4)
+!!! Type 'Boolean' is not assignable to type 'Object!'.
+}

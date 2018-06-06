@@ -1,0 +1,17 @@
+input Object {
+    field: Int
+}
+
+input Input {
+    field: Object!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: null })
+                          ~~~~ (2, 27, 4)
+!!! The value 'null' is not assignable to type 'Object!'.
+}

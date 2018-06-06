@@ -29,6 +29,7 @@ public:
     static DiagnosticMessageTemplate Expected_type_annotation_instead_got_0;
     static DiagnosticMessageTemplate Expected_type_definition;
     static DiagnosticMessageTemplate Expected_type_name_instead_got_0;
+    static DiagnosticMessageTemplate Expected_value_instead_got_0;
     static DiagnosticMessageTemplate Field_0_does_not_exist_on_type_1;
     static DiagnosticMessageTemplate Fragment_0_is_not_defined;
     static DiagnosticMessageTemplate Interface_0_is_not_defined;

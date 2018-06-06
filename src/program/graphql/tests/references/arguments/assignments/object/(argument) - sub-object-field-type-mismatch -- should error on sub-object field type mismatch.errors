@@ -1,0 +1,17 @@
+input Object {
+    field: Int
+}
+
+input Input {
+    field: Object!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: { field: "String" } })
+                                   ~~~~~~~~ (2, 36, 8)
+!!! Type 'String' is not assignable to type 'Int'.
+}

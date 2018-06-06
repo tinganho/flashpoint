@@ -75,6 +75,7 @@ namespace flashpoint::program::graphql {
         S_StringValue,
         S_ObjectField,
         S_ObjectValue,
+        S_ListValue,
     };
 
     struct Syntax {
@@ -417,6 +418,19 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
+
+
+    struct ListValue : Value {
+        std::vector<Value*> values;
+
+        D(ListValue, Value)
+        { }
+
+        new_operator(ListValue)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
     struct VariableDefinition : Syntax {
         Name* name;
         Type* type;
@@ -681,6 +695,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const EnumValue*) = 0;
         virtual void visit(const ObjectField*) = 0;
         virtual void visit(const ObjectValue*) = 0;
+        virtual void visit(const ListValue*) = 0;
         virtual void visit(const VariableDefinition*) = 0;
         virtual void visit(const VariableDefinitions*) = 0;
         virtual void visit(const Field*) = 0;

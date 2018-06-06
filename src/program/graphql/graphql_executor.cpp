@@ -1059,8 +1059,33 @@ namespace flashpoint::program::graphql {
     Value*
     GraphQlParser::parse_value(Type* type)
     {
-        GraphQlToken token = take_next_token();
-        switch (token) {
+        current_value_token = take_next_token();
+        switch (current_value_token) {
+            case GraphQlToken::OpenBracket: {
+                if (!type->is_list_type) {
+                    add_diagnostic(
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        "null",
+                        get_type_name(type)
+                    );
+                }
+                const auto list_value = create_syntax<ListValue>(SyntaxKind::S_ObjectValue);
+                type->is_list_type = false;
+                Value* value = parse_value(type);
+                while (value != nullptr) {
+                    list_value->values.push_back(value);
+                    value = parse_value(type);
+                }
+                if (current_value_token != GraphQlToken::CloseBracket) {
+                    add_diagnostic(D::Expected_0_but_got_1, "]", get_token_value());
+                }
+                type->is_list_type = true;
+                finish_syntax(list_value);
+                return list_value;
+            }
+            case GraphQlToken::CloseBracket:
+                return nullptr;
+
             case GraphQlToken::NullKeyword:
                 if (type->is_non_null) {
                     add_diagnostic(
@@ -1071,7 +1096,7 @@ namespace flashpoint::program::graphql {
                 }
                 return create_syntax<NullValue>(SyntaxKind::S_NullValue);
             case GraphQlToken::StringLiteral: {
-                if (type->type != TypeEnum::T_String) {
+                if (type->type != TypeEnum::T_String || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
                         "String",
@@ -1083,7 +1108,7 @@ namespace flashpoint::program::graphql {
                 return value;
             }
             case GraphQlToken::IntegerLiteral: {
-                if (type->type != TypeEnum::T_Int) {
+                if (type->type != TypeEnum::T_Int || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
                         "Int",
@@ -1095,7 +1120,7 @@ namespace flashpoint::program::graphql {
                 return value;
             }
             case GraphQlToken::FloatLiteral: {
-                if (type->type != TypeEnum::T_Float) {
+                if (type->type != TypeEnum::T_Float || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
                         "Float",
@@ -1123,7 +1148,7 @@ namespace flashpoint::program::graphql {
             case GraphQlToken::OpenBrace: {
                 std::size_t start_position = scanner->start_position;
                 auto location = get_token_location();
-                if (type->type != TypeEnum::T_Object) {
+                if (type->type != TypeEnum::T_Object || type->is_list_type) {
                     // TODO: Create a version of parse_value that doesn't do checking and proper object parsing
                     scanner->skip_block();
                     location.length += scanner->position - start_position - 1;
@@ -1222,17 +1247,22 @@ namespace flashpoint::program::graphql {
                 return object_value;
             }
             default:
+                add_diagnostic(D::Expected_value_instead_got_0, get_token_value());
+                skip_to({
+                    GraphQlToken::G_Name,
+                    GraphQlToken::CloseParen,
+                });
                 return nullptr;
         }
     }
 
     BooleanValue*
     GraphQlParser::parse_boolean_value(Type* type, bool value) {
-        if (type->type != TypeEnum::T_Boolean) {
+        if (type->type != TypeEnum::T_Boolean || type->is_list_type) {
             add_diagnostic(
-                    D::Type_0_is_not_assignable_to_type_1,
-                    "Boolean",
-                    get_type_name(type)
+                D::Type_0_is_not_assignable_to_type_1,
+                "Boolean",
+                get_type_name(type)
             );
         }
         auto syntax = create_syntax<BooleanValue>(SyntaxKind::S_BooleanValue);

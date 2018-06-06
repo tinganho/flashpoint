@@ -500,9 +500,9 @@ namespace flashpoint::program::graphql {
 
     bool
     GraphQlScanner::is_hexadecimal(char32_t ch) {
-        return ch >= Character::_0 && ch <= Character::_9 ||
-            ch >= Character::a && ch <= Character::f ||
-            ch >= Character::A && ch <= Character::F;
+        return (ch >= Character::_0 && ch <= Character::_9) ||
+            (ch >= Character::a && ch <= Character::f) ||
+            (ch >= Character::A && ch <= Character::F);
     }
 
     GraphQlToken

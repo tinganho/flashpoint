@@ -1,0 +1,13 @@
+type Query {
+    field(input: [Int!]): Int
+}
+====
+query {
+    field(input: 1, 1, 1])
+                 ~ (2, 18, 1)
+!!! Type 'Int' is not assignable to type '[Int!]'.
+                       ~ (2, 24, 1)
+!!! Expected field, inline fragment or fragment spread.
+                        ~ (2, 25, 1)
+!!! Expected operation definition or fragment definition.
+}

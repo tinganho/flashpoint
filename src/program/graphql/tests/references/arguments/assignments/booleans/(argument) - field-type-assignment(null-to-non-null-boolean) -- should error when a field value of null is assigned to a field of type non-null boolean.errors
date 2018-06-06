@@ -1,0 +1,13 @@
+input Input {
+    field: Boolean!
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: null })
+                          ~~~~ (2, 27, 4)
+!!! The value 'null' is not assignable to type 'Boolean!'.
+}

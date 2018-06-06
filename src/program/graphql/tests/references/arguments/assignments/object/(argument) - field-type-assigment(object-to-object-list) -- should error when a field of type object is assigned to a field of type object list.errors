@@ -1,0 +1,17 @@
+input Object {
+    field: Int
+}
+
+input Input {
+    field: Object!
+}
+
+type Query {
+    field(input: [Input]): Int
+}
+====
+query {
+    field(input: { field: 1 })
+                 ~~~~~~~~~~~~ (2, 18, 12)
+!!! The value '{ field: 1 }' is not assignable to type '[Input]'.
+}
