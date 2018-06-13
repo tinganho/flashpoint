@@ -1,0 +1,13 @@
+type Query {
+    field(float: Float): Int
+}
+====
+query {
+    field(float: 1ee+4)
+                 ~~ (2, 18, 2)
+!!! Expected value, instead got '1e'.
+                   ~ (2, 20, 1)
+!!! Unknown argument 'e'.
+                    ~ (2, 21, 1)
+!!! Expected ':', but got '+'.
+}

@@ -11,8 +11,9 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Duplicate_fragment_0 = DiagnosticMessageTemplate { "Duplicate fragment '{0}'." };
     DiagnosticMessageTemplate D::Duplicate_type_0 = DiagnosticMessageTemplate { "Duplicate type '{0}'." };
     DiagnosticMessageTemplate D::Expected_0_but_got_1 = DiagnosticMessageTemplate { "Expected '{0}', but got '{1}'." };
-    DiagnosticMessageTemplate D::Expected_0_but_reached_the_end_of_document = DiagnosticMessageTemplate { "Expected '{0}', but reached the end of document." };
+    DiagnosticMessageTemplate D::Expected_0_but_instead_reached_the_end_of_document = DiagnosticMessageTemplate { "Expected '{0}', but instead reached the end of document." };
     DiagnosticMessageTemplate D::Expected_at_least_a_field_inline_fragment_or_fragment_spread = DiagnosticMessageTemplate { "Expected at least a field, inline fragment or fragment spread." };
+    DiagnosticMessageTemplate D::Expected_enum_value_but_instead_got_0 = DiagnosticMessageTemplate { "Expected enum value, but instead got '{0}'." };
     DiagnosticMessageTemplate D::Expected_field_definition = DiagnosticMessageTemplate { "Expected field definition." };
     DiagnosticMessageTemplate D::Expected_field_inline_fragment_or_fragment_spread = DiagnosticMessageTemplate { "Expected field, inline fragment or fragment spread." };
     DiagnosticMessageTemplate D::Expected_fragment_spread_or_inline_fragment = DiagnosticMessageTemplate { "Expected fragment spread or inline fragment." };
@@ -41,7 +42,9 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Type_0_is_not_assignable_to_type_1 = DiagnosticMessageTemplate { "Type '{0}' is not assignable to type '{1}'." };
     DiagnosticMessageTemplate D::Type_0_is_not_defined = DiagnosticMessageTemplate { "Type '{0}' is not defined." };
     DiagnosticMessageTemplate D::Type_conditions_are_only_applicable_inside_object_interfaces_and_unions = DiagnosticMessageTemplate { "Type conditions are only applicable inside object, interfaces and unions." };
+    DiagnosticMessageTemplate D::Undefined_enum_value_0 = DiagnosticMessageTemplate { "Undefined enum value '{0}'." };
     DiagnosticMessageTemplate D::Unexpected_end_of_implementations = DiagnosticMessageTemplate { "Unexpected end of implementations." };
     DiagnosticMessageTemplate D::Unknown_argument_0 = DiagnosticMessageTemplate { "Unknown argument '{0}'." };
+    DiagnosticMessageTemplate D::Unterminated_string_value = DiagnosticMessageTemplate { "Unterminated string value." };
 
 } // flashpoint::program

@@ -1,0 +1,8 @@
+enum Enum
+    value
+    ~~~~~ (2, 5, 5)
+!!! Expected '{', but got 'value'.
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

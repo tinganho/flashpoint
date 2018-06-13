@@ -1,7 +1,7 @@
 input Object {
     property: Int
                   (2, 18, 0)
-!!! Expected '}', but reached the end of document.
+!!! Expected '}', but instead reached the end of document.
 
 END_OF_DOCUMENT:
 !!! No query root operation type defined.

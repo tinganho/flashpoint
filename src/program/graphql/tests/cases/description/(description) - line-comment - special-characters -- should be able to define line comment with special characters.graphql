@@ -1,0 +1,4 @@
+type Object {
+    "Special Characters: \" \\ \/ \b \f \n \r \t"
+    field: Int
+}

@@ -1,0 +1,4 @@
+type Object {
+    """\u0020"""
+    field: Int
+}

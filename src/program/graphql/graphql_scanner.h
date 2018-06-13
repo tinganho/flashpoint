@@ -46,6 +46,13 @@ namespace flashpoint::program::graphql {
         Comment,
         G_Description,
 
+        // Operator keywords
+        Ampersand,
+        OnKeyword,
+        Pipe,
+
+        StartKeyword,
+
         // Operation keywords
         MutationKeyword,
         QueryKeyword,
@@ -60,12 +67,6 @@ namespace flashpoint::program::graphql {
         TypeKeyword,
         UnionKeyword,
 
-        // Operator keywords
-        Ampersand,
-        OnKeyword,
-        Pipe,
-        ImplementsKeyword,
-
         // Scalar type keywords
         IDKeyword,
         IntKeyword,
@@ -76,11 +77,17 @@ namespace flashpoint::program::graphql {
         TrueKeyword,
         FalseKeyword,
 
+        // Operator keyword
+        ImplementsKeyword,
+
+        EndKeyword,
+
         IntegerLiteral,
         FloatLiteral,
         BooleanLiteral,
         EnumLiteral,
-        StringLiteral,
+        G_StringValue,
+        TruncatedStringValue,
         ObjectLiteral,
 
         // Punctuations
@@ -234,8 +241,17 @@ namespace flashpoint::program::graphql {
         bool
         is_number(const char32_t &ch) const;
 
+        bool
+        is_source_character(char32_t ch);
+
+        GraphQlToken
+        scan_string_value();
+
         GraphQlToken
         scan_string_literal();
+
+        GraphQlToken
+        scan_string_block_after_double_quotes();
 
         Glib::ustring
         scan_escape_sequence();
@@ -247,7 +263,7 @@ namespace flashpoint::program::graphql {
         scan_ellipses_after_first_dot();
 
         GraphQlToken
-        get_name_from_value(std::size_t size, const char *token);
+        get_token_from_value(std::size_t size, const char *token);
 
         bool
         is_line_break(const char32_t& ch) const;

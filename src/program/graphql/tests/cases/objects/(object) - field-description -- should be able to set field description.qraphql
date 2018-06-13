@@ -1,0 +1,8 @@
+type Object {
+    """Comment"""
+    property: String
+}
+
+type Query {
+    property: Object
+}

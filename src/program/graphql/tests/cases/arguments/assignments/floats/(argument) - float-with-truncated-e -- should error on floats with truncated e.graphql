@@ -1,0 +1,7 @@
+type Query {
+    field(float: Float): Int
+}
+====
+query {
+    field(float: 1e)
+}

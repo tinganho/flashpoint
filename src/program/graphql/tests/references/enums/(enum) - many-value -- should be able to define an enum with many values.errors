@@ -1,0 +1,7 @@
+enum Enum {
+    value1
+    value2
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

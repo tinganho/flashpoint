@@ -117,6 +117,8 @@ namespace flashpoint::program {
         VerticalTab = 0x0B,           // [VERTICAL_TAB]
 
         MaxAsciiCharacter = 0x7F,     // DEL
+
+        End = 0xFFFF,
     };
 }
 #endif //FLASHPOINT_CHARACTER_H

@@ -1,0 +1,4 @@
+enum Enum {
+    value1
+    value2
+}

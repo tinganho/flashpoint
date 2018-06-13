@@ -1,0 +1,11 @@
+enum Enum {
+    value
+}
+
+type Query {
+    field(enum: Enum): Int
+}
+====
+{
+    field(enum: undefined)
+}

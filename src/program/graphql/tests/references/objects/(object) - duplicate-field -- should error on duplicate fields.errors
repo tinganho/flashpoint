@@ -1,0 +1,9 @@
+type Object {
+    property: Int
+    property: Int
+    ~~~~~~~~ (3, 5, 8)
+!!! Duplicate field 'property'.
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

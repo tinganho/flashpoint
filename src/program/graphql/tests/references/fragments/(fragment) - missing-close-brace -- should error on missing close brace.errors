@@ -15,4 +15,4 @@ query {
 fragment Fragment on Object {
     field
           (6, 10, 0)
-!!! Expected '}', but reached the end of document.
+!!! Expected '}', but instead reached the end of document.

@@ -10,4 +10,4 @@ query {
   (3, 2, 0)
 !!! Expected ']', but got ''.
   (3, 2, 0)
-!!! Expected '}', but reached the end of document.
+!!! Expected '}', but instead reached the end of document.

@@ -12,6 +12,6 @@ type Query {
 ====
 query {
     field(input: { field: 1.0 })
-                          ~~~~ (2, 27, 4)
+                          ~~~ (2, 27, 3)
 !!! Type 'Float' is not assignable to type 'Object!'.
 }

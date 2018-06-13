@@ -1,0 +1,7 @@
+enum Enum {
+}
+~ (2, 1, 1)
+!!! Expected enum value, but instead got '}'.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

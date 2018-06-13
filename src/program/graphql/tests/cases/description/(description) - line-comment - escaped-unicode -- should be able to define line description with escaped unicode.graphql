@@ -1,0 +1,4 @@
+type Object {
+    "Special Characters: \u0020"
+    field: Int
+}

@@ -24,7 +24,7 @@
   "Type conditions are only applicable inside object, interfaces and unions.": {},
   "The object '{0}' does not match the object '{1}'.": {},
   "The object '{0}' does not implement the interface '{1}'.": {},
-  "Expected '{0}', but reached the end of document.": {},
+  "Expected '{0}', but instead reached the end of document.": {},
   "Only objects are allowed as members in a union.": {},
   "Expected fragment spread or inline fragment.": {},
   "The type '{0}' is not member of the union '{1}'.": {},
@@ -38,5 +38,8 @@
   "The value '{0}' is not assignable to type '{1}'.": {},
   "Type '{0}' is not assignable to type '{1}'.": {},
   "Missing required field '{0}'.": {},
-  "Expected value, instead got '{0}'.": {}
+  "Expected value, instead got '{0}'.": {},
+  "Expected enum value, but instead got '{0}'.": {},
+  "Undefined enum value '{0}'.": {},
+  "Unterminated string value.": {}
 }

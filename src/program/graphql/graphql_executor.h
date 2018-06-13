@@ -100,6 +100,9 @@ namespace flashpoint::program::graphql {
         Union*
         parse_union_after_union_keyword();
 
+        EnumTypeDefinition*
+        parse_enum();
+
         Implementations*
         parse_implementations();
 
@@ -214,6 +217,10 @@ namespace flashpoint::program::graphql {
         inline
         GraphQlToken
         skip_to(const std::vector<GraphQlToken>& tokens);
+
+        inline
+        bool
+        is_valid_enum_value(GraphQlToken token);
     };
 
     enum class RootType : unsigned int {

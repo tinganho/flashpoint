@@ -1,0 +1,11 @@
+input Input {
+    field: [Float!]
+}
+
+type Query {
+    field(input: Input): Int
+}
+====
+query {
+    field(input: { field: [1.0] })
+}

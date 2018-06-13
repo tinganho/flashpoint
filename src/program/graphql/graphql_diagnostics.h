@@ -16,8 +16,9 @@ public:
     static DiagnosticMessageTemplate Duplicate_fragment_0;
     static DiagnosticMessageTemplate Duplicate_type_0;
     static DiagnosticMessageTemplate Expected_0_but_got_1;
-    static DiagnosticMessageTemplate Expected_0_but_reached_the_end_of_document;
+    static DiagnosticMessageTemplate Expected_0_but_instead_reached_the_end_of_document;
     static DiagnosticMessageTemplate Expected_at_least_a_field_inline_fragment_or_fragment_spread;
+    static DiagnosticMessageTemplate Expected_enum_value_but_instead_got_0;
     static DiagnosticMessageTemplate Expected_field_definition;
     static DiagnosticMessageTemplate Expected_field_inline_fragment_or_fragment_spread;
     static DiagnosticMessageTemplate Expected_fragment_spread_or_inline_fragment;
@@ -46,8 +47,10 @@ public:
     static DiagnosticMessageTemplate Type_0_is_not_assignable_to_type_1;
     static DiagnosticMessageTemplate Type_0_is_not_defined;
     static DiagnosticMessageTemplate Type_conditions_are_only_applicable_inside_object_interfaces_and_unions;
+    static DiagnosticMessageTemplate Undefined_enum_value_0;
     static DiagnosticMessageTemplate Unexpected_end_of_implementations;
     static DiagnosticMessageTemplate Unknown_argument_0;
+    static DiagnosticMessageTemplate Unterminated_string_value;
 };
 
 }

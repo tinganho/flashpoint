@@ -1,0 +1,7 @@
+enum Enum {
+    value
+          (2, 10, 0)
+!!! Expected 'enum value', but instead reached the end of document.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

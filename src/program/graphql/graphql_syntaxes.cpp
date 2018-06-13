@@ -38,6 +38,11 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
+    void EnumTypeDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
     void Name::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
@@ -64,6 +69,11 @@ namespace flashpoint::program::graphql {
     }
 
     void FloatValue::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void EnumValue::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

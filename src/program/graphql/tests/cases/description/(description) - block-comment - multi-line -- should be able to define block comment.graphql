@@ -1,0 +1,9 @@
+type Object {
+    """
+    Comment
+    With
+    Many
+    Lines
+    """
+    field: Int
+}

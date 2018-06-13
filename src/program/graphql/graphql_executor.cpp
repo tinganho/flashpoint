@@ -79,17 +79,22 @@ namespace flashpoint::program::graphql {
 
     void GraphQlParser::check_forward_references()
     {
-        for (const auto& reference : forward_type_references) {
-            auto it = symbols.find(reference->name->identifier);
+        for (const auto& type : forward_type_references) {
+            auto it = symbols.find(type->name->identifier);
             if (it == symbols.end()) {
-                add_diagnostic(get_location_from_syntax(reference->name), D::Type_0_is_not_defined, reference->name->identifier);
+                add_diagnostic(get_location_from_syntax(type->name), D::Type_0_is_not_defined, type->name->identifier);
             }
             else {
-                if ((it->second->kind & SymbolKind::Input) > SymbolKind::SL_None && !reference->in_input_location) {
-                    add_diagnostic(get_location_from_syntax(reference->name), D::Cannot_add_an_input_type_to_an_output_location, reference->name->identifier);
+                if ((it->second->kind & SymbolKind::SL_Enum) > SymbolKind::SL_None) {
+                    type->type = TypeEnum::T_Enum;
                 }
-                if ((it->second->kind & SymbolKind::Output) > SymbolKind::SL_None && reference->in_input_location) {
-                    add_diagnostic(get_location_from_syntax(reference->name), D::Cannot_add_an_output_type_to_an_input_location, reference->name->identifier);
+                else {
+                    if ((it->second->kind & SymbolKind::Input) > SymbolKind::SL_None && !type->in_input_location) {
+                        add_diagnostic(get_location_from_syntax(type->name), D::Cannot_add_an_input_type_to_an_output_location, type->name->identifier);
+                    }
+                    if ((it->second->kind & SymbolKind::Output) > SymbolKind::SL_None && type->in_input_location) {
+                        add_diagnostic(get_location_from_syntax(type->name), D::Cannot_add_an_output_type_to_an_input_location, type->name->identifier);
+                    }
                 }
             }
         }
@@ -335,18 +340,88 @@ namespace flashpoint::program::graphql {
         return _union;
     }
 
+    EnumTypeDefinition*
+    GraphQlParser::parse_enum()
+    {
+        if (!scan_expected(GraphQlToken::G_Name)) {
+            return nullptr;
+        }
+        auto enum_type_definition = create_syntax<EnumTypeDefinition>(SyntaxKind::S_EnumTypeDefinition);
+        const auto& enum_name = get_token_value();
+        enum_type_definition->name = create_syntax<Name>(SyntaxKind::S_Name, enum_name);
+        const auto& result = symbols.find(enum_name);
+        if (result == symbols.end()) {
+            symbols.emplace(enum_name, create_symbol(&enum_type_definition->name->identifier, enum_type_definition, SymbolKind::SL_Enum));
+        }
+        else {
+            add_diagnostic(get_location_from_syntax(enum_type_definition->name), D::Duplicate_type_0, enum_name);
+            if (duplicate_symbols.count(enum_name) == 0) {
+                add_diagnostic(get_location_from_syntax(result->second->declaration->name), D::Duplicate_type_0, *result->second->name);
+                duplicate_symbols.insert(enum_name);
+            }
+        }
+        if (!scan_expected(GraphQlToken::OpenBrace)) {
+            return nullptr;
+        }
+        GraphQlToken token;
+        bool has_at_least_one_field = false;
+        while(true) {
+            token = take_next_token();
+            if (token == GraphQlToken::CloseBrace && has_at_least_one_field) {
+                break;
+            }
+            if (token == GraphQlToken::EndOfDocument) {
+                add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, "enum value");
+                return nullptr;
+            }
+            if (!is_valid_enum_value(token)) {
+                add_diagnostic(D::Expected_enum_value_but_instead_got_0, get_token_value());
+                skip_to({ GraphQlToken::CloseBrace });
+                break;
+            }
+            const auto& token_value = get_token_value();
+            const auto& name = create_syntax<Name>(SyntaxKind::S_Name, token_value);
+            enum_type_definition->members.emplace(token_value, name);
+            has_at_least_one_field = true;
+        }
+        return enum_type_definition;
+    }
+
+    inline
+    bool
+    GraphQlParser::is_valid_enum_value(GraphQlToken token)
+    {
+        if (token == GraphQlToken::G_Name) {
+            return true;
+        }
+        switch (token) {
+            case GraphQlToken::TrueKeyword:
+            case GraphQlToken::FalseKeyword:
+            case GraphQlToken::NullKeyword:
+            case GraphQlToken::Unknown:
+                return false;
+            default:;
+        }
+        if (token > GraphQlToken::StartKeyword && token < GraphQlToken::EndKeyword) {
+            return true;
+        }
+        return false;
+    }
+
     Syntax*
     GraphQlParser::parse_schema_primary_token(GraphQlToken token)
     {
         switch (token) {
-            case GraphQlToken::SchemaKeyword:
-                return parse_schema();
-            case GraphQlToken::InputKeyword:
-                return parse_input_object();
-            case GraphQlToken::TypeKeyword:
-                return parse_object();
+            case GraphQlToken::EnumKeyword:
+                return parse_enum();
             case GraphQlToken::InterfaceKeyword:
                 return parse_interface();
+            case GraphQlToken::InputKeyword:
+                return parse_input_object();
+            case GraphQlToken::SchemaKeyword:
+                return parse_schema();
+            case GraphQlToken::TypeKeyword:
+                return parse_object();
             case GraphQlToken::UnionKeyword:
                 return parse_union_after_union_keyword();
             default:
@@ -432,7 +507,8 @@ namespace flashpoint::program::graphql {
                     parse_schema_field_after_colon();
             }
         }
-        outer:;
+        outer:
+        return schema;
     }
 
     Name*
@@ -506,21 +582,38 @@ namespace flashpoint::program::graphql {
     {
         auto fields_definition = create_syntax<FieldsDefinition>(SyntaxKind::S_FieldsDefinition);
         bool has_at_least_one_field = false;
+        std::set<Glib::ustring> field_names;
+        Glib::ustring current_description;
         while (true) {
-            auto field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_FieldDefinition);
             GraphQlToken field_token = take_next_token(/*treat_keyword_as_name*/ true);
             if (field_token == GraphQlToken::EndOfDocument) {
-                add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
+                add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, "}");
                 return nullptr;
             }
             if (field_token == GraphQlToken::CloseBrace && has_at_least_one_field) {
                 break;
             }
+            if (field_token == GraphQlToken::G_StringValue) {
+                current_description = get_string_value();
+                continue;
+            }
             if (field_token != GraphQlToken::G_Name) {
-                add_diagnostic(D::Expected_field_definition);
+                if (field_token == GraphQlToken::TruncatedStringValue) {
+                    add_diagnostic(D::Unterminated_string_value);
+                    continue;
+                }
+                else {
+                    add_diagnostic(D::Expected_field_definition);
+                }
                 return nullptr;
             }
+            auto field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_FieldDefinition);
+            field_definition->description = current_description;
             auto name = get_token_value();
+            if (field_names.find(name) != field_names.end()) {
+                add_diagnostic(D::Duplicate_field_0, name);
+            }
+            field_names.emplace(name);
             field_definition->name = create_syntax<Name>(SyntaxKind::S_Name, name);
             if (scan_optional(GraphQlToken::OpenParen)) {
                 field_definition->arguments_definition = parse_arguments_definition();
@@ -535,6 +628,7 @@ namespace flashpoint::program::graphql {
             fields_definition->field_definitions.push_back(field_definition);
             object->fields.emplace(name, field_definition);
             has_at_least_one_field = true;
+            current_description = "";
         }
         return fields_definition;
     }
@@ -552,7 +646,7 @@ namespace flashpoint::program::graphql {
             auto input_field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_InputFieldDefinition);
             GraphQlToken field_token = take_next_token();
             if (field_token == GraphQlToken::EndOfDocument) {
-                add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
+                add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, "}");
                 return nullptr;
             }
             if (field_token == GraphQlToken::CloseBrace && has_at_least_one_field) {
@@ -645,14 +739,19 @@ namespace flashpoint::program::graphql {
                     forward_type_references.push_back(type);
                 }
                 else {
-                    if (in_input_location) {
-                        if ((it->second->kind & SymbolKind::Output) > SymbolKind::SL_None) {
-                            add_diagnostic(D::Cannot_add_an_output_type_to_an_input_location);
-                        }
+                    if ((it->second->kind & SymbolKind::SL_Enum) > SymbolKind::SL_None) {
+                        type->type = TypeEnum::T_Enum;
                     }
                     else {
-                        if ((it->second->kind & SymbolKind::Input) > SymbolKind::SL_None) {
-                            add_diagnostic(D::Cannot_add_an_input_type_to_an_output_location);
+                        if (in_input_location) {
+                            if ((it->second->kind & SymbolKind::Output) > SymbolKind::SL_None) {
+                                add_diagnostic(D::Cannot_add_an_output_type_to_an_input_location);
+                            }
+                        }
+                        else {
+                            if ((it->second->kind & SymbolKind::Input) > SymbolKind::SL_None) {
+                                add_diagnostic(D::Cannot_add_an_input_type_to_an_output_location);
+                            }
                         }
                     }
                 }
@@ -908,7 +1007,7 @@ namespace flashpoint::program::graphql {
                         add_diagnostic(D::Expected_at_least_a_field_inline_fragment_or_fragment_spread);
                     }
                     else {
-                        add_diagnostic(D::Expected_0_but_reached_the_end_of_document, "}");
+                        add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, "}");
                     }
                     return nullptr;
                 }
@@ -1095,7 +1194,7 @@ namespace flashpoint::program::graphql {
                     );
                 }
                 return create_syntax<NullValue>(SyntaxKind::S_NullValue);
-            case GraphQlToken::StringLiteral: {
+            case GraphQlToken::G_StringValue: {
                 if (type->type != TypeEnum::T_String || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
@@ -1135,11 +1234,24 @@ namespace flashpoint::program::graphql {
                 return parse_boolean_value(type, true);
             case GraphQlToken::FalseKeyword:
                 return parse_boolean_value(type, false);
-//            case GraphQlToken::Name:
-//                return Value {
-//                    ValueType::Enum,
-//                    create_syntax<EnumLiteral>(SyntaxKind::EnumLiteral, get_token_value().c_str()),
-//                };
+            case GraphQlToken::G_Name: {
+                auto token_value = get_token_value();
+                if (type->type != TypeEnum::T_Enum || type->is_list_type) {
+                    add_diagnostic(
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        token_value,
+                        get_type_name(type)
+                    );
+                }
+                auto _enum = static_cast<EnumTypeDefinition*>(symbols.find(type->name->identifier)->second->declaration);
+                if (_enum->members.find(token_value) == _enum->members.end()) {
+                    add_diagnostic(D::Undefined_enum_value_0, token_value);
+                }
+                auto enum_value = create_syntax<EnumValue>(SyntaxKind::S_EnumValue);
+                enum_value->value = token_value;
+                return enum_value;
+            }
+
 //            case GraphQlToken::Dollar:
 //                ArgumentLiteral argument_literal = create_syntax<ArgumentLiteral>(SyntaxKind::ArgumentLiteral);
 //                argument_literal.name = parse_name();
@@ -1361,7 +1473,7 @@ namespace flashpoint::program::graphql {
         GraphQlToken result = scanner->scan_expected(token, treat_keyword_as_name);
         if (result != token) {
             if (result == GraphQlToken::EndOfDocument) {
-                add_diagnostic(D::Expected_0_but_reached_the_end_of_document, graphQlTokenToString.at(token));
+                add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, graphQlTokenToString.at(token));
             }
             else {
                 add_diagnostic(D::Expected_0_but_got_1, graphQlTokenToString.at(token), get_token_value());

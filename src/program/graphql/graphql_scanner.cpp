@@ -82,7 +82,7 @@ namespace flashpoint::program::graphql {
                 case Exclamation:
                     return GraphQlToken::Exclamation;
                 case DoubleQuote:
-                    return scan_string_literal();
+                    return scan_string_value();
                 case Dot:
                     return scan_ellipses_after_first_dot();
                 case Pipe:
@@ -113,7 +113,7 @@ namespace flashpoint::program::graphql {
                         if (treat_keyword_as_name) {
                             return GraphQlToken::G_Name;
                         }
-                        return get_name_from_value(name_size, get_value().c_str());
+                        return get_token_from_value(name_size, get_value().c_str());
                     }
                     return GraphQlToken::Unknown;
             }
@@ -134,7 +134,6 @@ namespace flashpoint::program::graphql {
                 }
                 increment_position();
                 scan_digit_list();
-                increment_position();
                 ch = current_char();
                 if (ch != Character::e && ch != Character::E) {
                     return GraphQlToken::FloatLiteral;
@@ -148,6 +147,10 @@ namespace flashpoint::program::graphql {
                     increment_position();
                     ch = current_char();
                 }
+                if (!is_digit(ch)) {
+                    return GraphQlToken::Unknown;
+                }
+                increment_position();
                 scan_digit_list();
                 return GraphQlToken::FloatLiteral;
             }
@@ -249,7 +252,7 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
-    GraphQlScanner::get_name_from_value(std::size_t size, const char *value)
+    GraphQlScanner::get_token_from_value(std::size_t size, const char *value)
     {
         switch (size) {
             case 2:
@@ -274,6 +277,11 @@ namespace flashpoint::program::graphql {
                 break;
             case 4:
                 switch (value[0]) {
+                    case e:
+                        if (strcmp(value + 1, "num") == 0) {
+                            return GraphQlToken::EnumKeyword;
+                        }
+                        break;
                     case t:
                         switch (value[1]) {
                             case r:
@@ -433,10 +441,67 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
+    GraphQlScanner::scan_string_value()
+    {
+        if (current_char() == Character::DoubleQuote && (*source)[position + 1] == Character::DoubleQuote) {
+            increment_position();
+            increment_position();
+            return scan_string_block_after_double_quotes();
+        }
+        return scan_string_literal();
+    }
+
+    GraphQlToken
+    GraphQlScanner::scan_string_block_after_double_quotes()
+    {
+        string_literal = "";
+        while (true) {
+            if (position > size) {
+                break;
+            }
+            char32_t ch = current_char();
+            if (ch == Character::DoubleQuote) {
+                if (position + 2 >= size) {
+                    return GraphQlToken::Unknown;
+                }
+                if ((*source)[position + 1] == DoubleQuote && (*source)[position + 2] == DoubleQuote) {
+                    increment_position();
+                    increment_position();
+                    increment_position();
+                    return GraphQlToken::G_StringValue;
+                }
+            }
+            if (is_source_character(ch)) {
+                string_literal += ch;
+                increment_position();
+                continue;
+            }
+            increment_position();
+        }
+    }
+
+    bool
+    GraphQlScanner::is_source_character(char32_t ch)
+    {
+        switch (ch) {
+            case Character::NewLine:
+            case Character::CarriageReturn:
+            case Character::HorizontalTab:
+                return true;
+            default:
+                if (ch >= Character::Space && ch <= Character::End) {
+                    return true;
+                }
+        }
+        return false;
+    }
+
+    GraphQlToken
     GraphQlScanner::scan_string_literal()
     {
         auto start = position;
         string_literal = "";
+        bool is_truncated = false;
         while (true) {
             if (position > size) {
                 break;
@@ -445,6 +510,14 @@ namespace flashpoint::program::graphql {
             if (ch == Character::Backslash) {
                 string_literal += source->substr(start, position - start);
                 string_literal += scan_escape_sequence();
+                increment_position();
+                start = position;
+                continue;
+            }
+            if (ch == Character::NewLine || ch == Character::CarriageReturn) {
+                is_truncated = true;
+                increment_position();
+                continue;
             }
             if (ch == Character::DoubleQuote) {
                 string_literal += source->substr(start, position - start);
@@ -453,22 +526,29 @@ namespace flashpoint::program::graphql {
             }
             increment_position();
         }
-        return GraphQlToken::StringLiteral;
+        if (is_truncated) {
+            return GraphQlToken::TruncatedStringValue;
+        }
+        return GraphQlToken::G_StringValue;
     }
 
     Glib::ustring
     GraphQlScanner::scan_escape_sequence()
     {
-        switch (current_char()) {
+        increment_position();
+        char32_t ch = current_char();
+        switch (ch) {
             case Character::DoubleQuote:
                 return "\"";
             case Character::Backslash:
                 return "\\";
+            case Character::Slash:
+                return "\/";
             case Character::b:
                 return "\b";
             case Character::f:
                 return "\f";
-            case Character::n :
+            case Character::n:
                 return "\n";
             case Character::r:
                 return "\r";

@@ -43,6 +43,7 @@ namespace flashpoint::program::graphql {
         S_Argument,
         S_Arguments,
         S_ArgumentsDefinition,
+        S_EnumTypeDefinition,
         S_FieldsDefinition,
         S_FieldDefinition,
         S_FragmentDefinition,
@@ -138,7 +139,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct FieldDefinition : Declaration {
-        Glib::ustring* description;
+        Glib::ustring description;
         Type* type;
         ArgumentsDefinition* arguments_definition;
 
@@ -246,6 +247,17 @@ namespace flashpoint::program::graphql {
         { }
 
         new_operator(Union)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct EnumTypeDefinition : Declaration {
+        std::map<Glib::ustring, Name*> members;
+
+        D(EnumTypeDefinition, Declaration)
+        { }
+
+        new_operator(EnumTypeDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -384,7 +396,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct EnumValue : Value {
-        const char* value;
+        Glib::ustring value;
 
         D(EnumValue, Value)
         { }
@@ -417,8 +429,6 @@ namespace flashpoint::program::graphql {
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
-
-
 
     struct ListValue : Value {
         std::vector<Value*> values;
@@ -647,6 +657,7 @@ namespace flashpoint::program::graphql {
         SL_Union = 1 << 5,
 
         Input =
+            static_cast<unsigned int>(SL_Enum) |
             static_cast<unsigned int>(SL_InputObject),
 
         Output =
@@ -710,6 +721,7 @@ namespace flashpoint::program::graphql {
         virtual void visit(const Object*) = 0;
         virtual void visit(const InputObject*) = 0;
         virtual void visit(const Interface*) = 0;
+        virtual void visit(const EnumTypeDefinition*) = 0;
         virtual void visit(const FieldDefinition*) = 0;
         virtual void visit(const FieldsDefinition*) = 0;
         virtual void visit(const InputFieldDefinition*) = 0;

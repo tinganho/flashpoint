@@ -1,0 +1,14 @@
+enum Enum1 {
+    enum
+    interface
+    union
+    type
+}
+
+type CheckParseAlignment {
+    field: Int
+}
+
+schema {
+    query: CheckParseAlignment
+}
