@@ -1,0 +1,4 @@
+type Object {
+    "Unicode Characters: \u002"
+    field: Int
+}

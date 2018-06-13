@@ -221,6 +221,9 @@ namespace flashpoint::program::graphql {
         inline
         bool
         is_valid_enum_value(GraphQlToken token);
+
+        void
+        take_errors_from_scanner();
     };
 
     enum class RootType : unsigned int {

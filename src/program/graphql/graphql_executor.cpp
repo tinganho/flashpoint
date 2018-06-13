@@ -598,8 +598,8 @@ namespace flashpoint::program::graphql {
                 continue;
             }
             if (field_token != GraphQlToken::G_Name) {
-                if (field_token == GraphQlToken::TruncatedStringValue) {
-                    add_diagnostic(D::Unterminated_string_value);
+                if (field_token == GraphQlToken::InvalidString) {
+                    take_errors_from_scanner();
                     continue;
                 }
                 else {
@@ -1628,5 +1628,15 @@ namespace flashpoint::program::graphql {
     GraphQlParser::skip_to(const std::vector<GraphQlToken>& tokens)
     {
         return scanner->skip_to(tokens);
+    }
+
+    void
+    GraphQlParser::take_errors_from_scanner()
+    {
+        while (!scanner->errors.empty()) {
+            auto error = scanner->errors.top();
+            diagnostics.push_back(error);
+            scanner->errors.pop();
+        }
     }
 }

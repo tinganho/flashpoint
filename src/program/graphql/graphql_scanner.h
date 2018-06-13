@@ -12,6 +12,8 @@ using namespace flashpoint::lib;
 
 namespace flashpoint::program::graphql {
 
+    class InvalidStringException : public std::exception {};
+
     struct SavedTextCursor {
         unsigned long long position;
         unsigned long long line;
@@ -87,7 +89,9 @@ namespace flashpoint::program::graphql {
         BooleanLiteral,
         EnumLiteral,
         G_StringValue,
-        TruncatedStringValue,
+        InvalidString,
+        TruncatedString,
+
         ObjectLiteral,
 
         // Punctuations
@@ -148,8 +152,7 @@ namespace flashpoint::program::graphql {
         std::size_t column = 1;
         std::size_t size;
         std::vector<PositionToLine> position_to_line_list = { { 0, 1 } };
-
-        bool token_is_terminated = false;
+        std::stack<DiagnosticMessage> errors;
         Glib::ustring name;
 
         unsigned long long
@@ -253,11 +256,12 @@ namespace flashpoint::program::graphql {
         GraphQlToken
         scan_string_block_after_double_quotes();
 
-        Glib::ustring
+        void
         scan_escape_sequence();
 
-        Glib::ustring
-        scan_hexadecimal_escape();
+        void
+
+        scan_hexadecimal_escape(const std::size_t& start_position, const std::size_t& start_line, const std::size_t& start_column);
 
         GraphQlToken
         scan_ellipses_after_first_dot();

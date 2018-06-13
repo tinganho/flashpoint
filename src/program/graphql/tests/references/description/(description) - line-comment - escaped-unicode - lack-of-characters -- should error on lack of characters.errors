@@ -1,0 +1,9 @@
+type Object {
+    "Unicode Characters: \u002"
+                         ~~~~~ (2, 26, 5)
+!!! Invalid Unicode escape sequence.
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

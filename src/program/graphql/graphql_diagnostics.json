@@ -41,5 +41,6 @@
   "Expected value, instead got '{0}'.": {},
   "Expected enum value, but instead got '{0}'.": {},
   "Undefined enum value '{0}'.": {},
-  "Unterminated string value.": {}
+  "Unterminated string value.": {},
+  "Invalid Unicode escape sequence.": {}
 }

@@ -1,7 +1,9 @@
 #include "graphql_scanner.h"
 #include "graphql_syntaxes.h"
+#include "graphql_diagnostics.h"
 #include <lib/character.h>
 #include <experimental/optional>
+#include <exception>
 
 using namespace flashpoint::program;
 
@@ -501,6 +503,9 @@ namespace flashpoint::program::graphql {
     {
         auto start = position;
         string_literal = "";
+        std::size_t start_position = position;
+        std::size_t start_line = line;
+        std::size_t start_column = column;
         bool is_truncated = false;
         while (true) {
             if (position > size) {
@@ -508,10 +513,12 @@ namespace flashpoint::program::graphql {
             }
             char32_t ch = current_char();
             if (ch == Character::Backslash) {
-                string_literal += source->substr(start, position - start);
-                string_literal += scan_escape_sequence();
-                increment_position();
-                start = position;
+                try {
+                    scan_escape_sequence();
+                }
+                catch (const InvalidStringException& e) {
+                    return GraphQlToken::InvalidString;
+                }
                 continue;
             }
             if (ch == Character::NewLine || ch == Character::CarriageReturn) {
@@ -527,55 +534,64 @@ namespace flashpoint::program::graphql {
             increment_position();
         }
         if (is_truncated) {
-            return GraphQlToken::TruncatedStringValue;
+            errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Unterminated_string_value));
+            return GraphQlToken::InvalidString;
         }
         return GraphQlToken::G_StringValue;
     }
 
-    Glib::ustring
+    void
     GraphQlScanner::scan_escape_sequence()
     {
+        std::size_t start_position = position;
+        std::size_t start_line = line;
+        std::size_t start_column = column;
         increment_position();
         char32_t ch = current_char();
         switch (ch) {
             case Character::DoubleQuote:
-                return "\"";
             case Character::Backslash:
-                return "\\";
             case Character::Slash:
-                return "\/";
             case Character::b:
-                return "\b";
             case Character::f:
-                return "\f";
             case Character::n:
-                return "\n";
             case Character::r:
-                return "\r";
             case Character::t:
-                return "\t";
+                increment_position();
+                return;
             case Character::u:
-                return "\\u" + scan_hexadecimal_escape();
-
+                increment_position();
+                return scan_hexadecimal_escape(start_position, start_line, start_column);
+            default:;
         }
     }
 
-    Glib::ustring
-    GraphQlScanner::scan_hexadecimal_escape()
+    void
+    GraphQlScanner::scan_hexadecimal_escape(const std::size_t& start_position, const std::size_t& start_line, const std::size_t& start_column)
     {
         std::size_t n = 0;
         Glib::ustring value = "";
+        bool is_invalid = false;
         while (true) {
             char32_t ch = current_char();
-            if (is_hexadecimal(ch)) {
-                value += ch;
-            }
             if (n == 4) {
                 break;
             }
+            if (is_hexadecimal(ch)) {
+                value += ch;
+            }
+            else {
+                is_invalid = true;
+                errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Invalid_Unicode_escape_sequence));
+                break;
+            }
+            increment_position();
             n++;
         }
-        return value;
+        if (is_invalid) {
+            increment_position();
+            throw InvalidStringException();
+        }
     }
 
     bool

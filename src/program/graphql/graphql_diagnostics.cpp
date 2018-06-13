@@ -29,6 +29,7 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Field_0_does_not_exist_on_type_1 = DiagnosticMessageTemplate { "Field '{0}' does not exist on type '{1}'." };
     DiagnosticMessageTemplate D::Fragment_0_is_not_defined = DiagnosticMessageTemplate { "Fragment '{0}' is not defined." };
     DiagnosticMessageTemplate D::Interface_0_is_not_defined = DiagnosticMessageTemplate { "Interface '{0}' is not defined." };
+    DiagnosticMessageTemplate D::Invalid_Unicode_escape_sequence = DiagnosticMessageTemplate { "Invalid Unicode escape sequence." };
     DiagnosticMessageTemplate D::Missing_required_field_0 = DiagnosticMessageTemplate { "Missing required field '{0}'." };
     DiagnosticMessageTemplate D::No_query_root_operation_type_defined = DiagnosticMessageTemplate { "No query root operation type defined." };
     DiagnosticMessageTemplate D::Only_objects_are_allowed_as_members_in_a_union = DiagnosticMessageTemplate { "Only objects are allowed as members in a union." };

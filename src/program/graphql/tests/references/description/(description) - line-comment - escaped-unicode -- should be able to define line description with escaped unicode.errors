@@ -2,3 +2,6 @@ type Object {
     "Unicode Characters: \u0020 \u0021"
     field: Int
 }
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

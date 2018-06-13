@@ -34,6 +34,7 @@ public:
     static DiagnosticMessageTemplate Field_0_does_not_exist_on_type_1;
     static DiagnosticMessageTemplate Fragment_0_is_not_defined;
     static DiagnosticMessageTemplate Interface_0_is_not_defined;
+    static DiagnosticMessageTemplate Invalid_Unicode_escape_sequence;
     static DiagnosticMessageTemplate Missing_required_field_0;
     static DiagnosticMessageTemplate No_query_root_operation_type_defined;
     static DiagnosticMessageTemplate Only_objects_are_allowed_as_members_in_a_union;
