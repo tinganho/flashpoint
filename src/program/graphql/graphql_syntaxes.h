@@ -94,6 +94,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct Name : Syntax {
+        Glib::ustring description;
         Glib::ustring identifier;
 
         C(Name, Glib::ustring identifier),

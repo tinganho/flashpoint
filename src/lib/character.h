@@ -117,6 +117,7 @@ namespace flashpoint::program {
         VerticalTab = 0x0B,           // [VERTICAL_TAB]
 
         MaxAsciiCharacter = 0x7F,     // DEL
+        ByteOrderMark = 0xFEFF,
 
         End = 0xFFFF,
     };

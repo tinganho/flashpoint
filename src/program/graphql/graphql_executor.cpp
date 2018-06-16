@@ -19,7 +19,14 @@ namespace flashpoint::program::graphql {
         GraphQlToken token = take_next_token();
         bool has_schema_query_root_operation = false;
         while (token != GraphQlToken::EndOfDocument) {
+            if (token == GraphQlToken::G_StringValue) {
+                has_description = true;
+                current_description = get_string_value();
+                token = take_next_token();
+                continue;
+            }
             auto type_definition = parse_schema_primary_token(token);
+            has_description = false;
             if (type_definition != nullptr) {
                 schema_document->definitions.push_back(type_definition);
                 if (type_definition->kind == SyntaxKind::S_Schema) {
@@ -206,6 +213,9 @@ namespace flashpoint::program::graphql {
     {
         auto object = create_syntax<Object>(SyntaxKind::S_Object);
         object->name = parse_object_name(object, SymbolKind::SL_Object);
+        if (has_description) {
+            object->description = current_description;
+        }
         if (object->name == nullptr) {
             return nullptr;
         }
@@ -271,6 +281,9 @@ namespace flashpoint::program::graphql {
     {
         auto input_object = create_syntax<InputObject>(SyntaxKind::S_InputObject);
         input_object->name = parse_input_object_name(input_object);
+        if (has_description) {
+            input_object->description = current_description;
+        }
         if (input_object->name == nullptr) {
             return nullptr;
         }
@@ -286,6 +299,9 @@ namespace flashpoint::program::graphql {
     {
         auto interface = create_syntax<Interface>(SyntaxKind::S_Interface);
         interface->name = parse_object_name(interface, SymbolKind::SL_Interface);
+        if (has_description) {
+            interface->description = current_description;
+        }
         if (interface->name == nullptr) {
             return nullptr;
         }
@@ -366,9 +382,14 @@ namespace flashpoint::program::graphql {
         GraphQlToken token;
         bool has_at_least_one_field = false;
         while(true) {
+            Glib::ustring current_description = "";
             token = take_next_token();
             if (token == GraphQlToken::CloseBrace && has_at_least_one_field) {
                 break;
+            }
+            if (token == GraphQlToken::G_StringValue) {
+                current_description = get_string_value();
+                continue;
             }
             if (token == GraphQlToken::EndOfDocument) {
                 add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, "enum value");
@@ -381,6 +402,7 @@ namespace flashpoint::program::graphql {
             }
             const auto& token_value = get_token_value();
             const auto& name = create_syntax<Name>(SyntaxKind::S_Name, token_value);
+            name->description = current_description;
             enum_type_definition->members.emplace(token_value, name);
             has_at_least_one_field = true;
         }
@@ -640,8 +662,8 @@ namespace flashpoint::program::graphql {
             return nullptr;
         }
         auto input_fields_definition = create_syntax<FieldsDefinition>(SyntaxKind::S_InputFieldsDefinition);
-
         bool has_at_least_one_field = false;
+        Glib::ustring current_description;
         while (true) {
             auto input_field_definition = create_syntax<FieldDefinition>(SyntaxKind::S_InputFieldDefinition);
             GraphQlToken field_token = take_next_token();
@@ -652,8 +674,18 @@ namespace flashpoint::program::graphql {
             if (field_token == GraphQlToken::CloseBrace && has_at_least_one_field) {
                 break;
             }
+            if (field_token == GraphQlToken::G_StringValue) {
+                current_description = get_string_value();
+                continue;
+            }
             if (field_token != GraphQlToken::G_Name) {
-                add_diagnostic(D::Expected_field_definition);
+                if (field_token == GraphQlToken::InvalidString) {
+                    take_errors_from_scanner();
+                    continue;
+                }
+                else {
+                    add_diagnostic(D::Expected_field_definition);
+                }
                 return nullptr;
             }
             auto name = get_token_value();
@@ -671,6 +703,7 @@ namespace flashpoint::program::graphql {
             input_fields_definition->field_definitions.push_back(input_field_definition);
             object->fields.emplace(name, input_field_definition->type);
             has_at_least_one_field = true;
+            current_description = "";
         }
     }
 

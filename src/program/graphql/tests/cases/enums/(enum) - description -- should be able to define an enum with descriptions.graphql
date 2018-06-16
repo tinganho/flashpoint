@@ -1,0 +1,7 @@
+"""EnumDEscription"""
+enum Enum {
+    """ValueDescription1"""
+    value1
+    """ValueDescription2"""
+    value2
+}

@@ -51,6 +51,7 @@ namespace flashpoint::program::graphql {
                     start_column = 1;
                     start_position++;
                     continue;
+                case ByteOrderMark:
                 case Space:
                 case Comma:
                     start_position++;
@@ -83,6 +84,8 @@ namespace flashpoint::program::graphql {
                     return GraphQlToken::Colon;
                 case Exclamation:
                     return GraphQlToken::Exclamation;
+                case At:
+                    return GraphQlToken::At;
                 case DoubleQuote:
                     return scan_string_value();
                 case Dot:

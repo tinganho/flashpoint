@@ -1,0 +1,4 @@
+"""ObjectDescription"""
+type Object {
+    field: Int
+}
