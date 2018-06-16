@@ -1,0 +1,7 @@
+type Object {
+    """\u0020"""
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

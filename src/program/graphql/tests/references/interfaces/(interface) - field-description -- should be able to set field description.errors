@@ -1,0 +1,7 @@
+interface Input {
+    """Comment"""
+    property: String
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

@@ -1,0 +1,8 @@
+input Input {
+    """Comment"""
+    property: String
+}
+
+type Query {
+    property(input: Input): Int
+}

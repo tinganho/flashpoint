@@ -1,0 +1,3 @@
+﻿type Object {
+    field: Int
+}

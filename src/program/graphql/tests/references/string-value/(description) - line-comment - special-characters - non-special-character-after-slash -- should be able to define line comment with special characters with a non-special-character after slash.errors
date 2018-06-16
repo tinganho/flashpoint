@@ -1,0 +1,7 @@
+type Object {
+    "Special Characters: \a \ö"
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

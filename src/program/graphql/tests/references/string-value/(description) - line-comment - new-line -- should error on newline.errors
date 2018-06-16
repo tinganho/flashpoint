@@ -1,0 +1,11 @@
+type Object {
+    "
+      (2, 6, 18)
+!!! Unterminated string value.
+    newline
+    "
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.
