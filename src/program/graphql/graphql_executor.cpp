@@ -213,7 +213,7 @@ namespace flashpoint::program::graphql {
             add_diagnostic(
                 get_location_from_syntax(location),
                 D::Cannot_annotate_with_a_type_that_recursively_references_the_directive_0,
-                "@" + type->parent_directive_definition->name->identifier
+                "@" + parent_directive_definition
             );
         }
         switch (input_type->kind) {
@@ -225,7 +225,7 @@ namespace flashpoint::program::graphql {
                         add_diagnostic(
                             get_location_from_syntax(location),
                             D::Cannot_annotate_with_a_type_that_recursively_references_the_directive_0,
-                            "@" + type->parent_directive_definition->name->identifier
+                            "@" + parent_directive_definition
                         );
                     }
                     if (f.second->type->type == TypeEnum::T_Object) {
@@ -242,7 +242,7 @@ namespace flashpoint::program::graphql {
                         add_diagnostic(
                             get_location_from_syntax(location),
                             D::Cannot_annotate_with_a_type_that_recursively_references_the_directive_0,
-                            "@" + type->parent_directive_definition->name->identifier
+                            "@" + parent_directive_definition
                         );
                     }
                 }

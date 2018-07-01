@@ -4,12 +4,19 @@ input InputDirective @directive1 {
     type: Int
 }
 
-input InputFieldDirective  {
+input InputFieldDirective {
     type: Int @directive1
 }
 
-directive @directive1(argument1: InputDirective, argument2: InputFieldDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
+input DeepInputFieldDirective {
+    type: InputFieldDirective
+}
 
+input DeepInputDirective {
+    type: InputDirective
+}
+
+directive @directive1(argument1: InputDirective, argument2: InputFieldDirective, argument3: DeepInputDirective, argument4: DeepInputFieldDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 enum EnumDirective @directive2 {
     SOME
