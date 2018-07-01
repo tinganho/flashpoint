@@ -10,4 +10,8 @@ query {
 !!! Expected field, inline fragment or fragment spread.
                         ~ (2, 25, 1)
 !!! Expected operation definition or fragment definition.
+                         ~ (2, 26, 1)
+!!! Expected operation definition or fragment definition.
 }
+~ (3, 1, 1)
+!!! Expected operation definition or fragment definition.

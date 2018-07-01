@@ -65,42 +65,6 @@ namespace flashpoint::test {
         current_domain->tests.push_back(test);
     }
 
-    std::string Backtrace(int skip = 1)
-    {
-        void *callstack[128];
-        const int nMaxFrames = sizeof(callstack) / sizeof(callstack[0]);
-        char buf[1024];
-        int nFrames = backtrace(callstack, nMaxFrames);
-        char **symbols = backtrace_symbols(callstack, nFrames);
-
-        std::ostringstream trace_buf;
-        for (int i = skip; i < nFrames; i++) {
-            printf("%s\n", symbols[i]);
-
-            Dl_info info;
-            if (dladdr(callstack[i], &info) && info.dli_sname) {
-                char *demangled = NULL;
-                int status = -1;
-                if (info.dli_sname[0] == '_')
-                    demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-                snprintf(buf, sizeof(buf), "%-3d %*p %s + %zd\n",
-                         i, int(2 + sizeof(void*) * 2), callstack[i],
-                         status == 0 ? demangled :
-                         info.dli_sname == 0 ? symbols[i] : info.dli_sname,
-                         (char *)callstack[i] - (char *)info.dli_saddr);
-                free(demangled);
-            } else {
-                snprintf(buf, sizeof(buf), "%-3d %*p %s\n",
-                         i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
-            }
-            trace_buf << buf;
-        }
-        free(symbols);
-        if (nFrames == nMaxFrames)
-            trace_buf << "[truncated]\n";
-        return trace_buf.str();
-    }
-
     int print_result() {
         std::vector<Test*> failed_tests = {};
         int tests_succeded = 0;
@@ -119,9 +83,9 @@ namespace flashpoint::test {
             }
         }
 
-        std::cout << "\e[32m    " + std::to_string(tests_succeded) + " passed\e[0m" << std::endl;
-        std::cout << "\e[31m    " + std::to_string(tests_failed) + " failed\e[0m" << std::endl;
-        std::cout << "    " + std::to_string(tests_succeded + tests_failed) + " total" << std::endl;
+        std::cout << "\e[32m    " + std::to_string(tests_succeded) + " passed\e[0m\n";
+        std::cout << "\e[31m    " + std::to_string(tests_failed) + " failed\e[0m\n";
+        std::cout << "    " + std::to_string(tests_succeded + tests_failed) + " total\n";
         int domain_size = domains.size();
         std::string domain = domain_size == 1 ? " domain" : " domains";
         std::cout << "    " + std::to_string(domain_size) + domain << std::endl;
@@ -131,8 +95,8 @@ namespace flashpoint::test {
             std::cout << "Failed test:" << std::endl;
             std::cout << std::endl;
             for (auto const & t : failed_tests) {
-                std::cout <<  "\e[31m    " + t->name + "\e[0m" << std::endl;
-                std::cout <<  "\e[31m        " + t->message + "\e[0m" << std::endl;
+                std::cout <<  "\e[31m    " + t->name + "\e[0m" << "\n";
+                std::cout <<  "\e[31m        " + t->message + "\e[0m" << "\n";
             }
         }
 
@@ -197,7 +161,6 @@ namespace flashpoint::test {
                 }
             }
             std::cout << std::endl;
-
         }
         std::cout << std::endl;
     }

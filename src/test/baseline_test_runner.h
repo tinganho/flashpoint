@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <lib/text_writer.h>
+#include "test_case_scanner.h"
 #include <boost/filesystem/path.hpp>
 #include <uv.h>
 #include <experimental/optional>
@@ -14,8 +15,9 @@ using namespace flashpoint::lib;
 namespace flashpoint::test {
     struct TestCase {
         std::string name;
-        const char* source;
-        const char* folder;
+        std::string aggregate_name;
+        std::string source;
+        std::string folder;
         const path current_folder;
         const path reference_folder;
     };
@@ -79,9 +81,15 @@ namespace flashpoint::test {
         std::string
         line_number();
 
-
         std::string
         line_number(std::size_t line);
+
+        void
+        call_test(path test_folder,
+                  path test_path,
+                  path aggregate_path,
+                  Glib::ustring source_code,
+                  const std::function<void(const TestCase& test_case)>& callback);
     };
 }
 

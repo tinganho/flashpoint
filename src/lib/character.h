@@ -1,7 +1,7 @@
 #ifndef FLASHPOINT_CHARACTER_H
 #define FLASHPOINT_CHARACTER_H
 
-namespace flashpoint::program {
+namespace flashpoint::lib {
 
     enum Character {
         NullCharacter = 0x00,

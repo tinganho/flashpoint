@@ -42,6 +42,7 @@ namespace flashpoint::program::graphql {
     enum class GraphQlToken {
         Unknown,
         G_Name,
+        G_Directive,
 
         WhiteSpace,
         LineTerminator,
@@ -61,6 +62,7 @@ namespace flashpoint::program::graphql {
         SubscriptionKeyword,
 
         // Declaration keywords
+        DirectiveKeyword,
         EnumKeyword,
         FragmentKeyword,
         InputKeyword,
@@ -105,6 +107,7 @@ namespace flashpoint::program::graphql {
         Ellipses,
         Exclamation,
         Equal,
+        Hash,
         OpenBrace,
         OpenBracket,
         OpenParen,
@@ -115,6 +118,7 @@ namespace flashpoint::program::graphql {
     const std::map<const GraphQlToken, std::string> graphQlTokenToString = {
         { GraphQlToken::At, "@" },
         { GraphQlToken::Colon, ":" },
+        { GraphQlToken::DirectiveKeyword, "directive" },
         { GraphQlToken::Equal, "=" },
         { GraphQlToken::Ellipses, "..." },
         { GraphQlToken::OpenBracket, "[" },
@@ -124,9 +128,12 @@ namespace flashpoint::program::graphql {
         { GraphQlToken::OpenParen, "(" },
         { GraphQlToken::CloseParen, ")" },
         { GraphQlToken::Exclamation, "!" },
+        { GraphQlToken::OnKeyword, "on" },
         { GraphQlToken::Pipe, "|" },
         { GraphQlToken::G_Name, "name" },
-        { GraphQlToken::Unknown, "unknown" }
+        { GraphQlToken::G_Directive, "@directive" },
+        { GraphQlToken::Unknown, "unknown" },
+        { GraphQlToken::WhiteSpace, "whitespace" }
     };
 
     struct PositionToLine {
@@ -154,12 +161,13 @@ namespace flashpoint::program::graphql {
         std::vector<PositionToLine> position_to_line_list = { { 0, 1 } };
         std::stack<DiagnosticMessage> errors;
         Glib::ustring name;
+        Glib::ustring directive_name;
 
         unsigned long long
         get_token_length();
 
         GraphQlToken
-        take_next_token(bool treat_keyword_as_name);
+        take_next_token(bool treat_keyword_as_name, bool skip_white_space);
 
         GraphQlToken
         try_scan(const GraphQlToken& token);
@@ -168,10 +176,16 @@ namespace flashpoint::program::graphql {
         try_scan(const GraphQlToken& token, bool treat_keyword_as_name);
 
         GraphQlToken
+        try_scan(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space);
+
+        GraphQlToken
         scan_expected(const GraphQlToken& token);
 
         GraphQlToken
         scan_expected(const GraphQlToken& token, bool treat_keyword_as_name);
+
+        GraphQlToken
+        scan_expected(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space);
 
         void
         set_token_start_position();
@@ -222,6 +236,12 @@ namespace flashpoint::program::graphql {
 
         Glib::ustring
         get_text_from_location(std::size_t start, std::size_t end);
+
+        DirectiveLocation
+        scan_directive_location();
+
+        DirectiveLocation
+        get_directive_from_value(std::size_t size, const char* value);
 
     private:
         char32_t ch;

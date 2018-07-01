@@ -14,6 +14,8 @@
 #include <string>
 #include <sstream>
 #include "diagnostic_writer.h"
+#include "test_case_scanner.h"
+#include <regex>
 
 using namespace flashpoint::lib;
 using namespace flashpoint::program;
@@ -40,53 +42,89 @@ namespace flashpoint::test {
         }
         std::vector<std::string> tests = find_files(tests_folder / "cases/*");
         visit_tests(folder, tests, callback);
-
     }
+
     void BaselineTestRunner::visit_tests(
         const path& test_folder,
         std::vector<std::string>& tests,
         std::function<void(const TestCase& test_case)> callback)
     {
         for (const auto& test : tests) {
-            path t = boost::filesystem::weakly_canonical(test);
-            if (is_directory(t)) {
-                auto files = find_files(t / "*");
+            path test_path = boost::filesystem::weakly_canonical(test);
+            if (is_directory(test_path)) {
+                auto files = find_files(test_path / "*");
                 visit_tests(test_folder, files, callback);
             }
             else {
-                const char* content = read_file(t);
-                std::string relative_test_path = replace_string(t.string(), root_dir().string() + "/", "");
-                std::vector<std::string> paths = split_string(relative_test_path, '/');
-                std::string filename = paths.back();
-                std::string name = split_string(filename, '.').front();
-
-                paths.pop_back();
-
-                std::string s = join_vector(paths, "/");
-                std::string f = (test_folder / "tests/cases").string();
-                std::string sub_folder = replace_string(s, f, "");
-                if (sub_folder.size() > 0) {
-                    sub_folder = sub_folder.substr(1); // Remove '/'
+                const char* content = read_file(test_path);
+                TestCaseScanner scanner(content);
+                auto test_cases = scanner.scan();
+                if (test_cases.empty()) {
+                    call_test(test_folder, test_path, test_path, scanner.get_source_code({}), callback);
                 }
-                path current_folder = root_dir() / test_folder / "tests/currents" / sub_folder;
-                path reference_folder = root_dir() / test_folder / "tests/references" / sub_folder;
-
-                if (!path_exists(current_folder)) {
-                    create_folder(current_folder);
+                else {
+                    for (const auto& test_case : test_cases) {
+                        Glib::ustring source_code = scanner.get_source_code(test_case->source_code_arguments);
+                        const std::string test_path_string = test_path.string();
+                        boost::regex rgx("\\{\\w+\\}");
+                        boost::smatch match;
+                        if (!boost::regex_search(test_path_string.begin(), test_path_string.end(), match, rgx)) {
+                            throw std::logic_error("The path '" + test_path_string + "' must contain template arguments.");
+                        }
+                        path new_test_path = scanner.get_filename(test_path_string, test_case->file_arguments);
+                        call_test(test_folder, new_test_path, test_path, source_code, callback);
+                    }
                 }
-
-                callback(TestCase {
-                    name,
-                    content,
-                    sub_folder.c_str(),
-                    current_folder,
-                    reference_folder
-                });
             }
         }
     }
 
-    void BaselineTestRunner::run_http_tests_with_server(const RunOption& run_option) {
+    void
+    BaselineTestRunner::call_test(
+        path test_folder,
+        path test_path,
+        path aggregate_path,
+        Glib::ustring source_code,
+        const std::function<void(const TestCase& test_case)>& callback)
+    {
+        std::string relative_test_path = replace_string(test_path.string(), root_dir().string() + "/", "");
+        std::vector<std::string> test_paths = split_string(relative_test_path, '/');
+        std::string filename = test_paths.back();
+        std::string name = split_string(filename, '.').front();
+
+        std::string relative_aggregate_path = replace_string(aggregate_path.string(), root_dir().string() + "/", "");
+        std::vector<std::string> aggregate_paths = split_string(relative_aggregate_path, '/');
+        std::string aggregate_name = split_string(aggregate_paths.back(), '.').front();
+
+        test_paths.pop_back();
+
+        std::string s = join_vector(test_paths, "/");
+        std::string f = (test_folder / "tests/cases").string();
+        std::string sub_folder = replace_string(s, f, "");
+        if (sub_folder.size() > 0) {
+            sub_folder = sub_folder.substr(1); // Remove '/'
+        }
+        path current_folder = root_dir() / test_folder / "tests/currents" / sub_folder;
+        path reference_folder = root_dir() / test_folder / "tests/references" / sub_folder;
+
+        if (!path_exists(current_folder)) {
+            create_folder(current_folder);
+        }
+
+        callback(TestCase {
+            name,
+            aggregate_name,
+            source_code,
+            sub_folder,
+            current_folder,
+            reference_folder
+        });
+    }
+
+
+    void
+    BaselineTestRunner::run_http_tests_with_server(const RunOption& run_option)
+    {
         pid_t parent_pid = getpid();
         pid_t pid = fork();
         if (pid == -1) {
@@ -106,7 +144,8 @@ namespace flashpoint::test {
         }
     }
 
-    void BaselineTestRunner::accept_graphql_tests(const RunOption& run_option)
+    void
+    BaselineTestRunner::accept_graphql_tests(const RunOption& run_option)
     {
         visit_tests_by_path("src/program/graphql", [&](const TestCase& test_case) {
             if (run_option.folder && *run_option.folder != test_case.folder) {
@@ -138,7 +177,7 @@ namespace flashpoint::test {
                 return;
             }
             auto s = *run_option.test;
-            if (run_option.test && s != test_case.name) {
+            if (run_option.test && (s != test_case.aggregate_name && s != test_case.name)) {
                 return;
             }
             test(test_case.name, [=](Test* test, std::function<void()> done, std::function<void(std::string error)> error) {
@@ -201,7 +240,7 @@ namespace flashpoint::test {
             test(test_case.name, [=](Test* test, std::function<void()> success, std::function<void(std::string error)> error) {
                 TcpClientRaw tcp_client;
                 tcp_client._connect("0.0.0.0", 8000);
-                tcp_client.send_message(test_case.source);
+                tcp_client.send_message(test_case.source.c_str());
                 const char* current_file_content = tcp_client.recieve_message();
                 write_file(test_case.current_folder, current_file_content);
                 std::stringstream error_message;
@@ -213,95 +252,6 @@ namespace flashpoint::test {
         });
         run_test_suites();
         print_result();
-    }
-
-    bool BaselineTestRunner::assert_baselines(const char* current, const char* reference, std::stringstream& error_message)
-    {
-        if (strcmp(current, reference) != 0) {
-//            auto tw = TextWriter();
-//            tw.write("\n\e[0m");
-//            diff_match_patch<std::string> diff;
-//            std::string c(current);
-//            std::string r(reference);
-//            auto diffs = diff.diff_main(r, c);
-//            std::string last_line;
-//            diff_match_patch<std::string>::diff_cleanupSemantic(diffs);
-//            enum class ChunkType {
-//                Equal,
-//                Delete,
-//                Insert,
-//            } last_chunk_type = ChunkType::Equal;
-//            bool has_appended_last_line = false;
-//            bool last_sequence_was_delete = false;
-//            bool last_sequence_was_delete_insert = false;
-//            tw.write(line_number(current_line++));
-//            std::string first_line_after_delete;
-//
-//            for (const auto& d : diffs) {
-//                if (d.operation == diff_match_patch<std::string>::Operation::DELETE) {
-//                    tw.write(last_line);
-//                    append_mutation_chunk(d.text, false, tw);
-//                    tw.add_placeholder("delete");
-//                    last_sequence_was_delete = true;
-//                    has_appended_last_line = true;
-//                }
-//                else if (d.operation == diff_match_patch<std::string>::Operation::INSERT) {
-//                    if (last_sequence_was_delete) {
-//                        current_line--;
-//                        tw.newline();
-//                        tw.write(line_number());
-//                        last_sequence_was_delete = false;
-//                        last_sequence_was_delete_insert = true;
-//                    }
-//                    tw.write(last_line);
-//                    append_mutation_chunk(d.text, true, tw);
-//                    has_appended_last_line = true;
-//                }
-//                else {
-//                    if (last_sequence_was_delete) {
-//                        tw.write(d.text);
-//                        tw.add_placeholder("delete");
-//                        last_line += d.text;
-//                    }
-//                    else if (last_sequence_was_delete_insert) {
-//                        auto [first_line, rest_lines, number_of_lines] = get_first_and_rest_lines(d.text);
-//                        tw.begin_write_on_placeholder("delete");
-//                        tw.write(first_line);
-//                        tw.end_write_on_placeholder();
-//                        if (number_of_lines == 1) {
-//                            last_line = first_line;
-//                        }
-//                        else {
-//                            tw.newline();
-//                            tw.write(line_number(++current_line));
-//                            std::size_t n = 0;
-//                            for (const auto& line : rest_lines) {
-//                                tw.write(line);
-//                                tw.save();
-//                                tw.newline();
-//                                tw.write(line_number(++current_line));
-//                                n++;
-//                            }
-//                            if (n > 0) {
-//                                tw.restore();
-//                            }
-//                        }
-//                        last_sequence_was_delete_insert = false;
-//                    }
-//                    else {
-//                        last_line = append_all_lines_except_last_line(d.text, tw);
-//                        has_appended_last_line = false;
-//                    }
-//                }
-//            }
-//            if (!has_appended_last_line) {
-//                error_message << last_line;
-//            }
-//            error_message << *tw.text;
-//            current_line = 1;
-            return false;
-        }
-        return true;
     }
 
     std::tuple<std::string, std::vector<std::string>, std::size_t>
@@ -461,48 +411,14 @@ namespace flashpoint::test {
         return std::make_tuple(*tw.text, n > 0);
     }
 
-    std::string BaselineTestRunner::append_all_lines_except_last_line(const std::string &chunk, TextWriter &tw)
+    bool BaselineTestRunner::assert_baselines(const char* current, const char* reference, std::stringstream& error_message)
     {
-        std::stringstream line;
-        std::vector<std::string> lines;
-        std::size_t n = 0;
-        bool has_added_lines = false;
-        for (std::size_t i = 0; i < chunk.size(); i++) {
-            char ch = chunk[i];
-            if (ch == '\n') {
-                if (has_added_lines) {
-                    tw.write_line(line.str());
-                    tw.write(line_number(current_line++));
-                    line.str("");
-                }
-                else {
-                    tw.newline();
-                    tw.write(line_number(current_line++));
-                }
-                n++;
-            }
-            else if (ch == '\r') {
-                if (chunk[i + 1] == '\n') {
-                    i++;
-                }
-                if (has_added_lines) {
-                    tw.write_line(line.str());
-                    tw.write(line_number(current_line++));
-                    line.str("");
-                }
-                else {
-                    tw.newline();
-                    tw.write(line_number(current_line++));
-                }
-                n++;
-            }
-            else {
-                line << ch;
-                has_added_lines = true;
-            }
+        if (strcmp(current, reference) != 0) {
+            return false;
         }
-        return line.str();
+        return true;
     }
+
 
     void BaselineTestRunner::start_server() {
         HttpServer server(loop);

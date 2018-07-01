@@ -1,0 +1,5 @@
+directive @directive(paremeter: Int @undefined1) on OBJECT
+
+type Object @undefined2 {
+    field: Int
+}

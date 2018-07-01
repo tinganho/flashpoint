@@ -6,6 +6,6 @@ schema {
     query: RootQuery
 }
 ====
-query {
-    undefined
+mutation {
+    field
 }

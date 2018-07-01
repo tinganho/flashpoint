@@ -1,0 +1,82 @@
+directive {{directive}} on {{location}}
+
+schema {
+    query: Object
+    mutation: Object
+    subscription: Object
+}
+
+type Object {
+    field: Int
+    subField: Object
+}
+====
+query Query {{directive}} {
+    field {{directive}}
+    subField {
+        field {{directive}}
+    }
+    ...Fragment {{directive}}
+    ... on Object {{directive}} {
+        field
+    }
+}
+
+mutation Mutation {{directive}} {
+    field
+}
+
+subscription Mutation {{directive}} {
+    field
+}
+
+fragment Fragment on Object {
+    field
+}
+
+fragment FragmentDirective on Object {{directive}} {
+    field
+}
+
+fragment FragmentFieldDirective on Object {
+    field {{directive}}
+}
+
+# @cases:
+#
+# [directive: "query", description: "query directive"]: {
+#   directive: "@query_directive",
+#   location: "QUERY",
+# }
+#
+# [directive: "mutation", description: "mutation directive"]: {
+#   directive: "@mutation_directive",
+#   location: "MUTATION",
+# }
+#
+# [directive: "subscription", description: "subscription directive"]: {
+#   directive: "@subscription_directive",
+#   location: "SUBSCRIPTION",
+# }
+#
+# [directive: "field", description: "field directive"]: {
+#   directive: "@field_directive",
+#   location: "FIELD",
+# }
+#
+# [directive: "fragment-definition", description: "fragment definition directive"]: {
+#   directive: "@fragment_definition_directive",
+#   location: "FRAGMENT_DEFINITION",
+# }
+#
+# [directive: "fragment-spread", description: "fragment spread directive"]: {
+#   directive: "@fragment_spread_directive",
+#   location: "FRAGMENT_SPREAD",
+# }
+#
+# [directive: "inline-fragment", description: "inline fragment directive"]: {
+#   directive: "@inline_fragment_directive",
+#   location: "INLINE_FRAGMENT",
+# }
+#
+# @end

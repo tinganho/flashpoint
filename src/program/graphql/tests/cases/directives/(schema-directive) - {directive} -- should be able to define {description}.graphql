@@ -1,0 +1,122 @@
+directive {{directive}} on {{location}}
+
+schema {{directive}} {
+    query: ObjectDirective
+    mutation: ObjectDirective
+    subscription: ObjectDirective
+}
+
+type ObjectDirective {{directive}} {
+    field: Int
+    object: ObjectFieldDirective
+}
+
+type ObjectFieldDirective {
+    field: Int {{directive}}
+}
+
+type ObjectArgumentDirective {
+    field(argument: Int {{directive}}): Int
+}
+
+interface InterfaceDirective {{directive}} {
+    field: Int
+}
+
+interface InterfaceFieldDirective {
+    field: Int {{directive}}
+}
+
+interface InterfaceArgumentDirective {
+    field(argument: Int {{directive}}): Int
+}
+
+input InputObjectDirective {{directive}} {
+    field: Int
+}
+
+input InputObjectFieldDirective {
+    field: Int {{directive}}
+}
+
+enum EnumDirective {{directive}} {
+    value,
+}
+
+enum EnumValueDirective {
+    value {{directive}},
+}
+union UnionDirective {{directive}} = ObjectFieldDirective
+====
+query Query {{directive}} {
+    field {{directive}}
+    fieldWithArgument(argument: 1 {{directive}})
+    object {
+        field {{directive}}
+    }
+}
+
+mutation Mutation {{directive}} {
+    field
+}
+
+subscription Mutation {{directive}} {
+    field
+}
+
+fragment FragmentDirective on ObjectFieldDirective {{directive}} {
+    field
+}
+
+fragment FragmentFieldDirective on ObjectFieldDirective {
+    field {{directive}}
+}
+
+# @cases:
+#
+# [directive: "schema", description: "schema directive"]: {
+#   directive: "@schema_directive",
+#   location: "SCHEMA",
+# }
+#
+# [directive: "object", description: "object directive"]: {
+#   directive: "@object_directive",
+#   location: "OBJECT",
+# }
+#
+# [directive: "field-definition", description: "field definition directive"]: {
+#   directive: "@field_definition_directive",
+#   location: "FIELD_DEFINITION",
+# }
+#
+# [directive: "argument-definition", description: "argument definition directive"]: {
+#   directive: "@argument_definition_directive",
+#   location: "ARGUMENT_DEFINITION",
+# }
+#
+# [directive: "input-object", description: "input object directive"]: {
+#   directive: "@input_object_directive",
+#   location: "INPUT_OBJECT",
+# }
+#
+# [directive: "input-field-definition", description: "input field definition directive"]: {
+#   directive: "@input_field_field_directive",
+#   location: "INPUT_FIELD_DEFINITION",
+# }
+#
+# [directive: "enum", description: "enum directive"]: {
+#   directive: "@enum_directive",
+#   location: "ENUM",
+# }
+#
+# [directive: "enum-value", description: "enum value directive"]: {
+#   directive: "@enum_value_directive",
+#   location: "ENUM_VALUE",
+# }
+#
+# [directive: "union", description: "union directive"]: {
+#   directive: "@union_directive",
+#   location: "UNION",
+# }
+#
+# @end

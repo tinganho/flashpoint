@@ -42,5 +42,14 @@
   "Expected enum value, but instead got '{0}'.": {},
   "Undefined enum value '{0}'.": {},
   "Unterminated string value.": {},
-  "Invalid Unicode escape sequence.": {}
+  "Invalid Unicode escape sequence.": {},
+  "Expected directive location.": {},
+  "Expected directive location, but instead reached the end of document.": {},
+  "Expected name, but instead got '{0}'.": {},
+  "Undefined directive '{0}'.": {},
+  "The directive '{0}' does not support the location '{1}'.": {},
+  "Mutations are not supported.": {},
+  "Subscriptions are not supported.": {},
+  "Directive cannot reference itself.": {},
+  "Cannot annotate with a type that recursively references the directive '{0}'.": {}
 }

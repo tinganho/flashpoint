@@ -38,7 +38,22 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
+    void Directive::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void DirectiveDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
     void EnumTypeDefinition::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void FragmentSpread::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
@@ -74,6 +89,11 @@ namespace flashpoint::program::graphql {
     }
 
     void EnumValue::accept(GraphQlSyntaxVisitor* visitor) const
+    {
+        visitor->visit(this);
+    }
+
+    void EnumValueDefinition::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }
@@ -168,12 +188,7 @@ namespace flashpoint::program::graphql {
         visitor->visit(this);
     }
 
-    void FieldsDefinition::accept(GraphQlSyntaxVisitor* visitor) const
-    {
-        visitor->visit(this);
-    }
-
-    void Union::accept(GraphQlSyntaxVisitor* visitor) const
+    void UnionTypeDefinition::accept(GraphQlSyntaxVisitor* visitor) const
     {
         visitor->visit(this);
     }

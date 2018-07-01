@@ -4,6 +4,8 @@
 #include <lib/character.h>
 #include "http_scanner.h"
 
+using namespace flashpoint::lib;
+
 namespace flashpoint::program {
 
     HttpScanner::HttpScanner(char* text, unsigned int size):

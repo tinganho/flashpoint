@@ -11,7 +11,7 @@ namespace flashpoint::program::graphql {
 
     GraphQlScanner::GraphQlScanner(const Glib::ustring* source):
         source(source),
-        size(static_cast<unsigned int>(source->size()))
+        size(source->size())
     { }
 
     char32_t
@@ -27,7 +27,7 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
-    GraphQlScanner::take_next_token(bool treat_keyword_as_name)
+    GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_space)
     {
         set_token_start_position();
         while (position < size) {
@@ -36,6 +36,9 @@ namespace flashpoint::program::graphql {
             switch (ch) {
                 case NewLine:
                     position_to_line_list.emplace_back(position, ++line);
+                    if (!skip_white_space) {
+                        return GraphQlToken::WhiteSpace;
+                    }
                     column = 1;
                     start_column = 1;
                     start_line++;
@@ -46,6 +49,9 @@ namespace flashpoint::program::graphql {
                         increment_position();
                     }
                     position_to_line_list.emplace_back(position, ++line);
+                    if (!skip_white_space) {
+                        return GraphQlToken::WhiteSpace;
+                    }
                     column = 1;
                     start_line++;
                     start_column = 1;
@@ -54,6 +60,9 @@ namespace flashpoint::program::graphql {
                 case ByteOrderMark:
                 case Space:
                 case Comma:
+                    if (!skip_white_space) {
+                        return GraphQlToken::WhiteSpace;
+                    }
                     start_position++;
                     start_column++;
                     continue;
@@ -213,7 +222,7 @@ namespace flashpoint::program::graphql {
         int matched_braces = 0;
         bool encountered_brace = false;
         while (true) {
-            auto token = take_next_token(false);
+            auto token = take_next_token(false, true);
             switch (token) {
                 case GraphQlToken::OpenBrace:
                     matched_braces++;
@@ -239,7 +248,7 @@ namespace flashpoint::program::graphql {
     {
         while (true) {
             save();
-            GraphQlToken token = take_next_token(false);
+            GraphQlToken token = take_next_token(false, true);
             if (token == GraphQlToken::EndOfDocument) {
                 return token;
             }
@@ -257,7 +266,7 @@ namespace flashpoint::program::graphql {
     }
 
     GraphQlToken
-    GraphQlScanner::get_token_from_value(std::size_t size, const char *value)
+    GraphQlScanner::get_token_from_value(std::size_t size, const char* value)
     {
         switch (size) {
             case 2:
@@ -376,8 +385,16 @@ namespace flashpoint::program::graphql {
                 }
                 break;
             case 9:
-                if (strcmp(value, "interface") == 0) {
-                    return GraphQlToken::InterfaceKeyword;
+                switch (value[0]) {
+                    case i:
+                        if (strcmp(value + 1, "nterface") == 0) {
+                            return GraphQlToken::InterfaceKeyword;
+                        }
+                        break;
+                    case d:
+                        if (strcmp(value + 1, "irective") == 0) {
+                            return GraphQlToken::DirectiveKeyword;
+                        }
                 }
                 break;
             case 10:
@@ -394,6 +411,182 @@ namespace flashpoint::program::graphql {
         }
         name = value;
         return GraphQlToken::G_Name;
+    }
+
+    DirectiveLocation
+    GraphQlScanner::scan_directive_location()
+    {
+        set_token_start_position();
+        while (position < size) {
+            char32_t ch = current_char();
+            increment_position();
+
+            switch (ch) {
+                case NewLine:
+                    position_to_line_list.emplace_back(position, ++line);
+                    column = 1;
+                    start_column = 1;
+                    start_line++;
+                    start_position++;
+                    continue;
+                case CarriageReturn:
+                    if ((*source)[position + 1] == NewLine) {
+                        increment_position();
+                    }
+                    position_to_line_list.emplace_back(position, ++line);
+                    column = 1;
+                    start_line++;
+                    start_column = 1;
+                    start_position++;
+                    continue;
+                case ByteOrderMark:
+                case Space:
+                case Comma:
+                    start_position++;
+                    start_column++;
+                    continue;
+                default:;
+            }
+            if (is_name_start(ch)) {
+                std::size_t name_size = 1;
+                while (position < size && is_name_part(current_char())) {
+                    increment_position();
+                    name_size++;
+                }
+                return get_directive_from_value(name_size, get_value().c_str());
+            }
+        }
+
+        return DirectiveLocation::EndOfDocument;
+    }
+
+    DirectiveLocation
+    GraphQlScanner::get_directive_from_value(std::size_t size, const char* value)
+    {
+        switch (size) {
+            case 4:
+                if (strcmp(value , "ENUM") == 0) {
+                    return DirectiveLocation::ENUM;
+                }
+                break;
+            case 5:
+                switch (value[0]) {
+                    case Q:
+                        if (strcmp(value + 1, "UERY") == 0) {
+                            return DirectiveLocation::QUERY;
+                        }
+                        break;
+                    case F:
+                        if (strcmp(value + 1, "IELD") == 0) {
+                            return DirectiveLocation::FIELD;
+                        }
+                        break;
+                    case U:
+                        if (strcmp(value + 1, "NION") == 0) {
+                            return DirectiveLocation::UNION;
+                        }
+                        break;
+                    default:;
+                }
+                break;
+            case 6:
+                switch (value[0]) {
+                    case S:
+                        switch (value[2]) {
+                            case H:
+                                if (strcmp(value + 3, "EMA") == 0) {
+                                    return DirectiveLocation::SCHEMA;
+                                }
+                                break;
+
+                            case A:
+                                if (strcmp(value + 3, "LAR") == 0) {
+                                    return DirectiveLocation::SCALAR;
+                                }
+                                break;
+                            default:;
+                        }
+                        break;
+                    case O:
+                        if (strcmp(value + 1, "BJECT") == 0) {
+                            return DirectiveLocation::OBJECT;
+                        }
+                        break;
+                    default:;
+                }
+                break;
+            case 8:
+                if (strcmp(value, "MUTATION") == 0) {
+                    return DirectiveLocation::MUTATION;
+                }
+                break;
+            case 9:
+                if (strcmp(value, "INTERFACE") == 0) {
+                    return DirectiveLocation::INTERFACE;
+                }
+                break;
+            case 10:
+                if (strcmp(value, "ENUM_VALUE") == 0) {
+                    return DirectiveLocation::ENUM_VALUE;
+                }
+                break;
+            case 12:
+                switch (value[0]) {
+                    case I:
+                        if (strcmp(value + 1, "NPUT_OBJECT") == 0) {
+                            return DirectiveLocation::INPUT_OBJECT;
+                        }
+                        break;
+                    case S:
+                        if (strcmp(value + 1, "UBSCRIPTION") == 0) {
+                            return DirectiveLocation::SUBSCRIPTION;
+                        }
+                        break;
+                    default:;
+                }
+                break;
+            case 15:
+                switch (value[0]) {
+                    case F:
+                        if (strcmp(value + 1, "RAGMENT_SPREAD") == 0) {
+                            return DirectiveLocation::FRAGMENT_SPREAD;
+                        }
+                        break;
+                    case I:
+                        if (strcmp(value + 1, "NLINE_FRAGMENT") == 0) {
+                            return DirectiveLocation::INLINE_FRAGMENT;
+                        }
+                        break;
+                    default:;
+                }
+                break;
+            case 16:
+                if (strcmp(value, "FIELD_DEFINITION") == 0) {
+                    return DirectiveLocation::FIELD_DEFINITION;
+                }
+                break;
+            case 19:
+                switch (value[0]) {
+                    case A:
+                        if (strcmp(value + 1, "RGUMENT_DEFINITION") == 0) {
+                            return DirectiveLocation::ARGUMENT_DEFINITION;
+                        }
+                        break;
+                    case F:
+                        if (strcmp(value + 1, "RAGMENT_DEFINITION") == 0) {
+                            return DirectiveLocation::FRAGMENT_DEFINITION;
+                        }
+                        break;
+                    default:;
+                }
+                break;
+            case 22:
+                if (strcmp(value, "INPUT_FIELD_DEFINITION") == 0) {
+                    return DirectiveLocation::INPUT_FIELD_DEFINITION;
+                }
+                break;
+        }
+        return DirectiveLocation::Unknown;
     }
 
     void
@@ -655,7 +848,7 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::peek_next_token()
     {
         save();
-        GraphQlToken token = take_next_token(false);
+        GraphQlToken token = take_next_token(false, true);
         revert();
         return token;
     }
@@ -692,12 +885,17 @@ namespace flashpoint::program::graphql {
         return try_scan(token, false);
     }
 
-
     GraphQlToken
     GraphQlScanner::try_scan(const GraphQlToken& token, bool treat_keyword_as_name)
     {
+        return try_scan(token, treat_keyword_as_name, true);
+    }
+
+    GraphQlToken
+    GraphQlScanner::try_scan(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space)
+    {
         save();
-        auto result = take_next_token(treat_keyword_as_name);
+        auto result = take_next_token(treat_keyword_as_name, skip_white_space);
         if (result == token) {
             return token;
         }
@@ -708,13 +906,20 @@ namespace flashpoint::program::graphql {
     GraphQlToken
     GraphQlScanner::scan_expected(const GraphQlToken& token)
     {
-        return scan_expected(token, false);
+        return scan_expected(token, false, true);
     }
 
     GraphQlToken
     GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_name)
     {
-        GraphQlToken result = take_next_token(treat_keyword_as_name);
+        return scan_expected(token, treat_keyword_as_name, true);
+    }
+
+
+    GraphQlToken
+    GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space)
+    {
+        GraphQlToken result = take_next_token(treat_keyword_as_name, skip_white_space);
         if (result == token) {
             return token;
         }

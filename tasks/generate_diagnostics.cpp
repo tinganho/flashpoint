@@ -7,35 +7,37 @@
 
 using namespace flashpoint::lib;
 
-const std::string start_wrap_header =
+const std::string start_wrap_header_template =
     "// This code is auto generate. Don't edit it!\n"
-    "#ifndef DIAGNOSTICS_H\n"
-    "#define DIAGNOSTICS_H\n"
+    "#ifndef {{header_guard}}\n"
+    "#define {{header_guard}}\n"
     "\n"
     "#include <program/diagnostic.h>\n"
     "\n"
-    "namespace flashpoint::program {\n"
+    "using namespace flashpoint::program;\n"
+    "\n"
+    "namespace {{namespace}} {\n"
     "\n"
     "class D {\n"
     "public:\n";
 
-const std::string start_wrap_source =
+const std::string start_wrap_source_template =
     "// This code is auto generate. Don't edit it!\n"
     "#include \"{{header_file}}\"\n"
     "\n"
-    "namespace flashpoint::program {\n"
+    "namespace {{namespace}} {\n"
     "\n";
 
-const std::string end_wrap_header =
+const std::string end_wrap_header_template =
     "};\n"
     "\n"
     "}\n"
     "\n"
-    "#endif // DIAGNOSTICS_H";
+    "#endif // {{header_guard}}";
 
-const std::string end_wrap_source =
+const std::string end_wrap_source_template =
     "\n"
-    "} // flashpoint::program\n";
+    "} // {{namespace}}\n";
 
 std::vector<std::string> keys = {};
 
@@ -55,10 +57,6 @@ std::string format_diagnostic_key(std::string key) {
     k = boost::regex_replace(k, boost::regex("_+"), "_");
     k = boost::regex_replace(k, boost::regex("^_+|_+$"), "");
     boost::match_results<std::string::const_iterator> results;
-//    if (boost::regex_search(k, boost::regex("[^a-zA-Z\\d_]"))) {
-//        throw std::invalid_argument("Your 'diagnostics.json' file contains non-alpha numeric characters: " + key);
-//    }
-
     return k;
 }
 
@@ -66,13 +64,25 @@ std::string remove_comments(std::string json) {
     return boost::regex_replace(json, boost::regex("//.*?\n"), "\n");
 }
 
-void generate_diagnostic(const char* folder, const char* file) {
+void generate_diagnostic(
+    const char* folder,
+    const char* file,
+    const std::string& _namespace)
+{
     const char* json = read_file(root_dir() / folder / (std::string(file) + ".json"));
     Json::Value diagnostics;
     Json::Reader reader;
-    std::string header_file = start_wrap_header;
-    std::string source_file = start_wrap_source;
-    source_file = boost::regex_replace(source_file, boost::regex("{{header_file}}"), std::string(file) + ".h");
+
+    std::string start_wrap_header = boost::regex_replace(start_wrap_header_template, boost::regex("{{header_guard}}"), std::string(file) + "_H");
+    start_wrap_header = boost::regex_replace(start_wrap_header, boost::regex("{{namespace}}"), _namespace);
+
+    std::string start_wrap_source =  boost::regex_replace(start_wrap_source_template, boost::regex("{{header_file}}"), std::string(file) + ".h");
+    start_wrap_source = boost::regex_replace(start_wrap_source, boost::regex("{{namespace}}"), _namespace);
+
+    std::string end_wrap_header = boost::regex_replace(end_wrap_header_template, boost::regex("{{header_guard}}"), std::string(file) + "_H");
+
+    std::string end_wrap_source =  boost::regex_replace(end_wrap_source_template, boost::regex("{{namespace}}"), _namespace);
+
     reader.parse(remove_comments(json).c_str(), diagnostics);
     for (Json::ValueIterator it = diagnostics.begin(); it != diagnostics.end(); ++it) {
         auto key = it.key().asString();
@@ -81,19 +91,29 @@ void generate_diagnostic(const char* folder, const char* file) {
         if (!is_unique(formatted_key)) {
             throw std::invalid_argument("Duplicate formatted key: " + formatted_key + ".");
         }
-        header_file += "    static DiagnosticMessageTemplate " + formatted_key + ";\n";
-        source_file += "    DiagnosticMessageTemplate D::" + formatted_key + " = " + "DiagnosticMessageTemplate { \"" + unformatted_key + "\" };\n";
+        start_wrap_header += "    static DiagnosticMessageTemplate " + formatted_key + ";\n";
+        start_wrap_source += "    DiagnosticMessageTemplate D::" + formatted_key + " = " + "DiagnosticMessageTemplate { \"" + unformatted_key + "\" };\n";
         keys.push_back(formatted_key);
     }
-    header_file += end_wrap_header;
-    source_file += end_wrap_source;
-    write_file(root_dir() / folder / (std::string(file) + ".h"), header_file.c_str());
-    write_file(root_dir() / folder / (std::string(file) + ".cpp"), source_file.c_str());
+    start_wrap_header += end_wrap_header;
+    start_wrap_source += end_wrap_source;
+    write_file(root_dir() / folder / (std::string(file) + ".h"), start_wrap_header.c_str());
+    write_file(root_dir() / folder / (std::string(file) + ".cpp"), start_wrap_source.c_str());
+    keys.clear();
 }
 
 int main() {
     try {
-        generate_diagnostic("src/program/graphql", "graphql_diagnostics");
+        generate_diagnostic(
+            "src/program/graphql",
+            "graphql_diagnostics",
+            "flashpoint::program"
+        );
+        generate_diagnostic(
+            "src/test",
+            "test_case_diagnostics",
+            "flashpoint::test"
+        );
         std::cout << "Successfully generated new diagnostics." << std::endl;
         return 0;
     }

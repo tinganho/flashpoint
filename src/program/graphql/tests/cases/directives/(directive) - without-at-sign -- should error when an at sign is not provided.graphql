@@ -1,0 +1,5 @@
+directive directive on OBJECT
+
+type Object {
+    field: Int
+}

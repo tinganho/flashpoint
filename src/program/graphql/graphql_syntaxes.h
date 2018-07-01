@@ -35,18 +35,23 @@ using namespace flashpoint::lib;
 namespace flashpoint::program::graphql {
     struct SelectionSet;
     struct Type;
+    struct Directive;
     struct Directives;
     struct Interface;
     class GraphQlSyntaxVisitor;
 
     enum class SyntaxKind {
+        S_None,
         S_Argument,
         S_Arguments,
         S_ArgumentsDefinition,
+        S_Directive,
+        S_DirectiveDefinition,
         S_EnumTypeDefinition,
         S_FieldsDefinition,
         S_FieldDefinition,
         S_FragmentDefinition,
+        S_FragmentSpread,
         S_InlineFragment,
         S_InputFieldsDefinition,
         S_InputFieldDefinition,
@@ -77,7 +82,18 @@ namespace flashpoint::program::graphql {
         S_ObjectField,
         S_ObjectValue,
         S_ListValue,
+
+        S_InputTypeWithDirectives = static_cast<int>(S_InputObject) | static_cast<int>(S_EnumTypeDefinition),
+        S_InputType = static_cast<int>(S_InputObject) | static_cast<int>(S_EnumTypeDefinition),
     };
+
+    inline constexpr SyntaxKind operator|(SyntaxKind a, SyntaxKind b) {
+        return static_cast<SyntaxKind>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    }
+
+    inline constexpr SyntaxKind operator&(SyntaxKind a, SyntaxKind b) {
+        return static_cast<SyntaxKind>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+    }
 
     struct Syntax {
         SyntaxKind kind;
@@ -113,11 +129,17 @@ namespace flashpoint::program::graphql {
         { }
     };
 
+    struct InputType : Declaration {
+        std::map<Glib::ustring, Directive*> directives;
+
+        D(InputType, Declaration)
+        { }
+    };
+
     struct InputValueDefinition : Declaration {
-        Glib::ustring* description;
         Type* type;
         Syntax* default_value;
-        Directives* directives;
+        std::map<Glib::ustring, Directive*> directives;
 
         D(InputValueDefinition, Declaration)
         { }
@@ -126,7 +148,6 @@ namespace flashpoint::program::graphql {
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
-
 
     struct ArgumentsDefinition : Syntax {
         std::vector<InputValueDefinition*> input_value_definitions;
@@ -142,7 +163,8 @@ namespace flashpoint::program::graphql {
     struct FieldDefinition : Declaration {
         Glib::ustring description;
         Type* type;
-        ArgumentsDefinition* arguments_definition;
+        std::map<Glib::ustring, InputValueDefinition*> arguments;
+        std::map<Glib::ustring, Directive*> directives;
 
         D(FieldDefinition, Declaration)
         { }
@@ -152,29 +174,16 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct FieldsDefinition : Syntax {
-        std::vector<FieldDefinition*> field_definitions;
-
-        S(FieldsDefinition)
-        { }
-
-        new_operator(FieldsDefinition)
-
-        void accept(GraphQlSyntaxVisitor*) const override;
-    };
-
-    struct InputFieldDefinition : Declaration {
-        Glib::ustring* description;
+    struct InputFieldDefinition : InputType {
         Type* type;
 
-        D(InputFieldDefinition, Declaration)
+        D(InputFieldDefinition, InputType)
         { }
 
         new_operator(InputFieldDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
-
 
     struct InputFieldsDefinition : Syntax {
         std::vector<InputFieldDefinition*> input_fields_definitions;
@@ -199,8 +208,8 @@ namespace flashpoint::program::graphql {
     };
 
     struct ObjectLike : Declaration {
-        FieldsDefinition* fields_definition;
-        std::map<Glib::ustring, FieldDefinition*> fields;
+        std::map<Glib::ustring, FieldDefinition*>* fields;
+        std::map<Glib::ustring, Directive*> directives;
 
         D(ObjectLike, Declaration)
         { }
@@ -218,12 +227,11 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct InputObject : Declaration {
-        InputFieldsDefinition* fields_definition;
-        std::map<Glib::ustring, Syntax*> fields;
+    struct InputObject : InputType {
+        std::map<Glib::ustring, InputFieldDefinition*>* fields;
         std::vector<Glib::ustring> required_fields;
 
-        D(InputObject, Declaration)
+        D(InputObject, InputType)
         { }
 
         new_operator(InputObject)
@@ -241,21 +249,97 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct Union : Declaration {
+    struct UnionTypeDefinition : Declaration {
         std::map<Glib::ustring, Name*> members;
+        std::map<Glib::ustring, Directive*> directives;
 
-        D(Union, Declaration)
+        D(UnionTypeDefinition, Declaration)
         { }
 
-        new_operator(Union)
+        new_operator(UnionTypeDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-    struct EnumTypeDefinition : Declaration {
-        std::map<Glib::ustring, Name*> members;
+    enum class DirectiveLocation {
+        Unknown,
+        EndOfDocument,
 
-        D(EnumTypeDefinition, Declaration)
+        EXECUTABLE_DIRECTIVE_LOCATION_START,
+        QUERY,
+        MUTATION,
+        SUBSCRIPTION,
+        FIELD,
+        FRAGMENT_DEFINITION,
+        FRAGMENT_SPREAD,
+        INLINE_FRAGMENT,
+        EXECUTABLE_DIRECTIVE_LOCATION_START_END,
+
+        TYPE_SYSTEM_DIRECTIVE_LOCATION_START,
+        SCHEMA,
+        SCALAR,
+        OBJECT,
+        FIELD_DEFINITION,
+        ARGUMENT_DEFINITION,
+        INTERFACE,
+        UNION,
+        ENUM,
+        ENUM_VALUE,
+        INPUT_OBJECT,
+        INPUT_FIELD_DEFINITION,
+        TYPE_SYSTEM_DIRECTIVE_LOCATION_END,
+    };
+
+    const std::map<const DirectiveLocation, std::string> directiveLocationToString = {
+        { DirectiveLocation::QUERY, "QUERY" },
+        { DirectiveLocation::MUTATION, "MUTATION" },
+        { DirectiveLocation::SUBSCRIPTION, "SUBSCRIPTION" },
+        { DirectiveLocation::FIELD, "FIELD" },
+        { DirectiveLocation::FRAGMENT_DEFINITION, "FRAGMENT_DEFINITION" },
+        { DirectiveLocation::FRAGMENT_SPREAD, "FRAGMENT_SPREAD" },
+        { DirectiveLocation::INLINE_FRAGMENT, "INLINE_FRAGMENT" },
+
+        { DirectiveLocation::SCHEMA, "SCHEMA" },
+        { DirectiveLocation::SCALAR, "SCALAR" },
+        { DirectiveLocation::OBJECT, "OBJECT" },
+        { DirectiveLocation::FIELD_DEFINITION, "FIELD_DEFINITION" },
+        { DirectiveLocation::ARGUMENT_DEFINITION, "ARGUMENT_DEFINITION" },
+        { DirectiveLocation::INTERFACE, "INTERFACE" },
+        { DirectiveLocation::UNION, "UNION" },
+        { DirectiveLocation::ENUM, "ENUM" },
+        { DirectiveLocation::ENUM_VALUE, "ENUM_VALUE" },
+        { DirectiveLocation::INPUT_OBJECT, "INPUT_OBJECT" },
+        { DirectiveLocation::INPUT_FIELD_DEFINITION, "INPUT_FIELD_DEFINITION" },
+    };
+
+    struct DirectiveDefinition : Declaration {
+        std::map<Glib::ustring, InputValueDefinition*> arguments;
+        std::set<DirectiveLocation> locations;
+
+        D(DirectiveDefinition, Declaration)
+        { }
+
+        new_operator(DirectiveDefinition)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct EnumValueDefinition : Name {
+        std::map<Glib::ustring, Directive*> directives;
+
+        EnumValueDefinition(SyntaxKind kind, unsigned int start, unsigned int end, Glib::ustring identifier) noexcept:
+            Name(kind, start, end, identifier)
+        { }
+
+        new_operator(EnumValueDefinition)
+
+        void accept(GraphQlSyntaxVisitor*) const;
+    };
+
+    struct EnumTypeDefinition : InputType {
+        std::map<Glib::ustring, EnumValueDefinition*> values;
+
+        D(EnumTypeDefinition, InputType)
         { }
 
         new_operator(EnumTypeDefinition)
@@ -293,7 +377,6 @@ namespace flashpoint::program::graphql {
             static_cast<unsigned int>(T_Object),
     };
 
-
     inline constexpr TypeEnum operator|(TypeEnum a, TypeEnum b) {
         return static_cast<TypeEnum>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
     }
@@ -309,6 +392,7 @@ namespace flashpoint::program::graphql {
         bool is_non_null_list;
         bool in_input_location;
         Name* name;
+        DirectiveDefinition* parent_directive_definition;
 
         S(Type)
         { }
@@ -469,6 +553,7 @@ namespace flashpoint::program::graphql {
     struct Argument : Syntax {
         Name* name;
         Syntax* value;
+        std::map<Glib::ustring, Directive*> directives;
 
         S(Argument)
         { }
@@ -492,6 +577,8 @@ namespace flashpoint::program::graphql {
     struct Directive : Syntax {
         Name* name;
         Arguments* arguments;
+        DirectiveDefinition* parent_directive_definition;
+        DirectiveLocation location;
 
         S(Directive)
         { }
@@ -512,7 +599,6 @@ namespace flashpoint::program::graphql {
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
-
     struct Selection : Syntax {
         SelectionSet* selection_set;
 
@@ -524,7 +610,7 @@ namespace flashpoint::program::graphql {
         Name* alias;
         Name* name;
         Arguments* arguments;
-        Directive* directive;
+        std::map<Glib::ustring, Directive*> directives;
 
         D(Field, Selection)
         { }
@@ -536,7 +622,7 @@ namespace flashpoint::program::graphql {
 
     struct FragmentSpread : Selection {
         Name* name;
-        Directives* directives;
+        std::map<Glib::ustring, Directive*> directives;
 
         D(FragmentSpread, Selection)
         { }
@@ -547,6 +633,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct InlineFragment : Selection {
+        std::map<Glib::ustring, Directive*> directives;
         D(InlineFragment, Selection)
         { }
 
@@ -569,7 +656,7 @@ namespace flashpoint::program::graphql {
     struct FragmentDefinition : Syntax {
         Name* name;
         Name* type;
-        Directives* directives;
+        std::map<Glib::ustring, Directive*> directives;
         SelectionSet* selection_set;
 
         S(FragmentDefinition)
@@ -591,6 +678,7 @@ namespace flashpoint::program::graphql {
         Name* name;
         VariableDefinitions* variable_definitions;
         SelectionSet* selection_set;
+        std::map<Glib::ustring, Directive*> directives;
 
         S(OperationDefinition)
         { }
@@ -615,6 +703,7 @@ namespace flashpoint::program::graphql {
     };
 
     struct Schema : Syntax {
+        std::map<Glib::ustring, Directive*> directives;
         Name* query;
         Name* mutation;
         Name* subscription;
@@ -722,12 +811,15 @@ namespace flashpoint::program::graphql {
         virtual void visit(const Object*) = 0;
         virtual void visit(const InputObject*) = 0;
         virtual void visit(const Interface*) = 0;
+        virtual void visit(const Directive*) = 0;
+        virtual void visit(const DirectiveDefinition*) = 0;
         virtual void visit(const EnumTypeDefinition*) = 0;
+        virtual void visit(const EnumValueDefinition*) = 0;
         virtual void visit(const FieldDefinition*) = 0;
-        virtual void visit(const FieldsDefinition*) = 0;
         virtual void visit(const InputFieldDefinition*) = 0;
         virtual void visit(const InputFieldsDefinition*) = 0;
-        virtual void visit(const Union*) = 0;
+        virtual void visit(const UnionTypeDefinition*) = 0;
+        virtual void visit(const FragmentSpread*) = 0;
         virtual void visit(const Schema*) = 0;
     };
 };

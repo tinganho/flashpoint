@@ -1,0 +1,5 @@
+﻿# comment-line
+#comment-line
+type Object {
+    field: Int
+}

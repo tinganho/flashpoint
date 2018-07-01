@@ -32,8 +32,13 @@ namespace flashpoint::program::graphql {
         std::stack<ObjectLike*> current_object_types;
         FieldDefinition* current_field;
         InputValueDefinition* current_argument;
+        Object* query;
+        Object* mutation;
+        Object* subscription;
         std::map<Glib::ustring, Symbol*> symbols;
         std::map<Glib::ustring, Interface*> interfaces;
+        std::vector<Directive*> directives;
+        std::map<Glib::ustring, DirectiveDefinition*> directive_definitions;
         std::vector<Type*> forward_type_references;
         std::vector<Name*> forward_interface_references;
         std::vector<std::tuple<Name*, ObjectLike*>> forward_fragment_references;
@@ -42,7 +47,7 @@ namespace flashpoint::program::graphql {
         std::vector<FragmentDefinition*> fragment_definitions;
         std::map<Glib::ustring, FragmentDefinition*> fragments;
         std::set<Glib::ustring> duplicate_fragments;
-        std::vector<Union*> unions;
+        std::vector<UnionTypeDefinition*> unions;
         std::set<Glib::ustring> duplicate_symbols;
         std::set<Glib::ustring> parsed_arguments;
         std::set<Glib::ustring> duplicate_arguments;
@@ -56,6 +61,9 @@ namespace flashpoint::program::graphql {
 
         GraphQlToken
         take_next_token(bool treat_keyword_as_name);
+
+        GraphQlToken
+        take_next_token(bool treat_keyword_as_name, bool skip_white_space);
 
         Glib::ustring
         get_token_value() const;
@@ -97,13 +105,19 @@ namespace flashpoint::program::graphql {
         parse_input_object();
 
         Interface*
-        parse_interface();
+        parse_interface_definition();
 
-        Union*
+        UnionTypeDefinition*
         parse_union_after_union_keyword();
 
         EnumTypeDefinition*
         parse_enum();
+
+        DirectiveDefinition*
+        parse_directive_definition_after_directive_keyword();
+
+        std::map<Glib::ustring, Directive*>
+        parse_directives(DirectiveLocation location, DirectiveDefinition* parent_directive_definition);
 
         Implementations*
         parse_implementations();
@@ -111,26 +125,32 @@ namespace flashpoint::program::graphql {
         Name*
         parse_object_name(ObjectLike *object, SymbolKind);
 
-        FieldsDefinition*
+        std::map<Glib::ustring, FieldDefinition*>*
         parse_fields_definition(ObjectLike* object);
 
-        FieldsDefinition*
+        std::map<Glib::ustring, FieldDefinition*>*
         parse_fields_definition_after_open_brace(ObjectLike* object);
 
-        InputFieldsDefinition*
+        std::map<Glib::ustring, InputFieldDefinition*>*
         parse_input_fields_definition(InputObject* object);
 
         Name*
         parse_input_object_name(InputObject* object);
 
         Arguments*
-        parse_arguments();
+        parse_arguments_after_open_paren();
+
+        Arguments*
+        parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions);
 
         Type*
         parse_type();
 
         Type*
-        parse_type_annotation(bool in_input_location);
+        parse_type_annotation(bool in_input_location, DirectiveDefinition* parent_directive_definition);
+
+        Value*
+        parse_value();
 
         Value*
         parse_value(Type*);
@@ -153,23 +173,27 @@ namespace flashpoint::program::graphql {
         Name*
         parse_optional_name();
 
-        ArgumentsDefinition*
-        parse_arguments_definition();
+        std::map<Glib::ustring, InputValueDefinition*>
+        parse_arguments_definition_after_open_paren(DirectiveDefinition*);
 
         ObjectField*
         parse_object_field();
 
         inline bool
         scan_optional(const GraphQlToken &);
-
         inline bool
         scan_optional(const GraphQlToken &, bool treat_keyword_as_name);
+
+        inline bool
+        scan_optional(const GraphQlToken &, bool treat_keyword_as_name, bool skip_white_space);
 
         inline bool
         scan_expected(const GraphQlToken&);
 
         inline bool
         scan_expected(const GraphQlToken&, bool treat_keyword_as_name);
+        inline bool
+        scan_expected(const GraphQlToken&, bool treat_keyword_as_name, bool skip_white_space);
 
         inline bool
         scan_expected(const GraphQlToken& token, DiagnosticMessageTemplate& _template);
@@ -181,10 +205,19 @@ namespace flashpoint::program::graphql {
         check_forward_references();
 
         void
+        check_directive_references();
+
+        void
+        check_recursive_directives(const Glib::ustring& parent_directive_definition, Type* location, Type* type);
+
+        void
         check_object_implementations();
 
         void
         check_union_members();
+
+        void
+        check_schema_references(Schema* schema);
 
         inline
         void
@@ -212,6 +245,9 @@ namespace flashpoint::program::graphql {
 
         void
         skip_to_next_schema_primary_token();
+
+        void
+        skip_to_next_query_primary_token();
 
         bool
         token_is_primary(GraphQlToken);

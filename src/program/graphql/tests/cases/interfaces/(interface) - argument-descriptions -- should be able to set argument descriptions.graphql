@@ -1,0 +1,19 @@
+interface LineDescription {
+    field("line-description" argument: Int): Int
+}
+
+interface BlockDescription {
+    field("""block-description""" argument: Int): Int
+}
+
+interface MultipleBlockDescription {
+    field("""block-description""" argument1: Int, """block-description""" argument2: Int): Int
+}
+
+interface MultipleLineDescription {
+    field("line-description" argument1: Int, "line-description" argument2: Int): Int
+}
+
+interface MultipleMixedTypeDescription {
+    field("line-description" argument1: Int, """block-description""" argument2: Int): Int
+}
