@@ -1,0 +1,69 @@
+directive @argument_definition_directive on ARGUMENT_DEFINITION
+
+schema @argument_definition_directive {
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (3, 8, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'SCHEMA'.
+    query: ObjectDirective
+    mutation: ObjectDirective
+    subscription: ObjectDirective
+}
+
+type ObjectDirective @argument_definition_directive {
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (9, 22, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'OBJECT'.
+    field: Int
+    object: ObjectFieldDirective
+}
+
+type ObjectFieldDirective {
+    field: Int @argument_definition_directive
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (15, 16, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'FIELD_DEFINITION'.
+}
+
+type ObjectArgumentDirective {
+    field(argument: Int @argument_definition_directive): Int
+}
+
+interface InterfaceDirective @argument_definition_directive {
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (22, 30, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'INTERFACE'.
+    field: Int
+}
+
+interface InterfaceFieldDirective {
+    field: Int @argument_definition_directive
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (27, 16, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'FIELD_DEFINITION'.
+}
+
+interface InterfaceArgumentDirective {
+    field(argument: Int @argument_definition_directive): Int
+}
+
+input InputObjectDirective @argument_definition_directive {
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (34, 28, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'INPUT_OBJECT'.
+    field: Int
+}
+
+input InputObjectFieldDirective {
+    field: Int @argument_definition_directive
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (39, 16, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'INPUT_FIELD_DEFINITION'.
+}
+
+enum EnumDirective @argument_definition_directive {
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (42, 20, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'ENUM'.
+    value,
+}
+
+enum EnumValueDirective {
+    value @argument_definition_directive,
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (47, 11, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'ENUM_VALUE'.
+}
+union UnionDirective @argument_definition_directive = ObjectFieldDirective
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (49, 22, 30)
+!!! The directive '@argument_definition_directive' does not support the location 'UNION'.

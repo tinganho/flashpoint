@@ -1,0 +1,13 @@
+type RootQuery {
+    field: Int
+}
+
+schema {
+    query: RootQuery
+}
+====
+mutation {
+~~~~~~~~ (1, 1, 8)
+!!! Mutations are not supported.
+    field
+}

@@ -1,0 +1,6 @@
+directive @directive on OBJECTT
+                        ~~~~~~~ (1, 25, 7)
+!!! Expected directive location.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

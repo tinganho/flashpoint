@@ -1,0 +1,44 @@
+directive @directive(argument: Int @directive) on ARGUMENT_DEFINITION
+                                   ~~~~~~~~~~ (1, 36, 10)
+!!! Directive cannot reference itself.
+
+input InputDirective @directive1 {
+    type: Int
+}
+
+input InputFieldDirective {
+    type: Int @directive1
+              ~~~~~~~~~~~ (8, 15, 11)
+!!! The directive '@directive1' does not support the location 'INPUT_FIELD_DEFINITION'.
+}
+
+input DeepInputDirective {
+    type: InputFieldDirective
+}
+
+directive @directive1(argument1: InputDirective, argument2: InputFieldDirective, argument3: DeepInputDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
+                                 ~~~~~~~~~~~~~~ (15, 34, 14)
+!!! Cannot annotate with a type that recursively references the directive '@directive1'.
+                                                            ~~~~~~~~~~~~~~~~~~~ (15, 61, 19)
+!!! Cannot annotate with a type that recursively references the directive '@directive1'.
+                                                                                            ~~~~~~~~~~~~~~~~~~ (15, 93, 18)
+!!! Cannot annotate with a type that recursively references the directive '@directive1'.
+
+enum EnumDirective @directive2 {
+    SOME
+}
+
+enum EnumValueDirective {
+    SOME @directive2
+         ~~~~~~~~~~~ (22, 10, 11)
+!!! The directive '@directive2' does not support the location 'ENUM_VALUE'.
+}
+
+directive @directive2(argument: EnumDirective, argument2: EnumValueDirective) on ENUM | ENUM_VALUE
+                                ~~~~~~~~~~~~~ (25, 33, 13)
+!!! Cannot annotate with a type that recursively references the directive '@directive2'.
+                                                          ~~~~~~~~~~~~~~~~~~ (25, 59, 18)
+!!! Cannot annotate with a type that recursively references the directive '@directive2'.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

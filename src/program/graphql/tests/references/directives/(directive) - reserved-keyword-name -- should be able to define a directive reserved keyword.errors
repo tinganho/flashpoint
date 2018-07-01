@@ -1,0 +1,4 @@
+directive @directive on OBJECT
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

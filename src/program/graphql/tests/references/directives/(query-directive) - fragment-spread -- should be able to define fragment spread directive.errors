@@ -1,0 +1,59 @@
+directive @fragment_spread_directive on FRAGMENT_SPREAD
+
+schema {
+    query: Object
+    mutation: Object
+    subscription: Object
+}
+
+type Object {
+    field: Int
+    subField: Object
+}
+====
+query Query @fragment_spread_directive {
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~ (1, 13, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'QUERY'.
+    field @fragment_spread_directive
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~ (2, 11, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'FIELD'.
+    subField {
+        field @fragment_spread_directive
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~ (4, 15, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'FIELD'.
+    }
+    ...Fragment @fragment_spread_directive
+    ... on Object @fragment_spread_directive {
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~ (7, 19, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'INLINE_FRAGMENT'.
+        field
+    }
+}
+
+mutation Mutation @fragment_spread_directive {
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~ (12, 19, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'MUTATION'.
+    field
+}
+
+subscription Mutation @fragment_spread_directive {
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~ (16, 23, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'SUBSCRIPTION'.
+    field
+}
+
+fragment Fragment on Object {
+    field
+}
+
+fragment FragmentDirective on Object @fragment_spread_directive {
+                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~ (24, 38, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'FRAGMENT_DEFINITION'.
+    field
+}
+
+fragment FragmentFieldDirective on Object {
+    field @fragment_spread_directive
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~ (29, 11, 26)
+!!! The directive '@fragment_spread_directive' does not support the location 'FIELD'.
+}

@@ -1,0 +1,12 @@
+directive @directive(paremeter: Int @undefined1) on OBJECT
+                                    ~~~~~~~~~~~ (1, 37, 11)
+!!! Undefined directive 'undefined1'.
+
+type Object @undefined2 {
+            ~~~~~~~~~~~ (3, 13, 11)
+!!! Undefined directive 'undefined2'.
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

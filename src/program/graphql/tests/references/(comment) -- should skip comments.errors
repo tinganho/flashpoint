@@ -1,0 +1,8 @@
+﻿# comment-line
+#comment-line
+type Object {
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

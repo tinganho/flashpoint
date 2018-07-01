@@ -1,0 +1,13 @@
+type RootQuery {
+    field: Int
+}
+
+schema {
+    query: RootQuery
+}
+====
+subscription {
+~~~~~~~~~~~~ (1, 1, 12)
+!!! Subscriptions are not supported.
+    field
+}

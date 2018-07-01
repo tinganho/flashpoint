@@ -1,0 +1,7 @@
+directive @directive on OBJECT | FIELD |
+
+END_OF_DOCUMENT:
+!!! Expected directive location, but instead reached the end of document.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

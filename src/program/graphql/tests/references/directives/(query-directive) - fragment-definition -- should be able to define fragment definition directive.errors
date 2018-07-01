@@ -1,0 +1,59 @@
+directive @fragment_definition_directive on FRAGMENT_DEFINITION
+
+schema {
+    query: Object
+    mutation: Object
+    subscription: Object
+}
+
+type Object {
+    field: Int
+    subField: Object
+}
+====
+query Query @fragment_definition_directive {
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (1, 13, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'QUERY'.
+    field @fragment_definition_directive
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (2, 11, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'FIELD'.
+    subField {
+        field @fragment_definition_directive
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (4, 15, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'FIELD'.
+    }
+    ...Fragment @fragment_definition_directive
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (6, 17, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'FRAGMENT_SPREAD'.
+    ... on Object @fragment_definition_directive {
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (7, 19, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'INLINE_FRAGMENT'.
+        field
+    }
+}
+
+mutation Mutation @fragment_definition_directive {
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (12, 19, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'MUTATION'.
+    field
+}
+
+subscription Mutation @fragment_definition_directive {
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (16, 23, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'SUBSCRIPTION'.
+    field
+}
+
+fragment Fragment on Object {
+    field
+}
+
+fragment FragmentDirective on Object @fragment_definition_directive {
+    field
+}
+
+fragment FragmentFieldDirective on Object {
+    field @fragment_definition_directive
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (29, 11, 30)
+!!! The directive '@fragment_definition_directive' does not support the location 'FIELD'.
+}

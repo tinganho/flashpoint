@@ -1,0 +1,71 @@
+directive @enum_directive on ENUM
+
+schema @enum_directive {
+       ~~~~~~~~~~~~~~~ (3, 8, 15)
+!!! The directive '@enum_directive' does not support the location 'SCHEMA'.
+    query: ObjectDirective
+    mutation: ObjectDirective
+    subscription: ObjectDirective
+}
+
+type ObjectDirective @enum_directive {
+                     ~~~~~~~~~~~~~~~ (9, 22, 15)
+!!! The directive '@enum_directive' does not support the location 'OBJECT'.
+    field: Int
+    object: ObjectFieldDirective
+}
+
+type ObjectFieldDirective {
+    field: Int @enum_directive
+               ~~~~~~~~~~~~~~~ (15, 16, 15)
+!!! The directive '@enum_directive' does not support the location 'FIELD_DEFINITION'.
+}
+
+type ObjectArgumentDirective {
+    field(argument: Int @enum_directive): Int
+                        ~~~~~~~~~~~~~~~ (19, 25, 15)
+!!! The directive '@enum_directive' does not support the location 'ARGUMENT_DEFINITION'.
+}
+
+interface InterfaceDirective @enum_directive {
+                             ~~~~~~~~~~~~~~~ (22, 30, 15)
+!!! The directive '@enum_directive' does not support the location 'INTERFACE'.
+    field: Int
+}
+
+interface InterfaceFieldDirective {
+    field: Int @enum_directive
+               ~~~~~~~~~~~~~~~ (27, 16, 15)
+!!! The directive '@enum_directive' does not support the location 'FIELD_DEFINITION'.
+}
+
+interface InterfaceArgumentDirective {
+    field(argument: Int @enum_directive): Int
+                        ~~~~~~~~~~~~~~~ (31, 25, 15)
+!!! The directive '@enum_directive' does not support the location 'ARGUMENT_DEFINITION'.
+}
+
+input InputObjectDirective @enum_directive {
+                           ~~~~~~~~~~~~~~~ (34, 28, 15)
+!!! The directive '@enum_directive' does not support the location 'INPUT_OBJECT'.
+    field: Int
+}
+
+input InputObjectFieldDirective {
+    field: Int @enum_directive
+               ~~~~~~~~~~~~~~~ (39, 16, 15)
+!!! The directive '@enum_directive' does not support the location 'INPUT_FIELD_DEFINITION'.
+}
+
+enum EnumDirective @enum_directive {
+    value,
+}
+
+enum EnumValueDirective {
+    value @enum_directive,
+          ~~~~~~~~~~~~~~~ (47, 11, 15)
+!!! The directive '@enum_directive' does not support the location 'ENUM_VALUE'.
+}
+union UnionDirective @enum_directive = ObjectFieldDirective
+                     ~~~~~~~~~~~~~~~ (49, 22, 15)
+!!! The directive '@enum_directive' does not support the location 'UNION'.

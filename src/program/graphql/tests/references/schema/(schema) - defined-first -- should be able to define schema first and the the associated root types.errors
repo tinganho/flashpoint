@@ -1,0 +1,9 @@
+schema {
+    query: Query
+}
+
+type Query {
+    error: Error
+           ~~~~~ (6, 12, 5)
+!!! Type 'Error' is not defined.
+}

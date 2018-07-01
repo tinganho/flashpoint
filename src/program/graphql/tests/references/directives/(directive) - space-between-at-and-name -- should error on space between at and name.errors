@@ -1,0 +1,6 @@
+directive @ name on OBJECT
+           ~ (1, 12, 1)
+!!! Expected name, but instead got 'whitespace'.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

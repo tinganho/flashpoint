@@ -1,0 +1,10 @@
+directive directive on OBJECT
+          ~~~~~~~~~ (1, 11, 9)
+!!! Expected '@', but got 'directive'.
+
+type Object {
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

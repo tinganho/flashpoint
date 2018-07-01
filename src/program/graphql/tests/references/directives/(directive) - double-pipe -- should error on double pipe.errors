@@ -1,0 +1,6 @@
+directive @directive on OBJECT || FIELD
+                                 ~~~~~~ (1, 34, 6)
+!!! Expected directive location.
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

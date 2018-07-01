@@ -1,0 +1,5 @@
+directive @directive1(argument: Int) on OBJECT
+directive @directive2(argument1: Int, argument2: Int) on OBJECT
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.
