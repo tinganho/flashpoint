@@ -1,0 +1,13 @@
+directive @directive(argument: Object) on OBJECT
+
+input Object {
+    field: SubObject
+}
+
+input SubObject {
+    field: Int
+}
+
+type Object1 @directive(argument: { field: { undefined: 1 } }) {
+    field: Int
+}

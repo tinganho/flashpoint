@@ -1,0 +1,14 @@
+directive @directive(argument: [Boolean]!) on OBJECT
+
+type Object @directive(argument: ["string"]) {
+                                  ~~~~~~~~ (3, 35, 8)
+!!! The value '"string"' is not assignable to type 'Boolean'.
+    field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

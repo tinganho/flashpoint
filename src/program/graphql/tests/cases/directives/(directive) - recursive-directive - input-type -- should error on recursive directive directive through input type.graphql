@@ -1,11 +1,11 @@
-directive @directive(argument: Int @directive) on ARGUMENT_DEFINITION
+directive @directive(argument: Int @directive(argument: 1)) on ARGUMENT_DEFINITION
 
-input InputDirective @directive1 {
+input InputDirective @directive1(argument1: { type: 1 }, argument2: { type: 1 }, argument3: { type: { type: 1 }}, argument4: { type: { type: 1 }}) {
     type: Int
 }
 
 input InputFieldDirective {
-    type: Int @directive1
+    type: Int @directive1(argument1: { type: 1 }, argument2: { type: 1 }, argument3: { type: { type: 1 }}, argument4: { type: { type: 1 }})
 }
 
 input DeepInputFieldDirective {
@@ -18,12 +18,12 @@ input DeepInputDirective {
 
 directive @directive1(argument1: InputDirective, argument2: InputFieldDirective, argument3: DeepInputDirective, argument4: DeepInputFieldDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-enum EnumDirective @directive2 {
-    SOME
+enum EnumDirective @directive2(argument1: ENUM_VALUE, argument2: ENUM_VALUE) {
+    ENUM_VALUE
 }
 
 enum EnumValueDirective {
-    SOME @directive2
+    ENUM_VALUE @directive2(argument1: ENUM_VALUE, argument2: ENUM_VALUE)
 }
 
-directive @directive2(argument: EnumDirective, argument2: EnumValueDirective) on ENUM | ENUM_VALUE
+directive @directive2(argument1: EnumDirective, argument2: EnumValueDirective) on ENUM | ENUM_VALUE

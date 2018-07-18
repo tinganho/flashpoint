@@ -597,7 +597,7 @@ namespace flashpoint::program::graphql {
     }
 
     Location
-    GraphQlScanner::get_token_location(Syntax* syntax)
+    GraphQlScanner::get_token_location(const Syntax* syntax)
     {
         Location location = search_for_line(0, position_to_line_list.size() - 1, syntax->start);
         location.length = syntax->end - syntax->start;
@@ -953,6 +953,12 @@ namespace flashpoint::program::graphql {
     GraphQlScanner::get_value() const
     {
         return source->substr(start_position, length());
+    }
+
+    Glib::ustring
+    GraphQlScanner::get_value_from_syntax(Syntax* syntax) const
+    {
+        return source->substr(syntax->start, syntax->end);
     }
 
     Glib::ustring

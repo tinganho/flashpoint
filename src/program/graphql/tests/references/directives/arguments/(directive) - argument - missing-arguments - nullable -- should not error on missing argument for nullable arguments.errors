@@ -1,0 +1,8 @@
+directive @directive(argument: Int, nullable: Int) on OBJECT
+
+type Object1 @directive(nullable: null) {
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

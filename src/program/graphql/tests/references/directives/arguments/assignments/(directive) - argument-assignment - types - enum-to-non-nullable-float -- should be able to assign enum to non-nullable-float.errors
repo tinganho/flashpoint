@@ -1,0 +1,14 @@
+directive @directive(argument: Float!) on OBJECT
+
+type Object @directive(argument: ENUM_VALUE) {
+                                 ~~~~~~~~~~ (3, 34, 10)
+!!! The value 'ENUM_VALUE' is not assignable to type 'Float!'.
+    field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

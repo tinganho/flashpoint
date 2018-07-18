@@ -1,0 +1,104 @@
+directive @directive(argument: {{type}}) on OBJECT
+
+type Object @directive(argument: {{value}}) {
+field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+# @foreach(type, type_name, value):
+#     [type: "Boolean", type_name: "boolean", value: "true"]
+#     [type: "String", type_name: "string", value: "\"String\""]
+#     [type: "Float", type_name: "float", value: "1.0"]
+#     [type: "Enum", type_name: "enum", value: "ENUM_VALUE"]
+#     [type: "ID", type_name: "id", value: "\"id\""]
+#
+# @test(value, type):
+#
+# [value: "int", type: "nullable-{{type_name}}"]: {
+#     type: "{{type}}",
+#     value: "1",
+# }
+#
+# [value: "int", type: "non-nullable-{{type_name}}"]: {
+#     type: "{{type}}!",
+#     value: "1",
+# }
+#
+# [value: "int", type: "nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}]",
+#     value: "1",
+# }
+#
+# [value: "int", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "1",
+# }
+#
+# [value: "int", type: "non-nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}!]!",
+#     value: "1",
+# }
+#
+# [value: "null", type: "non-nullable-{{type_name}}"]: {
+#     type: "{{type}}!",
+#     value: "null",
+# }
+#
+# [value: "null", type: "nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}]",
+#     value: "null",
+# }
+#
+# [value: "null", type: "non-nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}!]",
+#     value: "null",
+# }
+#
+# [value: "null", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "null",
+# }
+#
+# [value: "null", type: "non-nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}!]!",
+#     value: "null",
+# }
+#
+# [value: "{{type_name}}", type: "nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}]",
+#     value: "{{value}}",
+# }
+#
+# [value: "{{type_name}}", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "{{value}}",
+# }
+#
+# [value: "{{type_name}}-list", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "[{{value}}, {{value}}]",
+# }
+#
+# [value: "null-list", type: "nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}]",
+#     value: "[{{value}}, null]",
+# }
+#
+# [value: "null-list", type: "non-nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}!]",
+#     value: "[{{value}}, null]",
+# }
+#
+# [value: "null-list", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "[{{value}}, null]",
+# }
+#
+# [value: "null-list", type: "non-nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}!]!",
+#     value: "[{{value}}, null]",
+# }
+#
+# @end

@@ -2,7 +2,9 @@
 //#include "graphql_scanner.h"
 #include "graphql_syntaxes.h"
 #include "graphql_diagnostics.h"
+#include "lib/text_writer.h"
 #include <memory>
+#include <exception>
 
 namespace flashpoint::program::graphql {
 
@@ -196,6 +198,28 @@ namespace flashpoint::program::graphql {
                     "@" + directive->name->identifier,
                     directiveLocationToString.at(directive->location)
                 );
+            }
+            std::set<Glib::ustring> checked_arguments;
+            for (const auto& argument_definition_it : definition->second->arguments) {
+                const auto& argument_definition = argument_definition_it.second;
+                const auto& argument = argument_definition->name->identifier;
+                const auto& directive_argument_it = directive->arguments.find(argument);
+                if (directive_argument_it == directive->arguments.end()) {
+                    if (argument_definition->type->is_non_null || argument_definition->type->is_non_null_list) {
+                        add_diagnostic(get_location_from_syntax(directive), D::Missing_required_argument_0, argument);
+                    }
+                    continue;
+                }
+                checked_arguments.emplace(argument);
+                const auto& directive_argument = directive_argument_it->second;
+                check_value(directive_argument->value, argument_definition_it.second->type);
+            }
+            if (checked_arguments.size() < directive->arguments.size()) {
+                for (const auto& argument_it : directive->arguments) {
+                    if (checked_arguments.find(argument_it.second->name->identifier) != checked_arguments.end()) {
+                        add_diagnostic(D::Unknown_argument_0);
+                    }
+                }
             }
         }
     }
@@ -562,7 +586,7 @@ namespace flashpoint::program::graphql {
                 add_diagnostic(Location { 0, 0, 0, true }, D::Expected_directive_location_but_instead_reached_the_end_of_document);
                 return nullptr;
             }
-            definition->locations.emplace(location);
+            definition->locations.emplace(l);
         }
         directive_definitions.emplace(definition->name->identifier, definition);
         return definition;
@@ -916,7 +940,7 @@ namespace flashpoint::program::graphql {
             if (input_field_definition->type == nullptr) {
                 return nullptr;
             }
-            if (input_field_definition->type->is_non_null) {
+            if (input_field_definition->type->is_non_null || input_field_definition->type->is_non_null_list) {
                 object->required_fields.push_back(name);
             }
             input_field_definition->directives = parse_directives(DirectiveLocation::INPUT_FIELD_DEFINITION, nullptr);
@@ -960,7 +984,12 @@ namespace flashpoint::program::graphql {
             }
             input_value_definition->type = parse_type_annotation(/*is_input*/ true, parent_directive_definition);
             input_value_definition->directives = parse_directives(DirectiveLocation::ARGUMENT_DEFINITION, parent_directive_definition);
-            arguments.emplace(name, input_value_definition);
+            if (arguments.find(name) == arguments.end()) {
+                arguments.emplace(name, input_value_definition);
+            }
+            else {
+                add_diagnostic(D::Duplicate_argument_0, name);
+            }
         }
         while (true);
         return arguments;
@@ -1214,7 +1243,7 @@ namespace flashpoint::program::graphql {
                 case GraphQlToken::G_Name: {
                     auto token_value = get_token_value();
                     auto current_object_type = current_object_types.top();
-                    auto& fields = current_object_type->fields;
+                    auto fields = current_object_type->fields;
                     auto field_definition_it = fields->find(token_value);
                     if (field_definition_it == fields->end()) {
                         add_diagnostic(D::Field_0_does_not_exist_on_type_1, token_value, current_object_type->name->identifier);
@@ -1235,7 +1264,7 @@ namespace flashpoint::program::graphql {
                         field->name = name;
                     }
                     if (scan_optional(GraphQlToken::OpenParen)) {
-                        field->arguments = parse_arguments(field_definition_it->second->arguments);
+                        field->arguments = parse_arguments(field_definition_it->second->arguments, field);
                     }
                     field->directives = parse_directives(DirectiveLocation::FIELD, nullptr);
                     if (scan_optional(GraphQlToken::OpenBrace)) {
@@ -1314,7 +1343,7 @@ namespace flashpoint::program::graphql {
         }
     }
 
-    Arguments* GraphQlParser::parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions)
+    Arguments* GraphQlParser::parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field)
     {
         const auto& arguments = create_syntax<Arguments>(SyntaxKind::S_Arguments);
         while (true) {
@@ -1326,9 +1355,9 @@ namespace flashpoint::program::graphql {
             auto name = create_syntax<Name>(SyntaxKind::S_Name, token_value);
             auto argument = create_syntax<Argument>(SyntaxKind::S_Argument);
             argument->name = name;
-            auto result = input_value_definitions.find(token_value);
+            auto input_value_definition_it = input_value_definitions.find(token_value);
             bool is_defined = true;
-            if (result == input_value_definitions.end()) {
+            if (input_value_definition_it == input_value_definitions.end()) {
                 add_diagnostic(D::Unknown_argument_0, token_value);
                 is_defined = false;
             }
@@ -1344,7 +1373,7 @@ namespace flashpoint::program::graphql {
                 return nullptr;
             }
             if (is_defined) {
-                argument->value = parse_value(result->second->type);
+                argument->value = parse_value(input_value_definition_it->second->type);
             }
             else {
                 scanner->skip_to({
@@ -1354,6 +1383,7 @@ namespace flashpoint::program::graphql {
             }
             arguments->arguments.push_back(argument);
         }
+        finish_syntax(field);
         if (duplicate_arguments.size() > 0) {
             for (const auto& duplicate_argument : duplicate_arguments) {
                 for (const auto& argument : arguments->arguments) {
@@ -1369,18 +1399,28 @@ namespace flashpoint::program::graphql {
             duplicate_arguments.clear();
         }
         parsed_arguments.clear();
+        for (const auto& argument_definition : input_value_definitions) {
+            const auto& type = argument_definition.second->type;
+            if ((type->is_non_null && !type->is_list_type) || type->is_non_null_list) {
+                if (parsed_arguments.find(argument_definition.second->name->identifier) == parsed_arguments.end()) {
+                    add_diagnostic(
+                        get_location_from_syntax(field),
+                        D::Missing_required_argument_0,
+                        argument_definition.second->name->identifier
+                    );
+                }
+            }
+        }
         return arguments;
     }
 
-    Arguments*
+    std::map<Glib::ustring, Argument*>
     GraphQlParser::parse_arguments_after_open_paren()
     {
-        const auto& arguments = create_syntax<Arguments>(SyntaxKind::S_Arguments);
+        std::map<Glib::ustring, Argument*> arguments;
         while (true) {
-            scanner->save();
             auto token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
             if (token == GraphQlToken::CloseParen) {
-                scanner->revert();
                 break;
             }
             auto token_value = get_token_value();
@@ -1389,12 +1429,41 @@ namespace flashpoint::program::graphql {
             argument->name = name;
             if (!scan_expected(GraphQlToken::Colon)) {
                 scanner->skip_to({ GraphQlToken::CloseBrace });
-                return nullptr;
+                return arguments;
             }
             argument->value = parse_value();
-            arguments->arguments.push_back(argument);
+            const auto& argument_it = arguments.find(token_value);
+            if (argument_it == arguments.end()) {
+                arguments.emplace(token_value, argument);
+            }
+            else {
+                if (!has_diagnostic_in_syntax(argument_it->second->name, D::Duplicate_argument_0)) {
+                    add_diagnostic(get_location_from_syntax(argument_it->second->name), D::Duplicate_argument_0, token_value);
+                }
+                add_diagnostic(get_location_from_syntax(argument->name), D::Duplicate_argument_0, token_value);
+            }
         }
         return arguments;
+    }
+
+    bool
+    GraphQlParser::has_diagnostic_in_syntax(const Syntax* syntax, const DiagnosticMessageTemplate& diagnostic)
+    {
+        auto name_location = scanner->get_token_location(syntax);
+        auto old_diagnostic_it = std::find_if(this->diagnostics.begin(), this->diagnostics.end(), [&](DiagnosticMessage& diagnostic_message) -> bool {
+            auto location = diagnostic_message.location;
+            if (diagnostic_message._template == diagnostic.message_template &&
+                location.line == name_location.line &&
+                location.column == name_location.column &&
+                location.length == name_location.length) {
+                return true;
+            }
+            return false;
+        });
+        if (old_diagnostic_it != this->diagnostics.end()) {
+            return true;
+        }
+        return false;
     }
 
     std::map<Glib::ustring, Directive*>
@@ -1421,7 +1490,13 @@ namespace flashpoint::program::graphql {
                 directive->arguments = parse_arguments_after_open_paren();
             }
             this->directives.push_back(directive);
-            directives.emplace(directive->name->identifier, directive);
+            auto directive_name = directive->name->identifier;
+            if (directives.find(directive_name) == directives.end()) {
+                directives.emplace(directive_name, directive);
+            }
+            else {
+                add_diagnostic(D::Duplicate_argument_0, directive_name);
+            }
         }
         return directives;
     }
@@ -1463,7 +1538,7 @@ namespace flashpoint::program::graphql {
         current_value_token = take_next_token();
         switch (current_value_token) {
             case GraphQlToken::OpenBracket: {
-                const auto list_value = create_syntax<ListValue>(SyntaxKind::S_ObjectValue);
+                const auto list_value = create_syntax<ListValue>(SyntaxKind::S_ListValue);
                 Value* value = parse_value();
                 while (value != nullptr) {
                     list_value->values.push_back(value);
@@ -1492,7 +1567,8 @@ namespace flashpoint::program::graphql {
             }
             case GraphQlToken::FloatLiteral: {
                 auto value = create_syntax<FloatValue>(SyntaxKind::S_FloatValue);
-                value->value = std::atof(get_token_value().c_str());
+                value->string = get_token_value();
+                value->value = std::atof(value->string.c_str());
                 return value;
             }
             case GraphQlToken::TrueKeyword: {
@@ -1522,7 +1598,7 @@ namespace flashpoint::program::graphql {
                 auto location = get_token_location();
                 auto object_value = create_syntax<ObjectValue>(SyntaxKind::S_ObjectValue);
                 while (true) {
-                    GraphQlToken token = take_next_token();
+                    GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
                     if (token == GraphQlToken::CloseBrace) {
                         break;
                     }
@@ -1559,6 +1635,220 @@ namespace flashpoint::program::graphql {
         }
     }
 
+    void
+    GraphQlParser::check_value(Value* value, Type* type) {
+        switch (value->kind) {
+            case SyntaxKind::S_NullValue:
+                if ((!type->is_list_type && type->is_non_null) || type->is_non_null_list) {
+                    add_diagnostic(get_location_from_syntax(value), D::The_value_0_is_not_assignable_to_type_1, "null", get_type_name(type));
+                }
+                break;
+
+            case SyntaxKind::S_ListValue: {
+                if (!type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                    return;
+                }
+                type->is_list_type = false;
+                bool is_non_null_list = type->is_non_null_list;
+                type->is_non_null_list = false;
+                for (const auto& v : static_cast<ListValue*>(value)->values) {
+                    check_value(v, type);
+                }
+                type->is_list_type = true;
+                type->is_non_null_list = is_non_null_list;
+                break;
+            }
+
+            case SyntaxKind::S_StringValue:
+                if ((type->type & TypeEnum::T_StringType) == TypeEnum::T_None || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                break;
+
+            case SyntaxKind::S_IntValue:
+                if ((type->type & TypeEnum::T_IntegerType) == TypeEnum::T_None || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                break;
+
+            case SyntaxKind::S_FloatValue:
+                if (type->type != TypeEnum::T_Float || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                break;
+
+            case SyntaxKind::S_BooleanValue:
+                if (type->type != TypeEnum::T_Boolean || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                break;
+
+            case SyntaxKind::S_ObjectValue:
+                if (type->type != TypeEnum::T_Object || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                check_input_object(static_cast<ObjectValue*>(value), type);
+                break;
+
+            case SyntaxKind ::S_EnumValue:
+                if (type->type != TypeEnum::T_Enum || type->is_list_type) {
+                    add_diagnostic(get_location_from_syntax(value),
+                        D::The_value_0_is_not_assignable_to_type_1,
+                        get_value_string(value),
+                        get_type_name(type)
+                    );
+                }
+                break;
+
+            default:;
+        }
+    }
+
+    Glib::ustring
+    GraphQlParser::get_value_string(Value* value)
+    {
+        TextWriter tw;
+        switch (value->kind) {
+            case SyntaxKind::S_ListValue:
+                tw.write("[");
+                for (const auto& value : static_cast<ListValue*>(value)->values) {
+                    tw.write(get_value_string(value));
+                    tw.save();
+                    tw.write(", ");
+                }
+                tw.restore();
+                tw.write("]");
+                break;
+            case SyntaxKind::S_BooleanValue:
+                if (static_cast<BooleanValue*>(value)->value) {
+                    tw.write("true");
+                }
+                else {
+                    tw.write("false");
+                }
+                break;
+            case SyntaxKind::S_NullValue:
+                tw.write("null");
+                break;
+            case SyntaxKind::S_IntValue:
+                tw.write(std::to_string(static_cast<IntValue*>(value)->value));
+                break;
+            case SyntaxKind::S_FloatValue:
+                tw.write(static_cast<FloatValue*>(value)->string);
+                break;
+            case SyntaxKind::S_EnumValue:
+                tw.write(static_cast<EnumValue*>(value)->value);
+                break;
+            case SyntaxKind::S_StringValue:
+                tw.write(static_cast<StringValue*>(value)->value);
+                break;
+            case SyntaxKind::S_ObjectValue:
+                tw.write("{");
+                for (const auto& field : static_cast<ObjectValue*>(value)->object_fields) {
+                    tw.write(field->name->identifier + ": ");
+                    tw.write(get_value_string(field->value));
+                    tw.save();
+                    tw.write(",");
+                }
+                tw.restore();
+                tw.write("}");
+            default:
+                throw std::logic_error("Unknown value.");
+        }
+        return *tw.text;
+    }
+
+    void
+    GraphQlParser::check_input_object(ObjectValue* value, Type* type)
+    {
+        auto name = type->name->identifier;
+        auto symbol_it = symbols.find(name);
+        if (symbol_it == symbols.end()) {
+            add_diagnostic(D::Type_0_is_not_defined, name);
+            return;
+        }
+        if (symbol_it->second->kind != SymbolKind::SL_InputObject) {
+            // A diagnostic should already be registered here.
+            return;
+        }
+        InputObject* input_object = static_cast<InputObject*>(symbol_it->second->declaration);
+        std::map<Glib::ustring, ObjectField*> checked_fields;
+        for (const auto& field : value->object_fields) {
+            const auto& field_name = field->name->identifier;
+            const auto& field_it = input_object->fields->find(field_name);
+            if (field_it == input_object->fields->end()) {
+                add_diagnostic(
+                    get_location_from_syntax(value),
+                    D::Field_0_does_not_exist_on_type_1,
+                    field->name->identifier,
+                    input_object->name->identifier
+                );
+                continue;
+            }
+            auto checked_field_it = checked_fields.find(field_name);
+            if (checked_field_it != checked_fields.end()) {
+                add_diagnostic(
+                    get_location_from_syntax(field),
+                    D::Duplicate_field_0,
+                    field->name->identifier
+                );
+                if (!has_diagnostic_in_syntax(checked_field_it->second, D::Duplicate_field_0)) {
+                    add_diagnostic(
+                        get_location_from_syntax(checked_field_it->second),
+                        D::Duplicate_field_0,
+                        field->name->identifier
+                    );
+                }
+                continue;
+            }
+            checked_fields.emplace(field_name, field);
+            check_value(field->value, field_it->second->type);
+        }
+        if (checked_fields.size() < input_object->fields->size()) {
+            for (const auto& field_it : *input_object->fields) {
+                const auto field = field_it.second;
+                if ((field->type->is_non_null || field->type->is_non_null_list) && checked_fields.find(field_it.first) == checked_fields.end()) {
+                    add_diagnostic(
+                        get_location_from_syntax(value),
+                        D::Missing_required_field_0,
+                        field->name->identifier
+                    );
+                }
+            }
+        }
+    }
+
+    Glib::ustring
+    GraphQlParser::get_token_value_from_syntax(Syntax* syntax)
+    {
+        return scanner->get_value_from_syntax(syntax);
+    }
+
     Value*
     GraphQlParser::parse_value(Type* type)
     {
@@ -1590,7 +1880,7 @@ namespace flashpoint::program::graphql {
                 return nullptr;
 
             case GraphQlToken::NullKeyword:
-                if (type->is_non_null) {
+                if (type->is_non_null || type->is_non_null_list) {
                     add_diagnostic(
                         D::The_value_0_is_not_assignable_to_type_1,
                         "null",
@@ -1599,7 +1889,7 @@ namespace flashpoint::program::graphql {
                 }
                 return create_syntax<NullValue>(SyntaxKind::S_NullValue);
             case GraphQlToken::G_StringValue: {
-                if (type->type != TypeEnum::T_String || type->is_list_type) {
+                if ((type->type & TypeEnum::T_StringType) == TypeEnum::T_None || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
                         "String",
@@ -1611,7 +1901,7 @@ namespace flashpoint::program::graphql {
                 return value;
             }
             case GraphQlToken::IntegerLiteral: {
-                if (type->type != TypeEnum::T_Int || type->is_list_type) {
+                if ((type->type & TypeEnum::T_IntegerType) == TypeEnum::T_None || type->is_list_type) {
                     add_diagnostic(
                         D::Type_0_is_not_assignable_to_type_1,
                         "Int",
@@ -1998,6 +2288,9 @@ namespace flashpoint::program::graphql {
                 display_type += "ID";
                 break;
             case TypeEnum::T_Object:
+                display_type += type->name->identifier;
+                break;
+            case TypeEnum::T_Enum:
                 display_type += type->name->identifier;
                 break;
             default:

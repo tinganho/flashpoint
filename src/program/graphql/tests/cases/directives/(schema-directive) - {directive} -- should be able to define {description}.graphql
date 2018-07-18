@@ -72,7 +72,7 @@ fragment FragmentFieldDirective on ObjectFieldDirective {
     field {{directive}}
 }
 
-# @cases:
+# @test(directive, location):
 #
 # [directive: "schema", description: "schema directive"]: {
 #   directive: "@schema_directive",

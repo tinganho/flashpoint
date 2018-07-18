@@ -1,0 +1,18 @@
+directive @directive(argument: Object) on OBJECT
+
+input Object {
+    field: SubObject
+}
+
+input SubObject {
+    field: Int!
+}
+
+type Object1 @directive(argument: { field: { } }) {
+                                           ~~~ (11, 44, 3)
+!!! Missing required field 'field'.
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

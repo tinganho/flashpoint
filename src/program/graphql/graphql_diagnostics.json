@@ -51,5 +51,6 @@
   "Mutations are not supported.": {},
   "Subscriptions are not supported.": {},
   "Directive cannot reference itself.": {},
-  "Cannot annotate with a type that recursively references the directive '{0}'.": {}
+  "Cannot annotate with a type that recursively references the directive '{0}'.": {},
+  "Missing required argument '{0}'.": {}
 }

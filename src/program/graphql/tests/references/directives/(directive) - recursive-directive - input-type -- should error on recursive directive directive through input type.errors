@@ -1,43 +1,45 @@
-directive @directive(argument: Int @directive) on ARGUMENT_DEFINITION
+directive @directive(argument: Int @directive(argument: 1)) on ARGUMENT_DEFINITION
                                    ~~~~~~~~~~ (1, 36, 10)
 !!! Directive cannot reference itself.
 
-input InputDirective @directive1 {
+input InputDirective @directive1(argument1: { type: 1 }, argument2: { type: 1 }, argument3: { type: { type: 1 }}, argument4: { type: { type: 1 }}) {
     type: Int
 }
 
 input InputFieldDirective {
-    type: Int @directive1
-              ~~~~~~~~~~~ (8, 15, 11)
-!!! The directive '@directive1' does not support the location 'INPUT_FIELD_DEFINITION'.
+    type: Int @directive1(argument1: { type: 1 }, argument2: { type: 1 }, argument3: { type: { type: 1 }}, argument4: { type: { type: 1 }})
 }
 
-input DeepInputDirective {
+input DeepInputFieldDirective {
     type: InputFieldDirective
 }
 
-directive @directive1(argument1: InputDirective, argument2: InputFieldDirective, argument3: DeepInputDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
-                                 ~~~~~~~~~~~~~~ (15, 34, 14)
+input DeepInputDirective {
+    type: InputDirective
+}
+
+directive @directive1(argument1: InputDirective, argument2: InputFieldDirective, argument3: DeepInputDirective, argument4: DeepInputFieldDirective) on INPUT_OBJECT | INPUT_FIELD_DEFINITION
+                                 ~~~~~~~~~~~~~~ (19, 34, 14)
 !!! Cannot annotate with a type that recursively references the directive '@directive1'.
-                                                            ~~~~~~~~~~~~~~~~~~~ (15, 61, 19)
+                                                            ~~~~~~~~~~~~~~~~~~~ (19, 61, 19)
 !!! Cannot annotate with a type that recursively references the directive '@directive1'.
-                                                                                            ~~~~~~~~~~~~~~~~~~ (15, 93, 18)
+                                                                                            ~~~~~~~~~~~~~~~~~~ (19, 93, 18)
+!!! Cannot annotate with a type that recursively references the directive '@directive1'.
+                                                                                                                           ~~~~~~~~~~~~~~~~~~~~~~~ (19, 124, 23)
 !!! Cannot annotate with a type that recursively references the directive '@directive1'.
 
-enum EnumDirective @directive2 {
-    SOME
+enum EnumDirective @directive2(argument1: ENUM_VALUE, argument2: ENUM_VALUE) {
+    ENUM_VALUE
 }
 
 enum EnumValueDirective {
-    SOME @directive2
-         ~~~~~~~~~~~ (22, 10, 11)
-!!! The directive '@directive2' does not support the location 'ENUM_VALUE'.
+    ENUM_VALUE @directive2(argument1: ENUM_VALUE, argument2: ENUM_VALUE)
 }
 
-directive @directive2(argument: EnumDirective, argument2: EnumValueDirective) on ENUM | ENUM_VALUE
-                                ~~~~~~~~~~~~~ (25, 33, 13)
+directive @directive2(argument1: EnumDirective, argument2: EnumValueDirective) on ENUM | ENUM_VALUE
+                                 ~~~~~~~~~~~~~ (29, 34, 13)
 !!! Cannot annotate with a type that recursively references the directive '@directive2'.
-                                                          ~~~~~~~~~~~~~~~~~~ (25, 59, 18)
+                                                           ~~~~~~~~~~~~~~~~~~ (29, 60, 18)
 !!! Cannot annotate with a type that recursively references the directive '@directive2'.
 
 END_OF_DOCUMENT:

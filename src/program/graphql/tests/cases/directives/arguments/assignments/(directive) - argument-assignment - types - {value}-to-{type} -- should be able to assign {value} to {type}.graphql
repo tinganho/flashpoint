@@ -1,0 +1,62 @@
+directive @directive(argument: {{type}}) on OBJECT
+
+type Object @directive(argument: {{value}}) {
+    field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+# @foreach(value_type, value_value):
+#     [value_type: "boolean", value_value: "true"]
+#     [value_type: "boolean-list", value_value: "[true]"]
+#     [value_type: "int", value_value: "1"]
+#     [value_type: "int-list", value_value: "[1]"]
+#     [value_type: "float", value_value: "1.0"]
+#     [value_type: "float-list", value_value: "[1.0]"]
+#     [value_type: "enum", value_value: "ENUM_VALUE"]
+#     [value_type: "enum-list", value_value: "[ENUM_VALUE]"]
+#     [value_type: "string", value_value: "\"string\""]
+#     [value_type: "string-list", value_value: "[\"string\"]"]
+#
+# @foreach(type, type_name):
+#     [type: "Boolean", type_name: "boolean"]
+#     [type: "Int", type_name: "int"]
+#     [type: "Float", type_name: "float"]
+#     [type: "Enum", type_name: "enum"]
+#     [type: "ID", type_name: "id"]
+#     [type: "String", type_name: "string"]
+#
+# @test(type, value):
+#
+# [value: "{{value_type}}", type: "nullable-{{type_name}}"]: {
+#     type: "{{type}}",
+#     value: "{{value_value}}",
+# }
+#
+# [value: "{{value_type}}", type: "non-nullable-{{type_name}}"]: {
+#     type: "{{type}}!",
+#     value: "{{value_value}}",
+# }
+#
+# [value: "{{value_type}}", type: "nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}]",
+#     value: "{{value_value}}",
+# }
+#
+# [value: "{{value_type}}", type: "non-nullable-{{type_name}}-nullable-list"]: {
+#     type: "[{{type}}!]",
+#     value: "{{value_value}}",
+# }
+#
+# [value: "{{value_type}}", type: "nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}]!",
+#     value: "{{value_value}}",
+# }
+#
+# [value: "{{value_type}}", type: "non-nullable-{{type_name}}-non-nullable-list"]: {
+#     type: "[{{type}}!]!",
+#     value: "{{value_value}}",
+# }
+#
+# @end

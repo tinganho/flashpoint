@@ -1,5 +1,5 @@
-directive @directive1(argument: Int @directive2) on ARGUMENT_DEFINITION
-directive @directive2(argument: Int @directive1) on ARGUMENT_DEFINITION
+directive @directive1(argument: Int @directive2(argument: 1)) on ARGUMENT_DEFINITION
+directive @directive2(argument: Int @directive1(argument: 1)) on ARGUMENT_DEFINITION
 
 END_OF_DOCUMENT:
 !!! No query root operation type defined.

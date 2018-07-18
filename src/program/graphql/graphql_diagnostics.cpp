@@ -35,6 +35,7 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Fragment_0_is_not_defined = DiagnosticMessageTemplate { "Fragment '{0}' is not defined." };
     DiagnosticMessageTemplate D::Interface_0_is_not_defined = DiagnosticMessageTemplate { "Interface '{0}' is not defined." };
     DiagnosticMessageTemplate D::Invalid_Unicode_escape_sequence = DiagnosticMessageTemplate { "Invalid Unicode escape sequence." };
+    DiagnosticMessageTemplate D::Missing_required_argument_0 = DiagnosticMessageTemplate { "Missing required argument '{0}'." };
     DiagnosticMessageTemplate D::Missing_required_field_0 = DiagnosticMessageTemplate { "Missing required field '{0}'." };
     DiagnosticMessageTemplate D::Mutations_are_not_supported = DiagnosticMessageTemplate { "Mutations are not supported." };
     DiagnosticMessageTemplate D::No_query_root_operation_type_defined = DiagnosticMessageTemplate { "No query root operation type defined." };

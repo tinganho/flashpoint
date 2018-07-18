@@ -1,5 +1,6 @@
 {
   "Expected '{0}', but got '{1}'.": {},
   "Expected directive.": {},
-  "Expected identifier.": {}
+  "Expected identifier.": {},
+  "Expected end directive, instead reached the end of the document.": {}
 }

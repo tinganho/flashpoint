@@ -1,0 +1,14 @@
+directive @directive(argument: Object) on OBJECT
+
+input Object {
+    field: Int
+}
+
+type Object1 @directive(argument: { undefined: "" }) {
+                                  ~~~~~~~~~~~~~~~~~ (7, 35, 17)
+!!! Field 'undefined' does not exist on type 'Object'.
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

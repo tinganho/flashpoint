@@ -59,6 +59,9 @@ namespace flashpoint::test {
                 const char* content = read_file(test_path);
                 TestCaseScanner scanner(content);
                 auto test_cases = scanner.scan();
+//                for (const auto& d : scanner.diagnostics) {
+//
+//                }
                 if (test_cases.empty()) {
                     call_test(test_folder, test_path, test_path, scanner.get_source_code({}), callback);
                 }

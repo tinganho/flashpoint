@@ -1,6 +1,7 @@
 #include "test_case_scanner.h"
 #include <lib/character.h>
 #include "test_case_diagnostics.h"
+#include <lib/utils.h>
 
 using namespace flashpoint::lib;
 
@@ -14,18 +15,53 @@ namespace flashpoint::test {
     std::vector<TestCaseArguments*>
     TestCaseScanner::scan()
     {
-        std::vector<TestCaseArguments*> test_cases = {};
+        std::vector<TestCaseArguments*> noexpanded_test_cases = {};
+        std::vector<std::string> for_each_arguments = {};
+        std::vector<std::vector<std::map<std::string, std::string>*>> foreach_statements = {};
         while(true) {
             TestCaseToken token = take_next_token();
             switch (token) {
                 case TestCaseToken::EndOfDocument:
                     goto outer;
-                case TestCaseToken::CasesDirective:
+
+                case TestCaseToken::ForEachDirective: {
+                    if (!scan_expected(TestCaseToken::OpenParen)) {
+                        goto outer;
+                    }
+                    for_each_arguments = scan_parameters_after_open_paren();
+                    if (!scan_expected(TestCaseToken::Colon)) {
+                        goto outer;
+                    }
+                    std::vector<std::map<std::string, std::string>*> foreach_statement = {};
+                    while (true) {
+                        if (!scan_optional(TestCaseToken::OpenBracket)) {
+                            break;
+                        }
+                        auto replacement_arguments = parse_replacement_arguments();
+                        if (replacement_arguments == nullptr) {
+                            goto outer;
+                        }
+                        foreach_statement.push_back(replacement_arguments);
+                    }
+                    foreach_statements.push_back(foreach_statement);
+                    break;
+                }
+
+                case TestCaseToken::TestDirective: {
+                    std::vector<std::string> arguments;
+                    if (!scan_expected(TestCaseToken::OpenParen)) {
+                        goto outer;
+                    }
+                    arguments = scan_parameters_after_open_paren();
                     if (!scan_expected(TestCaseToken::Colon)) {
                         goto outer;
                     }
                     while (true) {
                         token = take_next_token();
+                        if (token == TestCaseToken::EndOfDocument) {
+                            add_diagnostic(D::Expected_end_directive_instead_reached_the_end_of_the_document);
+                            break;
+                        }
                         if (token == TestCaseToken::EndDirective) {
                             break;
                         }
@@ -36,14 +72,111 @@ namespace flashpoint::test {
                         if (t == nullptr) {
                             continue;
                         }
-                        test_cases.push_back(t);
+                        noexpanded_test_cases.push_back(t);
                     }
                     goto outer;
+                }
                 default:;
             }
         }
+
         outer:;
-        return test_cases;
+
+        if (foreach_statements.empty()) {
+            return noexpanded_test_cases;
+        }
+
+        std::vector<TestCaseArguments*> expanded_test_cases = {};
+        std::map<std::string, std::string> replacements = {};
+
+        replace_variable_test_case(
+            foreach_statements,
+            noexpanded_test_cases,
+            expanded_test_cases,
+            replacements,
+            0
+        );
+
+        return expanded_test_cases;
+    }
+
+    void
+    TestCaseScanner::replace_variable_test_case(
+        const std::vector<std::vector<std::map<std::string, std::string>*>>& foreach_statements,
+        const std::vector<TestCaseArguments*>& noexpanded_test_cases,
+        std::vector<TestCaseArguments*>& expanded_test_cases,
+        std::map<std::string, std::string>& replacements,
+        std::size_t index)
+    {
+        if (index >= foreach_statements.size()) {
+            for (const auto& test_case : noexpanded_test_cases) {
+                auto new_file_arguments = std::map<std::string, std::string>();
+                auto new_source_code_arguments = std::map<std::string, std::string>();
+                for (const auto& file_argument : test_case->file_arguments) {
+                    std::string str = file_argument.second;
+                    for (const auto replacement : replacements) {
+                        str = boost::regex_replace(str, boost::regex("\\{\\{" + replacement.first + "\\}\\}"), replacement.second);
+                    }
+                    new_file_arguments.emplace(file_argument.first, str);
+                }
+                for (const auto& source_code_argument : test_case->source_code_arguments) {
+                    std::string str = source_code_argument.second;
+                    for (const auto& replacement : replacements) {
+                        str = boost::regex_replace(str, boost::regex("\\{\\{" + replacement.first + "\\}\\}"), replacement.second);
+                    }
+                    new_source_code_arguments.emplace(source_code_argument.first, str);
+                }
+                expanded_test_cases.push_back(new TestCaseArguments {
+                    new_file_arguments,
+                    new_source_code_arguments,
+                });
+            }
+            return;
+        }
+
+        std::map<std::string, std::string> new_replacements = {};
+        for (const auto& r : replacements) {
+            new_replacements.emplace(r.first, r.second);
+        }
+        const auto& foreach_statement = foreach_statements.at(index);
+        for (const auto& foreach_arguments : foreach_statement) {
+            for (const auto& foreach_argument : *foreach_arguments) {
+                new_replacements.emplace(foreach_argument.first, foreach_argument.second);
+            }
+            replace_variable_test_case(
+                foreach_statements,
+                noexpanded_test_cases,
+                expanded_test_cases,
+                new_replacements,
+                index + 1
+            );
+            for (const auto& foreach_argument : *foreach_arguments) {
+                new_replacements.erase(foreach_argument.first);
+            }
+        }
+    }
+
+    std::vector<std::string>
+    TestCaseScanner::scan_parameters_after_open_paren()
+    {
+        std::vector<std::string> parameters = {};
+        while (true) {
+            TestCaseToken token = take_next_token();
+            if (token == TestCaseToken::EndOfDocument) {
+                break;
+            }
+            if (token != TestCaseToken::Identifier) {
+                add_diagnostic(D::Expected_identifier);
+                break;
+            }
+            parameters.push_back(get_token_value());
+            if (scan_optional(TestCaseToken::Comma)) {
+                continue;
+            }
+            scan_expected(TestCaseToken::CloseParen);
+            break;
+        }
+        return parameters;
     }
 
     std::string
@@ -69,7 +202,7 @@ namespace flashpoint::test {
     TestCaseArguments*
     TestCaseScanner::parse_test_case_arguments()
     {
-        auto file_arguments = parse_file_arguments();
+        auto file_arguments = parse_replacement_arguments();
         if (file_arguments == nullptr) {
             return nullptr;
         }
@@ -87,7 +220,7 @@ namespace flashpoint::test {
     }
 
     std::map<std::string, std::string>*
-    TestCaseScanner::parse_file_arguments()
+    TestCaseScanner::parse_replacement_arguments()
     {
         auto file_arguments = new std::map<std::string, std::string>();
         bool can_parse_comma = false;
@@ -105,6 +238,7 @@ namespace flashpoint::test {
                     continue;
                 }
                 can_parse_comma = false;
+                continue;
             }
             if (token != TestCaseToken::Identifier) {
                 add_diagnostic(D::Expected_identifier);
@@ -117,7 +251,9 @@ namespace flashpoint::test {
             if (!scan_expected(TestCaseToken::StringLiteral)) {
                 return file_arguments;
             }
-            file_arguments->emplace(key, get_string_literal());
+            auto string_value = get_string_literal();
+            std::string new_value = string_value;
+            file_arguments->emplace(key, new_value);
             can_parse_comma = true;
         }
 
@@ -174,7 +310,7 @@ namespace flashpoint::test {
             increment_position();
 
             switch (ch) {
-                case NewLine:
+                case Character::NewLine:
                     newline_position = position - 1;
                     if (!skip_white_space) {
                         return TestCaseToken::WhiteSpace;
@@ -184,7 +320,7 @@ namespace flashpoint::test {
                     token_start_line++;
                     token_start_position++;
                     continue;
-                case CarriageReturn:
+                case Character::CarriageReturn:
                     newline_position = position - 1;
                     if (source[position + 1] == NewLine) {
                         increment_position();
@@ -197,9 +333,10 @@ namespace flashpoint::test {
                     token_start_column = 1;
                     token_start_position++;
                     continue;
-                case ByteOrderMark:
-                case Space:
-                case Comma:
+                case Character::DoubleQuote:
+                    return scan_string_literal();
+                case Character::ByteOrderMark:
+                case Character::Space:
                     if (!skip_white_space) {
                         return TestCaseToken::WhiteSpace;
                     }
@@ -226,6 +363,12 @@ namespace flashpoint::test {
                     return scan_string_literal();
                 case Character::Colon:
                     return TestCaseToken::Colon;
+                case Character::Comma:
+                    return TestCaseToken::Comma;
+                case Character::OpenParen:
+                    return TestCaseToken::OpenParen;
+                case Character::CloseParen:
+                    return TestCaseToken::CloseParen;
                 case Character::OpenBracket:
                     return TestCaseToken::OpenBracket;
                 case Character::CloseBracket:
@@ -246,10 +389,18 @@ namespace flashpoint::test {
                         auto token = get_token_from_value(get_token_value(), name_size);
                         if (last_one_was_at_char) {
                             switch (token) {
-                                case TestCaseToken::CasesDirective:
-                                    source_code_template = source.substr(0, newline_position);
-                                    in_definition_location = true;
-                                    return TestCaseToken::CasesDirective;
+                                case TestCaseToken::ForEachDirective:
+                                    if (!in_definition_location) {
+                                        source_code_template = source.substr(0, newline_position);
+                                        in_definition_location = true;
+                                    }
+                                    return TestCaseToken::ForEachDirective;
+                                case TestCaseToken::TestDirective:
+                                    if (!in_definition_location) {
+                                        source_code_template = source.substr(0, newline_position);
+                                        in_definition_location = true;
+                                    }
+                                    return TestCaseToken::TestDirective;
                                 case TestCaseToken::EndDirective:
                                     return TestCaseToken::EndDirective;
                                 default:
@@ -270,10 +421,62 @@ namespace flashpoint::test {
     {
         TestCaseToken result = take_next_token();
         if (result != token) {
-            add_diagnostic(D::Expected_0_but_got_1, testCaseTokenToString.at(token), testCaseTokenToString.at(result));
+            if (result == TestCaseToken::EndOfDocument) {
+                add_diagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), "EndOfDocument");
+                return false;
+            }
+            if (test_case_token_to_string.find(result) == test_case_token_to_string.end()) {
+                add_diagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), get_token_value());
+                return false;
+            }
+            add_diagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), test_case_token_to_string.at(result));
             return false;
         }
         return true;
+    }
+
+    bool
+    TestCaseScanner::scan_optional(const TestCaseToken& token)
+    {
+        return try_scan(token) == token;
+    }
+
+    TestCaseToken
+    TestCaseScanner::try_scan(const TestCaseToken& token)
+    {
+        save();
+        auto result = take_next_token();
+        if (result == token) {
+            return token;
+        }
+        revert();
+        return result;
+    }
+
+
+    void
+    TestCaseScanner::save()
+    {
+        saved_text_cursors.emplace(
+            position,
+            line,
+            column,
+            token_start_position,
+            token_start_line,
+            token_start_column
+        );
+    }
+
+    void
+    TestCaseScanner::revert() {
+        const SavedTextCursor& saved_text_cursor = saved_text_cursors.top();
+        position = saved_text_cursor.position;
+        line = saved_text_cursor.line;
+        column = saved_text_cursor.column;
+        token_start_position = saved_text_cursor.token_start_position;
+        token_start_line = saved_text_cursor.token_start_line;
+        token_start_column = saved_text_cursor.token_start_column;
+        saved_text_cursors.pop();
     }
 
     Glib::ustring
@@ -310,6 +513,11 @@ namespace flashpoint::test {
                 break;
             }
             char32_t ch = current_char();
+            if (ch == Character::Backslash) {
+                scan_escape_sequence();
+                continue;
+            }
+
             if (ch == Character::DoubleQuote) {
                 string_literal += source.substr(start, position - start);
                 increment_position();
@@ -318,6 +526,30 @@ namespace flashpoint::test {
             increment_position();
         }
         return TestCaseToken::StringLiteral;
+    }
+
+
+    void
+    TestCaseScanner::scan_escape_sequence()
+    {
+        std::size_t start_position = position;
+        std::size_t start_line = line;
+        std::size_t start_column = column;
+        increment_position();
+        char32_t ch = current_char();
+        switch (ch) {
+            case Character::DoubleQuote:
+            case Character::Backslash:
+            case Character::Slash:
+            case Character::b:
+            case Character::f:
+            case Character::n:
+            case Character::r:
+            case Character::t:
+                increment_position();
+                return;
+            default:;
+        }
     }
 
     TestCaseToken
@@ -367,6 +599,7 @@ namespace flashpoint::test {
     void
     TestCaseScanner::increment_position()
     {
+        column++;
         position++;
     }
 }

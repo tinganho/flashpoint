@@ -1,0 +1,5 @@
+directive @directive(argument: Int) on OBJECT
+
+type Object1 @directive(argument: 1, argument: 1) {
+    field: Int
+}

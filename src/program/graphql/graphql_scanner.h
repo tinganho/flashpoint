@@ -194,7 +194,7 @@ namespace flashpoint::program::graphql {
         search_for_line(std::size_t start, std::size_t end, std::size_t position);
 
         Location
-        get_token_location(Syntax* syntax);
+        get_token_location(const Syntax* syntax);
 
         void
         save();
@@ -204,6 +204,9 @@ namespace flashpoint::program::graphql {
 
         Glib::ustring
         get_value() const;
+
+        Glib::ustring
+        get_value_from_syntax(Syntax* syntax) const;
 
         Glib::ustring
         get_name() const;

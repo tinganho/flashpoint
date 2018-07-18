@@ -42,6 +42,7 @@ public:
     static DiagnosticMessageTemplate Fragment_0_is_not_defined;
     static DiagnosticMessageTemplate Interface_0_is_not_defined;
     static DiagnosticMessageTemplate Invalid_Unicode_escape_sequence;
+    static DiagnosticMessageTemplate Missing_required_argument_0;
     static DiagnosticMessageTemplate Missing_required_field_0;
     static DiagnosticMessageTemplate Mutations_are_not_supported;
     static DiagnosticMessageTemplate No_query_root_operation_type_defined;

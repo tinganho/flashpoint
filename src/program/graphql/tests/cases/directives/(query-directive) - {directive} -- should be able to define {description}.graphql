@@ -42,7 +42,7 @@ fragment FragmentFieldDirective on Object {
     field {{directive}}
 }
 
-# @cases:
+# @test(directive, location):
 #
 # [directive: "query", description: "query directive"]: {
 #   directive: "@query_directive",

@@ -137,11 +137,11 @@ namespace flashpoint::program::graphql {
         Name*
         parse_input_object_name(InputObject* object);
 
-        Arguments*
+        std::map<Glib::ustring, Argument*>
         parse_arguments_after_open_paren();
 
         Arguments*
-        parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions);
+        parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field);
 
         Type*
         parse_type();
@@ -154,6 +154,12 @@ namespace flashpoint::program::graphql {
 
         Value*
         parse_value(Type*);
+
+        void
+        check_value(Value* value, Type* type);
+
+        void
+        check_input_object(ObjectValue* value, Type* type);
 
         BooleanValue*
         parse_boolean_value(Type* type, bool value);
@@ -178,6 +184,9 @@ namespace flashpoint::program::graphql {
 
         ObjectField*
         parse_object_field();
+
+        Glib::ustring
+        get_token_value_from_syntax(Syntax* syntax);
 
         inline bool
         scan_optional(const GraphQlToken &);
@@ -206,6 +215,9 @@ namespace flashpoint::program::graphql {
 
         void
         check_directive_references();
+
+        bool
+        has_diagnostic_in_syntax(const Syntax* syntax, const DiagnosticMessageTemplate& diagnostic);
 
         void
         check_recursive_directives(const Glib::ustring& parent_directive_definition, Type* location, Type* type);
@@ -262,6 +274,9 @@ namespace flashpoint::program::graphql {
 
         void
         take_errors_from_scanner();
+
+        Glib::ustring
+        get_value_string(Value* value);
     };
 
     enum class RootType : unsigned int {

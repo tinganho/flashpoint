@@ -1,0 +1,14 @@
+directive @directive(argument: Int!) on OBJECT
+
+type Object @directive(argument: [1]) {
+                                 ~~~ (3, 34, 3)
+!!! The value '[1]' is not assignable to type 'Int!'.
+    field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

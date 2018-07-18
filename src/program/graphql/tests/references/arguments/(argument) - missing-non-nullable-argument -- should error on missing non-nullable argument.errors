@@ -1,0 +1,11 @@
+type Query {
+    field(input1: Int!, input2: Int!): Int
+}
+====
+query {
+    field()
+    ~~~~~~~ (2, 5, 7)
+!!! Missing required argument 'input1'.
+    ~~~~~~~ (2, 5, 7)
+!!! Missing required argument 'input2'.
+}

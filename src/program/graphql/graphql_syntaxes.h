@@ -360,6 +360,14 @@ namespace flashpoint::program::graphql {
         T_Interface = 1 << 8,
         T_Union = 1 << 9,
 
+        T_StringType =
+            static_cast<unsigned int>(T_String) |
+            static_cast<unsigned int>(T_ID),
+
+        T_IntegerType =
+            static_cast<unsigned int>(T_Int) |
+            static_cast<unsigned int>(T_ID),
+
         T_ScalarType =
             static_cast<unsigned int>(T_Int) |
             static_cast<unsigned int>(T_String) |
@@ -385,8 +393,26 @@ namespace flashpoint::program::graphql {
         return static_cast<TypeEnum>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
     }
 
+    enum class TypeModifier {
+        NonNull = 0 << 1,
+        List = 1 << 1,
+
+        NonNullList =
+            static_cast<unsigned int>(NonNull) |
+            static_cast<unsigned int>(List),
+    };
+
+    inline constexpr TypeModifier operator|(TypeModifier a, TypeModifier b) {
+        return static_cast<TypeModifier>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    }
+
+    inline constexpr TypeModifier operator&(TypeModifier a, TypeModifier b) {
+        return static_cast<TypeModifier>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+    }
+
     struct Type : Syntax {
         TypeEnum type;
+        TypeModifier modifiers;
         bool is_non_null;
         bool is_list_type;
         bool is_non_null_list;
@@ -438,6 +464,7 @@ namespace flashpoint::program::graphql {
 
     struct FloatValue : Value {
         double value;
+        Glib::ustring string;
 
         D(FloatValue, Value)
         { }
@@ -552,7 +579,7 @@ namespace flashpoint::program::graphql {
 
     struct Argument : Syntax {
         Name* name;
-        Syntax* value;
+        Value* value;
         std::map<Glib::ustring, Directive*> directives;
 
         S(Argument)
@@ -576,7 +603,7 @@ namespace flashpoint::program::graphql {
 
     struct Directive : Syntax {
         Name* name;
-        Arguments* arguments;
+        std::map<Glib::ustring, Argument*> arguments;
         DirectiveDefinition* parent_directive_definition;
         DirectiveLocation location;
 

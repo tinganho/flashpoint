@@ -1,0 +1,23 @@
+directive @directive1(argument: Int) on OBJECT
+
+type Object1 @directive1(argument: 1) {
+    field: Int
+}
+
+directive @directive2(argument1: Int, argument2: Int) on OBJECT
+
+type Object2 @directive2(argument1: 1, argument2: 1) {
+    field: Int
+}
+
+type MissingArguments1 @directive2 {
+    field: Int
+}
+
+type MissingArguments2 @directive2(argument1: 1) {
+    field: Int
+}
+
+type UndefinedArgument @directive2(undefined: 1) {
+    field: Int
+}
