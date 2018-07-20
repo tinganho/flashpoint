@@ -1,0 +1,12 @@
+directive @directive(argument: [Float]) on OBJECT
+
+type Object @directive(argument: null) {
+field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

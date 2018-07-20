@@ -1,0 +1,12 @@
+directive @directive(argument: [String]!) on OBJECT
+
+type Object @directive(argument: ["String", "String"]) {
+field: Int
+}
+
+enum Enum {
+    ENUM_VALUE
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

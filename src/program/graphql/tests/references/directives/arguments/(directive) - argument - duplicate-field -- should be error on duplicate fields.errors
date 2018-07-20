@@ -1,0 +1,18 @@
+directive @directive(argument: Object) on OBJECT
+
+input Object {
+    field: Int
+}
+
+type Object1 @directive(argument: { field: 1, field: 1, field: 1 }) {
+                                    ~~~~~ (7, 37, 5)
+!!! Duplicate field 'field'.
+                                              ~~~~~ (7, 47, 5)
+!!! Duplicate field 'field'.
+                                                        ~~~~~ (7, 57, 5)
+!!! Duplicate field 'field'.
+    field: Int
+}
+
+END_OF_DOCUMENT:
+!!! No query root operation type defined.

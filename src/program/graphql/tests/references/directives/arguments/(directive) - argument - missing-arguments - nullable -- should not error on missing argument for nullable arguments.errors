@@ -1,8 +1,9 @@
-directive @directive(argument: Int, nullable: Int) on OBJECT
+directive @directive1(argument: Int, nullable: Int, argument2: [Int]) on OBJECT
 
-type Object1 @directive(nullable: null) {
+type Object1 @directive1(nullable: null) {
     field: Int
 }
+
 
 END_OF_DOCUMENT:
 !!! No query root operation type defined.

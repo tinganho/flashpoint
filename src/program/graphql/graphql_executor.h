@@ -25,36 +25,95 @@ namespace flashpoint::program::graphql {
 
     private:
         
-        MemoryPool* memory_pool;
-        Glib::ustring object_name;
-        MemoryPoolTicket* ticket;
-        GraphQlScanner* scanner;
-        std::stack<ObjectLike*> current_object_types;
-        FieldDefinition* current_field;
-        InputValueDefinition* current_argument;
-        Object* query;
-        Object* mutation;
-        Object* subscription;
-        std::map<Glib::ustring, Symbol*> symbols;
-        std::map<Glib::ustring, Interface*> interfaces;
-        std::vector<Directive*> directives;
-        std::map<Glib::ustring, DirectiveDefinition*> directive_definitions;
-        std::vector<Type*> forward_type_references;
-        std::vector<Name*> forward_interface_references;
-        std::vector<std::tuple<Name*, ObjectLike*>> forward_fragment_references;
-        std::vector<Object*> objects_with_implementations;
-        std::vector<OperationDefinition*> operation_definitions;
-        std::vector<FragmentDefinition*> fragment_definitions;
-        std::map<Glib::ustring, FragmentDefinition*> fragments;
-        std::set<Glib::ustring> duplicate_fragments;
-        std::vector<UnionTypeDefinition*> unions;
-        std::set<Glib::ustring> duplicate_symbols;
-        std::set<Glib::ustring> parsed_arguments;
-        std::set<Glib::ustring> duplicate_arguments;
-        std::set<Glib::ustring> duplicate_fields;
-        Glib::ustring current_description;
-        bool has_description;
-        GraphQlToken current_value_token;
+        MemoryPool*
+        memory_pool;
+
+        Glib::ustring
+        object_name;
+
+        MemoryPoolTicket*
+        ticket;
+
+        GraphQlScanner*
+        scanner;
+
+        std::stack<ObjectLike*>
+        current_object_types;
+
+        FieldDefinition*
+        current_field;
+
+        InputValueDefinition*
+        current_argument;
+
+        Object*
+        query;
+
+        Object*
+        mutation;
+
+        Object*
+        subscription;
+
+        std::map<Glib::ustring, Symbol*>
+        symbols;
+
+        std::map<Glib::ustring, Interface*>
+        interfaces;
+
+        std::vector<Directive*>
+        directives;
+
+        std::map<Glib::ustring, DirectiveDefinition*>
+        directive_definitions;
+
+        std::vector<Type*>
+        forward_type_references;
+
+        std::vector<Name*>
+        forward_interface_references;
+
+        std::vector<std::tuple<Name*, ObjectLike*>>
+        forward_fragment_references;
+
+        std::vector<Object*>
+        objects_with_implementations;
+
+        std::vector<OperationDefinition*>
+        operation_definitions;
+
+        std::vector<FragmentDefinition*>
+        fragment_definitions;
+
+        std::map<Glib::ustring, FragmentDefinition*>
+        fragments;
+
+        std::set<Glib::ustring>
+        duplicate_fragments;
+
+        std::vector<UnionTypeDefinition*>
+        unions;
+
+        std::set<Glib::ustring>
+        duplicate_symbols;
+
+        std::set<Glib::ustring>
+        parsed_arguments;
+
+        std::set<Glib::ustring>
+        duplicate_arguments;
+
+        std::set<Glib::ustring>
+        duplicate_fields;
+
+        Glib::ustring
+        current_description;
+
+        bool
+        has_description;
+
+        GraphQlToken
+        current_value_token;
 
         GraphQlToken
         take_next_token();

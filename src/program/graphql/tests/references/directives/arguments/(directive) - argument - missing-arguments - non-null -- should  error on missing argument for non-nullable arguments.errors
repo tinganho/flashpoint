@@ -1,8 +1,10 @@
-directive @directive(argument: Int!, nullable: Int!) on OBJECT
+directive @directive(argument: Int!, nullable: Int!, list: [Int]!) on OBJECT
 
 type Object1 @directive(nullable: null) {
              ~~~~~~~~~~ (3, 14, 10)
 !!! Missing required argument 'argument'.
+             ~~~~~~~~~~ (3, 14, 10)
+!!! Missing required argument 'list'.
                                   ~~~~ (3, 35, 4)
 !!! The value 'null' is not assignable to type 'Int!'.
     field: Int
