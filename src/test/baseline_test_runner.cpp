@@ -1,6 +1,7 @@
 #include <iostream>
 #include <program/http_server.h>
 #include <program/graphql/graphql_executor.h>
+#include <program/graphql/graphql_schema.h>
 #include <lib/tcp_client_raw.h>
 #include <lib/text_writer.h>
 #include <test/baseline_test_runner.h>
@@ -186,23 +187,18 @@ namespace flashpoint::test {
             test(test_case.name, [=](Test* test, std::function<void()> done, std::function<void(std::string error)> error) {
                 auto memory_pool = new MemoryPool(1024 * 4 * 10000, 1024 * 4);
                 auto ticket = memory_pool->take_ticket();
-                GraphQlParser parser(memory_pool, ticket);
                 std::vector<Glib::ustring> source;
                 boost::algorithm::split_regex(source, test_case.source, boost::regex("====\n"));
-                DiagnosticWriter* diagnostic_writer;
+                DiagnosticWriter diagnostic_writer;
+                GraphQlSchema schema(source[0], memory_pool, ticket);
+                GraphQlExecutor executor(memory_pool, ticket);
+                executor.add_schema(schema);
+                diagnostic_writer.add_diagnostics(schema.diagnostics, schema.source);
                 if (source.size() > 1) {
-                    auto schema_document = parser.add_schema(&source[0]);
-                    if (schema_document->diagnostics.size() > 0) {
-                        diagnostic_writer = new DiagnosticWriter(schema_document);
-                    }
-                    else {
-                        diagnostic_writer = new DiagnosticWriter(schema_document, parser.execute(&source[1]));
-                    }
+                    diagnostic_writer.add_source("====\n");
+                    diagnostic_writer.add_diagnostics(executor.execute(source[1])->diagnostics, source[1]);
                 }
-                else {
-                    diagnostic_writer = new DiagnosticWriter(parser.add_schema(&source[0]));
-                }
-                auto current_errors_file_source = diagnostic_writer->to_string();
+                auto current_errors_file_source = diagnostic_writer.to_string();
                 auto current_error_file = test_case.current_folder / (test_case.name + ".errors");
                 write_file(current_error_file, current_errors_file_source.c_str());
                 std::stringstream error_message;

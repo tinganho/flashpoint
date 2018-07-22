@@ -1,359 +1,142 @@
-#ifndef FLASHPOINT_GRAPHQL_PARSER_H
-#define FLASHPOINT_GRAPHQL_PARSER_H
+#ifndef FLASHPOINT_GRAPHQL_EXECUTOR_H
+#define FLASHPOINT_GRAPHQL_EXECUTOR_H
 
 #include "graphql_scanner.h"
+#include "graphql_schema.h"
 #include "graphql_syntaxes.h"
 #include "program/diagnostic.h"
+#include "graphql_parser.h"
 #include <glibmm/ustring.h>
 
 namespace flashpoint::program::graphql {
 
-    class GraphQlParser : public DiagnosticTrait<GraphQlParser> {
+class GraphQlExecutor : public GraphQlParser<GraphQlExecutor, GraphQlToken, GraphQlScanner> {
 
-    public:
+public:
 
-        GraphQlParser(MemoryPool* memory_pool, MemoryPoolTicket* ticket);
+    GraphQlExecutor(MemoryPool* memory_pool, MemoryPoolTicket* ticket);
 
-        SchemaDocument*
-        add_schema(const Glib::ustring* schema);
+    ExecutableDefinition*
+    execute(const Glib::ustring& query);
 
-        ExecutableDefinition*
-        execute(const Glib::ustring* query);
+    void
+    add_schema(const GraphQlSchema& schema);
 
-        Location
-        get_token_location();
+private:
 
-    private:
-        
-        MemoryPool*
-        memory_pool;
+    std::vector<const GraphQlSchema>
+    schemas;
 
-        Glib::ustring
-        object_name;
+    Glib::ustring
+    object_name;
 
-        MemoryPoolTicket*
-        ticket;
+    std::stack<ObjectLike*>
+    current_object_types;
 
-        GraphQlScanner*
-        scanner;
+    FieldDefinition*
+    current_field;
 
-        std::stack<ObjectLike*>
-        current_object_types;
+    InputValueDefinition*
+    current_argument;
 
-        FieldDefinition*
-        current_field;
+    Object*
+    query;
 
-        InputValueDefinition*
-        current_argument;
+    Object*
+    mutation;
 
-        Object*
-        query;
+    Object*
+    subscription;
 
-        Object*
-        mutation;
+    std::map<Glib::ustring, Symbol*>
+    symbols;
 
-        Object*
-        subscription;
+    std::vector<std::tuple<Name*, ObjectLike*>>
+    forward_fragment_references;
 
-        std::map<Glib::ustring, Symbol*>
-        symbols;
+    std::vector<OperationDefinition*>
+    operation_definitions;
 
-        std::map<Glib::ustring, Interface*>
-        interfaces;
+    std::vector<FragmentDefinition*>
+    fragment_definitions;
 
-        std::vector<Directive*>
-        directives;
+    std::map<Glib::ustring, FragmentDefinition*>
+    fragments;
 
-        std::map<Glib::ustring, DirectiveDefinition*>
-        directive_definitions;
+    std::set<Glib::ustring>
+    duplicate_fragments;
 
-        std::vector<Type*>
-        forward_type_references;
+    std::set<Glib::ustring>
+    parsed_arguments;
 
-        std::vector<Name*>
-        forward_interface_references;
+    std::set<Glib::ustring>
+    duplicate_arguments;
 
-        std::vector<std::tuple<Name*, ObjectLike*>>
-        forward_fragment_references;
+    std::set<Glib::ustring>
+    duplicate_fields;
 
-        std::vector<Object*>
-        objects_with_implementations;
+    FragmentDefinition*
+    parse_fragment_definition_after_fragment_keyword();
 
-        std::vector<OperationDefinition*>
-        operation_definitions;
+    void
+    check_fragment_assignment(Name* name, Object* fragment_object, Declaration* current_object_type);
 
-        std::vector<FragmentDefinition*>
-        fragment_definitions;
+    OperationDefinition*
+    parse_operation_definition(const OperationType& operation);
 
-        std::map<Glib::ustring, FragmentDefinition*>
-        fragments;
+    OperationDefinition*
+    parse_operation_definition_body(OperationDefinition*);
 
-        std::set<Glib::ustring>
-        duplicate_fragments;
+    OperationDefinition*
+    parse_operation_definition_body_after_open_brace(OperationDefinition*);
 
-        std::vector<UnionTypeDefinition*>
-        unions;
+    Syntax*
+    parse_executable_primary_token(GraphQlToken token);
 
-        std::set<Glib::ustring>
-        duplicate_symbols;
+    Arguments*
+    parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field);
 
-        std::set<Glib::ustring>
-        parsed_arguments;
+    Type*
+    parse_type();
 
-        std::set<Glib::ustring>
-        duplicate_arguments;
+    Value*
+    parse_value(Type*);
 
-        std::set<Glib::ustring>
-        duplicate_fields;
+    BooleanValue*
+    parse_boolean_value(Type* type, bool value);
 
-        Glib::ustring
-        current_description;
+    VariableDefinitions*
+    parse_variable_definitions();
 
-        bool
-        has_description;
+    SelectionSet*
+    parse_selection_set();
 
-        GraphQlToken
-        current_value_token;
+    SelectionSet*
+    parse_selection_set_after_open_brace();
 
-        GraphQlToken
-        take_next_token();
+    Name*
+    parse_expected_name();
 
-        GraphQlToken
-        take_next_token(bool treat_keyword_as_name);
+    Name*
+    parse_optional_name();
 
-        GraphQlToken
-        take_next_token(bool treat_keyword_as_name, bool skip_white_space);
+    ObjectField*
+    parse_object_field();
 
-        Glib::ustring
-        get_token_value() const;
+    Glib::ustring
+    get_token_value_from_syntax(Syntax* syntax);
 
-        Glib::ustring
-        get_string_value();
+    inline
+    void
+    check_forward_fragment_references(const std::vector<FragmentDefinition*>&);
 
-        FragmentDefinition*
-        parse_fragment_definition_after_fragment_keyword();
+    inline std::size_t
+    current_position();
 
-        void
-        check_fragment_assignment(Name* name, Object* fragment_object, Declaration* current_object_type);
+    void
+    skip_to_next_query_primary_token();
+};
 
-        Schema*
-        parse_schema();
-
-        Name*
-        parse_schema_field_after_colon();
-
-        OperationDefinition*
-        parse_operation_definition(const OperationType& operation);
-
-        OperationDefinition*
-        parse_operation_definition_body(OperationDefinition*);
-
-        OperationDefinition*
-        parse_operation_definition_body_after_open_brace(OperationDefinition*);
-
-        Syntax*
-        parse_executable_primary_token(GraphQlToken token);
-
-        Syntax*
-        parse_schema_primary_token(GraphQlToken token);
-
-        Object*
-        parse_object();
-
-        InputObject*
-        parse_input_object();
-
-        Interface*
-        parse_interface_definition();
-
-        UnionTypeDefinition*
-        parse_union_after_union_keyword();
-
-        EnumTypeDefinition*
-        parse_enum();
-
-        DirectiveDefinition*
-        parse_directive_definition_after_directive_keyword();
-
-        std::map<Glib::ustring, Directive*>
-        parse_directives(DirectiveLocation location, DirectiveDefinition* parent_directive_definition);
-
-        Implementations*
-        parse_implementations();
-
-        Name*
-        parse_object_name(ObjectLike *object, SymbolKind);
-
-        std::map<Glib::ustring, FieldDefinition*>*
-        parse_fields_definition(ObjectLike* object);
-
-        std::map<Glib::ustring, FieldDefinition*>*
-        parse_fields_definition_after_open_brace(ObjectLike* object);
-
-        std::map<Glib::ustring, InputFieldDefinition*>*
-        parse_input_fields_definition(InputObject* object);
-
-        Name*
-        parse_input_object_name(InputObject* object);
-
-        std::map<Glib::ustring, Argument*>
-        parse_arguments_after_open_paren();
-
-        Arguments*
-        parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field);
-
-        Type*
-        parse_type();
-
-        Type*
-        parse_type_annotation(bool in_input_location, DirectiveDefinition* parent_directive_definition);
-
-        Value*
-        parse_value();
-
-        Value*
-        parse_value(Type*);
-
-        void
-        check_value(Value* value, Type* type);
-
-        void
-        check_input_object(ObjectValue* value, Type* type);
-
-        BooleanValue*
-        parse_boolean_value(Type* type, bool value);
-
-        VariableDefinitions*
-        parse_variable_definitions();
-
-        SelectionSet*
-        parse_selection_set();
-
-        SelectionSet*
-        parse_selection_set_after_open_brace();
-
-        Name*
-        parse_expected_name();
-
-        Name*
-        parse_optional_name();
-
-        std::map<Glib::ustring, InputValueDefinition*>
-        parse_arguments_definition_after_open_paren(DirectiveDefinition*);
-
-        ObjectField*
-        parse_object_field();
-
-        Glib::ustring
-        get_token_value_from_syntax(Syntax* syntax);
-
-        inline bool
-        scan_optional(const GraphQlToken &);
-        inline bool
-        scan_optional(const GraphQlToken &, bool treat_keyword_as_name);
-
-        inline bool
-        scan_optional(const GraphQlToken &, bool treat_keyword_as_name, bool skip_white_space);
-
-        inline bool
-        scan_expected(const GraphQlToken&);
-
-        inline bool
-        scan_expected(const GraphQlToken&, bool treat_keyword_as_name);
-        inline bool
-        scan_expected(const GraphQlToken&, bool treat_keyword_as_name, bool skip_white_space);
-
-        inline bool
-        scan_expected(const GraphQlToken& token, DiagnosticMessageTemplate& _template);
-
-        inline bool
-        scan_expected(const GraphQlToken& token, DiagnosticMessageTemplate& _template, bool treat_keyword_as_name);
-
-        void
-        check_forward_references();
-
-        void
-        check_directive_references();
-
-        bool
-        has_diagnostic_in_syntax(const Syntax* syntax, const DiagnosticMessageTemplate& diagnostic);
-
-        void
-        check_recursive_directives(const Glib::ustring& parent_directive_definition, Type* location, Type* type);
-
-        void
-        check_object_implementations();
-
-        void
-        check_union_members();
-
-        void
-        check_schema_references(Schema* schema);
-
-        inline
-        void
-        check_forward_fragment_references(const std::vector<FragmentDefinition*>&);
-
-        Location
-        get_location_from_syntax(Syntax* syntax);
-
-        template<class T, class ... Args>
-        inline T*
-        create_syntax(SyntaxKind kind, Args ... args);
-
-        Symbol*
-        create_symbol(Glib::ustring* name, Declaration* declaration, SymbolKind kind);
-
-        inline std::size_t
-        current_position();
-
-        template<typename S>
-        inline S*
-        finish_syntax(S* syntax);
-
-        Glib::ustring
-        get_type_name(Type* type);
-
-        void
-        skip_to_next_schema_primary_token();
-
-        void
-        skip_to_next_query_primary_token();
-
-        bool
-        token_is_primary(GraphQlToken);
-
-        inline
-        GraphQlToken
-        skip_to(const std::vector<GraphQlToken>& tokens);
-
-        inline
-        bool
-        is_valid_enum_value(GraphQlToken token);
-
-        void
-        take_errors_from_scanner();
-
-        Glib::ustring
-        get_value_string(Value* value);
-    };
-
-    enum class RootType : unsigned int {
-        None,
-        Query = 1 << 1,
-        Mutation = 1 << 2,
-        Subscription = 1 << 3,
-    };
-
-    inline constexpr RootType operator|(RootType a, RootType b) {
-        return static_cast<RootType>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
-    }
-
-    inline constexpr RootType operator&(RootType a, RootType b) {
-        return static_cast<RootType>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
-    }
 }
 
-
-
-#endif //FLASHPOINT_GRAPHQL_PARSER_H
+#endif //FLASHPOINT_GRAPHQL_EXECUTOR_H

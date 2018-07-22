@@ -148,7 +148,7 @@ namespace flashpoint::program::graphql {
 
     class GraphQlScanner {
     public:
-        GraphQlScanner(const Glib::ustring* source);
+        GraphQlScanner(const Glib::ustring& source);
         std::size_t length() const;
         std::size_t start_position = 0;
         std::size_t end_position = 0;
@@ -248,9 +248,16 @@ namespace flashpoint::program::graphql {
 
     private:
         char32_t ch;
-        const Glib::ustring* source;
-        Glib::ustring string_literal;
-        std::stack<SavedTextCursor> saved_text_cursors;
+
+        const
+        Glib::ustring&
+        source;
+
+        Glib::ustring
+        string_literal;
+
+        std::stack<SavedTextCursor>
+        saved_text_cursors;
 
         char32_t
         current_char() const;

@@ -13,7 +13,7 @@ namespace flashpoint::lib {
 		set_source(source);
 	}
 
-	void TextAnnotater::set_source(const std::string &source)
+	void TextAnnotater::set_source(const std::string& source)
     {
         lines.clear();
         std::stringstream ss;
@@ -28,12 +28,13 @@ namespace flashpoint::lib {
         annotations.clear();
     }
 
-	void TextAnnotater::annotate(const std::string& text, Location& location) {
-        if (location.end_of_source) {
-            location.line = lines.size();
+	void TextAnnotater::annotate(const std::string& text, const Location& location) {
+	    Location l = location;
+        if (l.end_of_source) {
+            l.line = lines.size();
         }
-		auto it = annotations.find(location.line);
-		Annotation annotation { location, text };
+		auto it = annotations.find(l.line);
+		Annotation annotation { l, text };
 		if (it != annotations.end()) {
 			auto& vec = it->second;
 			auto last_annotation = vec.back().location;
@@ -41,7 +42,7 @@ namespace flashpoint::lib {
 		}
 		else {
 			std::vector<Annotation> a = { annotation };
-			annotations[location.line] = a;
+			annotations[l.line] = a;
 		}
 	}
 

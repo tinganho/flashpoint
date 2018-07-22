@@ -2,32 +2,25 @@
 
 namespace flashpoint::test {
 
+void
+DiagnosticWriter::add_source(const Glib::ustring &source)
+{
+    annotated_source += source;
+}
 
-    DiagnosticWriter::DiagnosticWriter(SchemaDocument* schema):
-        schema(schema),
-        query(nullptr)
-    { }
-
-    DiagnosticWriter::DiagnosticWriter(SchemaDocument* schema, ExecutableDefinition *query):
-        schema(schema),
-        query(query)
-    { }
-
-    std::string DiagnosticWriter::to_string()
-    {
-        TextAnnotater annotater(*schema->source);
-        for (auto& diagnostic : schema->diagnostics) {
-            annotater.annotate(diagnostic.message, diagnostic.location);
-        }
-        auto schema_source = annotater.to_string();
-        if (query == nullptr) {
-            return schema_source;
-        }
-        annotater.set_source(*query->source);
-        for (auto& diagnostic : query->diagnostics) {
-            annotater.annotate(diagnostic.message, diagnostic.location);
-        }
-        auto query_source = annotater.to_string();
-        return schema_source + "====\n" + query_source;
+void
+DiagnosticWriter::add_diagnostics(const std::vector<DiagnosticMessage>& diagnostics, const Glib::ustring& source) {
+    TextAnnotater text_annotater(source);
+    for (auto& diagnostic : diagnostics) {
+        text_annotater.annotate(diagnostic.message, diagnostic.location);
     }
+    annotated_source += text_annotater.to_string();
+}
+
+Glib::ustring
+DiagnosticWriter::to_string()
+{
+    return annotated_source;
+}
+
 }
