@@ -1,4 +1,3 @@
-
 #include "graphql_syntaxes.h"
 
 namespace flashpoint::program::graphql {

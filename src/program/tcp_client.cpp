@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-04-22.
-//
-
 #include "tcp_client.h"
 #include <functional>
 #include <future>

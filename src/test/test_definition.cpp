@@ -1,5 +1,3 @@
-
-
 #include <exception>
 #include <string>
 #include <future>

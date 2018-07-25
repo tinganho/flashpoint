@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-05-10.
-//
-
 #include "diagnostic.h"
 
 namespace flashpoint::program {

@@ -1,7 +1,3 @@
-//
-// Created by Tingan Ho on 2018-04-26.
-//
-
 #ifndef FLASHPOINT_HTTP_RESPONSE_H
 #define FLASHPOINT_HTTP_RESPONSE_H
 

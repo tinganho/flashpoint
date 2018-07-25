@@ -1,7 +1,6 @@
 #ifndef FLASH_TEST_DEFINITION_H
 #define FLASH_TEST_DEFINITION_H
 
-
 #include <exception>
 #include <string>
 #include <iostream>
