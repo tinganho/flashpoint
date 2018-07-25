@@ -13,17 +13,32 @@
 #include <netdb.h>
 
 namespace flashpoint::lib {
-    class TcpClientRaw {
-    private:
-        int socketfd;
-        hostent server;
-        sockaddr_in server_address;
-    public:
-        TcpClientRaw();
-        bool _connect(const char*, unsigned int port);
-        void send_message(const char*);
-        char *recieve_message();
-    };
+class TcpClientRaw {
+private:
+
+    int
+    socketfd;
+
+    hostent
+    server;
+
+    sockaddr_in
+    server_address;
+
+public:
+
+    TcpClientRaw();
+
+    bool
+    _connect(const char*, unsigned int port);
+
+    void
+    send_message(const char*);
+
+    char*
+    recieve_message();
+};
+
 }
 
 

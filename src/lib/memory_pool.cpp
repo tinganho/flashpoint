@@ -13,14 +13,16 @@ MemoryPool::MemoryPool(std::size_t total_size, std::size_t block_size)
     this->reset();
 }
 
-std::size_t MemoryPool::allocate_block()
+std::size_t
+MemoryPool::allocate_block()
 {
     std::size_t block = free_blocks.top();
     free_blocks.pop();
     return block;
 }
 
-MemoryPoolTicket* MemoryPool::take_ticket()
+MemoryPoolTicket*
+MemoryPool::take_ticket()
 {
     auto block = allocate_block();
     auto ticket = (MemoryPoolTicket*)(start_address_of_pool + start_address_of_block(block));
@@ -29,12 +31,14 @@ MemoryPoolTicket* MemoryPool::take_ticket()
     return ticket;
 }
 
-void MemoryPool::return_ticket(MemoryPoolTicket* ticket)
+void
+MemoryPool::return_ticket(MemoryPoolTicket* ticket)
 {
     free_blocks.push(ticket->block);
 }
 
-void* MemoryPool::allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket* ticket)
+void*
+MemoryPool::allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket* ticket)
 {
     std::size_t padding = 0;
     auto current_address = (std::size_t)(start_address_of_pool + start_address_of_block(ticket->block) + ticket->offset);
@@ -63,7 +67,8 @@ void* MemoryPool::allocate(std::size_t size, std::size_t alignment, MemoryPoolTi
     return (void*)current_address;
 }
 
-void MemoryPool::reset()
+void
+MemoryPool::reset()
 {
     std::size_t blocks = total_size / block_size;
     for (std::size_t i = 0; i < blocks; i++) {

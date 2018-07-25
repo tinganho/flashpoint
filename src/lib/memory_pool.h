@@ -6,55 +6,56 @@
 
 namespace flashpoint::lib {
 
-    class MemoryPoolTicket {
-    public:
+class MemoryPoolTicket {
+public:
 
-        std::size_t
-        offset;
+    std::size_t
+    offset;
 
-        std::size_t
-        block;
+    std::size_t
+    block;
 
-        MemoryPoolTicket(std::size_t offset, std::size_t block):
-            offset(offset),
-            block(block)
-        { }
-    };
+    MemoryPoolTicket(std::size_t offset, std::size_t block):
+        offset(offset),
+        block(block)
+    { }
+};
 
-    class MemoryPool {
-    public:
+class MemoryPool {
+public:
 
-        MemoryPool(std::size_t total_size, std::size_t block_size);
+    MemoryPool(std::size_t total_size, std::size_t block_size);
 
-        void*
-        allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket *ticket);
+    void*
+    allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket *ticket);
 
-        MemoryPoolTicket*
-        take_ticket();
+    MemoryPoolTicket*
+    take_ticket();
 
-        void
-        return_ticket(MemoryPoolTicket* ticket);
+    void
+    return_ticket(MemoryPoolTicket* ticket);
 
-        std::size_t
-        allocate_block();
+    std::size_t
+    allocate_block();
 
-        void
-        reset();
+    void
+    reset();
 
-    private:
+private:
 
-        std::size_t
-        block_size;
+    std::size_t
+    block_size;
 
-        std::size_t
-        total_size;
+    std::size_t
+    total_size;
 
-        char*
-        start_address_of_pool;
+    char*
+    start_address_of_pool;
 
-        std::stack<std::size_t>
-        free_blocks;
-    };
+    std::stack<std::size_t>
+    free_blocks;
+};
+
 }
 
 
