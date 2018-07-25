@@ -117,12 +117,6 @@ private:
     Name*
     parse_expected_name();
 
-    ObjectField*
-    parse_object_field();
-
-    Glib::ustring
-    get_token_value_from_syntax(Syntax* syntax);
-
     inline
     void
     check_forward_fragment_references(const std::vector<FragmentDefinition*>&);

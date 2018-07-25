@@ -453,12 +453,6 @@ VariableDefinitions* GraphQlExecutor::parse_variable_definitions()
     return finish_syntax(variable_definitions);
 }
 
-Glib::ustring
-GraphQlExecutor::get_token_value_from_syntax(Syntax* syntax)
-{
-    return scanner->get_value_from_syntax(syntax);
-}
-
 Value*
 GraphQlExecutor::parse_value(Type* type)
 {
