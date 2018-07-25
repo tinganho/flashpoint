@@ -277,7 +277,7 @@ bool
 GraphQlParser<TParser, TToken, TScanner>::has_diagnostic_in_syntax(TSyntax* syntax, const DiagnosticMessageTemplate& diagnostic)
 {
     auto name_location = scanner->get_token_location(syntax);
-    auto old_diagnostic_it = std::find_if(this->diagnostics.begin(), this->diagnostics.end(), [&](DiagnosticMessage& diagnostic_message) -> bool {
+    auto old_diagnostic_it = std::find_if(static_cast<TParser*>(this)->diagnostics.begin(), static_cast<TParser*>(this)->diagnostics.end(), [&](DiagnosticMessage& diagnostic_message) -> bool {
         auto location = diagnostic_message.location;
         if (diagnostic_message._template == diagnostic.message_template &&
             location.line == name_location.line &&
@@ -299,7 +299,7 @@ GraphQlParser<TParser, TToken, TScanner>::take_errors_from_scanner()
 {
     while (!scanner->errors.empty()) {
         auto error = scanner->errors.top();
-        this->diagnostics.push_back(error);
+        static_cast<TParser*>(this)->diagnostics.push_back(error);
         scanner->errors.pop();
     }
 }

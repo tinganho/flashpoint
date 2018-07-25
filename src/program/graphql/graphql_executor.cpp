@@ -1,5 +1,4 @@
 #include "graphql_executor.h"
-//#include "graphql_scanner.h"
 #include "graphql_syntaxes.h"
 #include "graphql_diagnostics.h"
 #include "lib/text_writer.h"
@@ -20,7 +19,7 @@ GraphQlExecutor::execute(const Glib::ustring& query)
     auto executable_definition = create_syntax<ExecutableDefinition>(SyntaxKind::S_QueryDocument);
     executable_definition->source = &query;
     while (token != GraphQlToken::EndOfDocument) {
-        auto definition = parse_executable_primary_token(token);
+        auto definition = parse_primary_token(token);
         if (definition == nullptr) {
             token = take_next_token();
             continue;
@@ -34,7 +33,6 @@ GraphQlExecutor::execute(const Glib::ustring& query)
         token = take_next_token();
     }
     check_forward_fragment_references(executable_definition->fragment_definitions);
-//    check_directive_references();
     if (!diagnostics.empty()) {
         executable_definition->diagnostics = diagnostics;
     }
@@ -45,11 +43,11 @@ void
 GraphQlExecutor::add_schema(const GraphQlSchema& schema)
 {
     schemas.push_back(schema);
-    for (const auto& type_definition : schema.definitions) {
-        if (type_definition->kind == SyntaxKind::S_Object) {
-
-        }
-    }
+    query = schema.query;
+    mutation = schema.mutation;
+    subscription = schema.subscription;
+    symbols = schema.symbols;
+    directive_definitions = schema.directive_definitions;
 }
 
 inline
@@ -74,13 +72,13 @@ GraphQlExecutor::check_forward_fragment_references(const std::vector<FragmentDef
             continue;
         }
         const auto& current_object_type = std::get<1>(forward_fragment_reference);
-        auto symbolsIt = symbols.find(current_fragment_definition->type->identifier);
-        check_fragment_assignment(name, static_cast<Object*>(symbolsIt->second->declaration), current_object_type);
+        auto symbols_it = symbols.find(current_fragment_definition->type->identifier);
+        check_fragment_assignment(name, static_cast<Object*>(symbols_it->second->declaration), current_object_type);
     }
 }
 
 Syntax*
-GraphQlExecutor::parse_executable_primary_token(GraphQlToken token)
+GraphQlExecutor::parse_primary_token(GraphQlToken token)
 {
     switch (token) {
         case GraphQlToken::QueryKeyword: {
@@ -90,7 +88,7 @@ GraphQlExecutor::parse_executable_primary_token(GraphQlToken token)
         case GraphQlToken::MutationKeyword: {
             if (mutation == nullptr) {
                 add_diagnostic(D::Mutations_are_not_supported);
-                skip_to_next_query_primary_token();
+                skip_to_next_primary_token();
                 return nullptr;
             }
             current_object_types.push(mutation);
@@ -99,7 +97,7 @@ GraphQlExecutor::parse_executable_primary_token(GraphQlToken token)
         case GraphQlToken::SubscriptionKeyword: {
             if (subscription == nullptr) {
                 add_diagnostic(D::Subscriptions_are_not_supported);
-                skip_to_next_query_primary_token();
+                skip_to_next_primary_token();
                 return nullptr;
             }
             current_object_types.push(subscription);
@@ -160,7 +158,7 @@ GraphQlExecutor::parse_fragment_definition_after_fragment_keyword()
     }
     current_object_types.push(object);
     fragment->type = create_syntax<Name>(SyntaxKind::S_Name, name);
-//    fragment->directives = parse_directives(DirectiveLocation::FRAGMENT_DEFINITION, nullptr);
+    fragment->directives = parse_directives(DirectiveLocation::FRAGMENT_DEFINITION);
     fragment->selection_set = parse_selection_set();
     if (fragment->selection_set == nullptr) {
         scanner->skip_block();
@@ -169,7 +167,8 @@ GraphQlExecutor::parse_fragment_definition_after_fragment_keyword()
     return fragment;
 }
 
-OperationDefinition* GraphQlExecutor::parse_operation_definition(const OperationType& operation_type)
+OperationDefinition*
+GraphQlExecutor::parse_operation_definition(const OperationType& operation_type)
 {
     auto operation_definition = create_syntax<OperationDefinition>(SyntaxKind::S_OperationDefinition);
     operation_definition->operation_type = operation_type;
@@ -192,7 +191,7 @@ OperationDefinition* GraphQlExecutor::parse_operation_definition(const Operation
             location = DirectiveLocation::SUBSCRIPTION;
             break;
     }
-//    operation_definition->directives = parse_directives(location, nullptr);
+    operation_definition->directives = parse_directives(location);
     return parse_operation_definition_body(operation_definition);
 }
 
@@ -232,8 +231,8 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
         GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
         switch (token) {
             case GraphQlToken::Ellipses: {
-                GraphQlToken token = take_next_token();
-                if (token == GraphQlToken::OnKeyword) {
+                GraphQlToken target_token = take_next_token();
+                if (target_token == GraphQlToken::OnKeyword) {
                     if (!scan_expected(GraphQlToken::G_Name)) {
                         add_diagnostic(D::Expected_name_of_object);
                         scanner->skip_block();
@@ -258,16 +257,16 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
                     auto current_object_type = static_cast<Declaration*>(current_object_types.top());
                     check_fragment_assignment(name, object, current_object_type);
                     current_object_types.push(static_cast<ObjectLike*>(object));
-//                    inline_fragment->directives = parse_directives(DirectiveLocation::INLINE_FRAGMENT, nullptr);
+                    inline_fragment->directives = parse_directives(DirectiveLocation::INLINE_FRAGMENT);
                     inline_fragment->selection_set = parse_selection_set();
                     finish_syntax(inline_fragment);
                     selection_set->selections.push_back(inline_fragment);
                 }
-                else if (token == GraphQlToken::G_Name) {
+                else if (target_token == GraphQlToken::G_Name) {
                     auto fragment_spread = create_syntax<FragmentSpread>(SyntaxKind::S_FragmentSpread);
                     fragment_spread->name = create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
                     forward_fragment_references.emplace_back(fragment_spread->name, current_object_types.top());
-//                    fragment_spread->directives = parse_directives(DirectiveLocation::FRAGMENT_SPREAD, nullptr);
+                    fragment_spread->directives = parse_directives(DirectiveLocation::FRAGMENT_SPREAD);
                     selection_set->selections.push_back(fragment_spread);
                 }
                 else {
@@ -303,7 +302,7 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
                 if (scan_optional(GraphQlToken::OpenParen)) {
                     field->arguments = parse_arguments(field_definition_it->second->arguments, field);
                 }
-//                field->directives = parse_directives(DirectiveLocation::FIELD, nullptr);
+                field->directives = parse_directives(DirectiveLocation::FIELD);
                 if (scan_optional(GraphQlToken::OpenBrace)) {
                     if ((field_definition_it->second->type->type & TypeEnum::T_ObjectType) != TypeEnum::T_None) {
                         auto object = symbols.find(field_definition_it->second->type->name->identifier)->second->declaration;
@@ -380,9 +379,10 @@ GraphQlExecutor::check_fragment_assignment(Name* name, Object* object, Declarati
     }
 }
 
-Arguments* GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field)
+std::map<Glib::ustring, Argument*>*
+GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Syntax* target)
 {
-    const auto& arguments = create_syntax<Arguments>(SyntaxKind::S_Arguments);
+    auto arguments = new std::map<Glib::ustring, Argument*>();
     while (true) {
         auto token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
         if (token != GraphQlToken::G_Name) {
@@ -398,13 +398,6 @@ Arguments* GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputV
             add_diagnostic(D::Unknown_argument_0, token_value);
             is_defined = false;
         }
-        auto duplicate_result = parsed_arguments.find(token_value);
-        if (duplicate_result != parsed_arguments.end()) {
-            duplicate_arguments.emplace(token_value);
-        }
-        else {
-            parsed_arguments.emplace(token_value);
-        }
         if (!scan_expected(GraphQlToken::Colon)) {
             scanner->skip_to({ GraphQlToken::CloseBrace });
             return nullptr;
@@ -418,30 +411,16 @@ Arguments* GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputV
                 GraphQlToken::CloseParen,
             });
         }
-        arguments->arguments.push_back(argument);
+        argument->directives = parse_directives(DirectiveLocation::ARGUMENT_DEFINITION);
+        arguments->emplace(token_value, argument);
     }
-    finish_syntax(field);
-    if (duplicate_arguments.size() > 0) {
-        for (const auto& duplicate_argument : duplicate_arguments) {
-            for (const auto& argument : arguments->arguments) {
-                if (argument->name->identifier == duplicate_argument) {
-                    add_diagnostic(
-                        get_location_from_syntax(argument->name),
-                        D::Duplicate_argument_0,
-                        duplicate_argument
-                    );
-                }
-            }
-        }
-        duplicate_arguments.clear();
-    }
-    parsed_arguments.clear();
+    finish_syntax(target);
     for (const auto& argument_definition : input_value_definitions) {
         const auto& type = argument_definition.second->type;
         if ((type->is_non_null && !type->is_list_type) || type->is_non_null_list) {
-            if (parsed_arguments.find(argument_definition.second->name->identifier) == parsed_arguments.end()) {
+            if (arguments->find(argument_definition.second->name->identifier) == arguments->end()) {
                 add_diagnostic(
-                    get_location_from_syntax(field),
+                    get_location_from_syntax(target),
                     D::Missing_required_argument_0,
                     argument_definition.second->name->identifier
                 );
@@ -449,14 +428,6 @@ Arguments* GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputV
         }
     }
     return arguments;
-}
-
-Name* GraphQlExecutor::parse_optional_name()
-{
-    if (scan_optional(GraphQlToken::G_Name)) {
-        return create_syntax<Name>(SyntaxKind::S_Name, get_token_value());
-    }
-    return nullptr;
 }
 
 VariableDefinitions* GraphQlExecutor::parse_variable_definitions()
@@ -677,7 +648,6 @@ GraphQlExecutor::parse_value(Type* type)
                         }
                     }
                 }
-                duplicate_arguments.clear();
             }
 
             for (const auto& required_field : input_object->required_fields) {
@@ -713,6 +683,62 @@ GraphQlExecutor::parse_boolean_value(Type* type, bool value) {
     auto syntax = create_syntax<BooleanValue>(SyntaxKind::S_BooleanValue);
     syntax->value = value;
     return syntax;
+}
+
+std::map<Glib::ustring, Directive*>
+GraphQlExecutor::parse_directives(DirectiveLocation location)
+{
+    std::map<Glib::ustring, Directive*> directives = {};
+    while (true) {
+        if (!scan_optional(GraphQlToken::At)) {
+            break;
+        }
+        GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/false);
+        if (token != GraphQlToken::G_Name) {
+            add_diagnostic(D::Expected_name_but_instead_got_0, get_token_value());
+            skip_to_next_primary_token();
+            break;
+        }
+        auto directive = create_syntax<Directive>(SyntaxKind::S_Directive);
+        directive->start = directive->start - 1;
+        directive->location = location;
+        auto name = get_token_value();
+        auto definition = directive_definitions.find(name);
+        if (definition == directive_definitions.end()) {
+            add_diagnostic(get_location_from_syntax(directive), D::Undefined_directive_0, name);
+            skip_to({ GraphQlToken::CloseParen });
+            return directives;
+        }
+        directive->name = create_syntax<Name>(SyntaxKind::S_Name, name);
+        auto location_it = definition->second->locations.find(directive->location);
+        if (location_it == definition->second->locations.end()) {
+            add_diagnostic(
+                get_location_from_syntax(directive),
+                D::The_directive_0_does_not_support_the_location_1,
+                "@" + directive->name->identifier,
+                directiveLocationToString.at(directive->location)
+            );
+        }
+        directive->name = create_syntax<Name>(SyntaxKind::S_Name, name);
+        if (scan_optional(GraphQlToken::OpenParen)) {
+            directive->arguments = parse_arguments(definition->second->arguments, directive->name);
+            if (directive->arguments == nullptr) {
+                return directives;
+            }
+        }
+        else {
+            directive->arguments = new std::map<Glib::ustring, Argument*>();
+        }
+        this->directives.push_back(directive);
+        auto directive_name = directive->name->identifier;
+        if (directives.find(directive_name) == directives.end()) {
+            directives.emplace(directive_name, directive);
+        }
+        else {
+            add_diagnostic(D::Duplicate_argument_0, directive_name);
+        }
+    }
+    return directives;
 }
 
 Name*
@@ -765,7 +791,7 @@ GraphQlExecutor::current_position()
 }
 
 void
-GraphQlExecutor::skip_to_next_query_primary_token()
+GraphQlExecutor::skip_to_next_primary_token()
 {
     scanner->skip_to({
         GraphQlToken::QueryKeyword,

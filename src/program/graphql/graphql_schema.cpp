@@ -35,7 +35,7 @@ GraphQlSchema::GraphQlSchema(const Glib::ustring& source, MemoryPool* memory_poo
     if (schema == nullptr) {
         schema = create_syntax<Schema>(SyntaxKind::S_Schema);
     }
-    check_schema_references(schema);
+    set_root_types(schema);
     check_forward_references();
     check_directive_references();
     check_object_implementations();
@@ -311,7 +311,7 @@ GraphQlSchema::parse_implementations()
             forward_interface_references.push_back(name);
         }
         else {
-            if (it->second->declaration->kind != SyntaxKind::S_Interface) {
+            if (it->second->kind != SymbolKind::SL_Interface) {
                 add_diagnostic(D::Expected_name_of_interface);
             }
         }
@@ -496,7 +496,7 @@ GraphQlSchema::parse_input_fields_definition(InputObject* object)
 }
 
 Name*
-GraphQlSchema::parse_object_name(ObjectLike *object, SymbolKind kind)
+GraphQlSchema::parse_object_name(ObjectLike* object, SymbolKind kind)
 {
     if (!scan_expected(GraphQlToken::G_Name, D::Expected_type_name_instead_got_0, /*treat_keyword_as_name*/true)) {
         return nullptr;
@@ -734,12 +734,12 @@ GraphQlSchema::parse_type_annotation(bool in_input_location, DirectiveDefinition
 }
 
 void
-GraphQlSchema::check_schema_references(Schema* schema)
+GraphQlSchema::set_root_types(Schema *schema)
 {
     if (schema->query != nullptr) {
         auto result = symbols.find(schema->query->identifier);
         if (result != symbols.end()) {
-            schema->query_object = static_cast<Object*>(result->second->declaration);
+            query = schema->query_object = static_cast<Object*>(result->second->declaration);
         }
         else {
             add_diagnostic(D::Type_0_is_not_defined, schema->query->identifier);
@@ -748,7 +748,7 @@ GraphQlSchema::check_schema_references(Schema* schema)
     else {
         auto result = symbols.find("Query");
         if (result != symbols.end()) {
-            schema->query_object = static_cast<Object*>(result->second->declaration);
+            query = static_cast<Object*>(result->second->declaration);
         }
         else {
             add_diagnostic({ 0, 0, 0, true }, D::No_query_root_operation_type_defined);
@@ -758,7 +758,7 @@ GraphQlSchema::check_schema_references(Schema* schema)
     if (schema->mutation != nullptr) {
         auto result = symbols.find(schema->mutation->identifier);
         if (result != symbols.end()) {
-            schema->mutation_object = static_cast<Object*>(result->second->declaration);
+            mutation = schema->mutation_object = static_cast<Object*>(result->second->declaration);
         }
         else {
             add_diagnostic(D::Type_0_is_not_defined, schema->mutation->identifier);
@@ -767,14 +767,17 @@ GraphQlSchema::check_schema_references(Schema* schema)
     else {
         auto result = symbols.find("Mutation");
         if (result != symbols.end()) {
-            schema->mutation_object = static_cast<Object*>(result->second->declaration);
+            mutation = static_cast<Object*>(result->second->declaration);
+        }
+        else {
+            mutation = nullptr;
         }
     }
 
     if (schema->subscription != nullptr) {
         auto result = symbols.find(schema->subscription->identifier);
         if (result != symbols.end()) {
-            schema->subscription_object = static_cast<Object*>(result->second->declaration);
+            subscription = schema->subscription_object = static_cast<Object*>(result->second->declaration);
         }
         else {
             add_diagnostic(D::Type_0_is_not_defined, schema->subscription->identifier);
@@ -783,7 +786,10 @@ GraphQlSchema::check_schema_references(Schema* schema)
     else {
         auto result = symbols.find("Subscription");
         if (result != symbols.end()) {
-            schema->subscription_object = static_cast<Object*>(result->second->declaration);
+            subscription = static_cast<Object*>(result->second->declaration);
+        }
+        else {
+            subscription = nullptr;
         }
     }
 }
@@ -1041,7 +1047,7 @@ GraphQlSchema::parse_directives(DirectiveLocation location, DirectiveDefinition*
         }
         GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/false);
         if (token != GraphQlToken::G_Name) {
-            add_diagnostic(D::Expected_name_but_instead_got_0, graphQlTokenToString.at(token));
+            add_diagnostic(D::Expected_name_but_instead_got_0, get_token_value());
             skip_to_next_primary_token();
             break;
         }
@@ -1053,6 +1059,9 @@ GraphQlSchema::parse_directives(DirectiveLocation location, DirectiveDefinition*
         directive->name = create_syntax<Name>(SyntaxKind::S_Name, name);
         if (scan_optional(GraphQlToken::OpenParen)) {
             directive->arguments = parse_arguments_after_open_paren();
+        }
+        else {
+            directive->arguments = new std::map<Glib::ustring, Argument*>();
         }
         this->directives.push_back(directive);
         auto directive_name = directive->name->identifier;
@@ -1218,10 +1227,10 @@ GraphQlSchema::parse_value()
     }
 }
 
-std::map<Glib::ustring, Argument*>
+std::map<Glib::ustring, Argument*>*
 GraphQlSchema::parse_arguments_after_open_paren()
 {
-    std::map<Glib::ustring, Argument*> arguments;
+    auto arguments = new std::map<Glib::ustring, Argument*>();
     while (true) {
         auto token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
         if (token == GraphQlToken::CloseParen) {
@@ -1236,9 +1245,9 @@ GraphQlSchema::parse_arguments_after_open_paren()
             return arguments;
         }
         argument->value = parse_value();
-        const auto& argument_it = arguments.find(token_value);
-        if (argument_it == arguments.end()) {
-            arguments.emplace(token_value, argument);
+        const auto& argument_it = arguments->find(token_value);
+        if (argument_it == arguments->end()) {
+            arguments->emplace(token_value, argument);
         }
         else {
             if (!has_diagnostic_in_syntax(argument_it->second->name, D::Duplicate_argument_0)) {
@@ -1323,8 +1332,8 @@ GraphQlSchema::check_directive_references()
         for (const auto& argument_definition_it : definition->second->arguments) {
             const auto& argument_definition = argument_definition_it.second;
             const auto& argument = argument_definition->name->identifier;
-            const auto& directive_argument_it = directive->arguments.find(argument);
-            if (directive_argument_it == directive->arguments.end()) {
+            const auto& directive_argument_it = directive->arguments->find(argument);
+            if (directive_argument_it == directive->arguments->end()) {
                 if (argument_definition->type->is_non_null || argument_definition->type->is_non_null_list) {
                     add_diagnostic(get_location_from_syntax(directive), D::Missing_required_argument_0, argument);
                 }
@@ -1334,8 +1343,8 @@ GraphQlSchema::check_directive_references()
             const auto& directive_argument = directive_argument_it->second;
             check_value(directive_argument->value, argument_definition_it.second->type);
         }
-        if (checked_arguments.size() < directive->arguments.size()) {
-            for (const auto& argument_it : directive->arguments) {
+        if (checked_arguments.size() < directive->arguments->size()) {
+            for (const auto& argument_it : *directive->arguments) {
                 if (checked_arguments.find(argument_it.second->name->identifier) != checked_arguments.end()) {
                     add_diagnostic(D::Unknown_argument_0);
                 }

@@ -47,30 +47,6 @@ enum EnumValueDirective {
     value {{directive}},
 }
 union UnionDirective {{directive}} = ObjectFieldDirective
-====
-query Query {{directive}} {
-    field {{directive}}
-    fieldWithArgument(argument: 1 {{directive}})
-    object {
-        field {{directive}}
-    }
-}
-
-mutation Mutation {{directive}} {
-    field
-}
-
-subscription Mutation {{directive}} {
-    field
-}
-
-fragment FragmentDirective on ObjectFieldDirective {{directive}} {
-    field
-}
-
-fragment FragmentFieldDirective on ObjectFieldDirective {
-    field {{directive}}
-}
 
 # @test(directive, location):
 #

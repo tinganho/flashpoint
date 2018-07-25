@@ -26,8 +26,8 @@
     parameter(parameter)
 
 #define new_operator(class); \
-    void* operator new(std::size_t size, MemoryPool* memory_pool, MemoryPoolTicket* request) { \
-        return memory_pool->allocate(size, alignof(class), request); \
+    void* operator new(std::size_t size, MemoryPool* memory_pool, MemoryPoolTicket* ticket) { \
+        return memory_pool->allocate(size, alignof(class), ticket); \
     }
 
 using namespace flashpoint::lib;
@@ -603,7 +603,7 @@ namespace flashpoint::program::graphql {
 
     struct Directive : Syntax {
         Name* name;
-        std::map<Glib::ustring, Argument*> arguments;
+        std::map<Glib::ustring, Argument*>* arguments;
         DirectiveDefinition* parent_directive_definition;
         DirectiveLocation location;
 
@@ -636,7 +636,7 @@ namespace flashpoint::program::graphql {
     struct Field : Selection {
         Name* alias;
         Name* name;
-        Arguments* arguments;
+        std::map<Glib::ustring, Argument*>* arguments;
         std::map<Glib::ustring, Directive*> directives;
 
         D(Field, Selection)

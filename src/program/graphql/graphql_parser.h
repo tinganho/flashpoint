@@ -32,6 +32,9 @@ public:
     MemoryPool*
     memory_pool;
 
+    MemoryPoolTicket*
+    ticket;
+
     Glib::ustring
     current_description;
 
@@ -40,9 +43,6 @@ public:
 
     bool
     has_description;
-
-    MemoryPoolTicket*
-    ticket;
 
     std::vector<Directive*>
     directives;

@@ -18,10 +18,19 @@ public:
     std::vector<DiagnosticMessage>
     diagnostics;
 
-private:
+    Object*
+    query;
+
+    Object*
+    mutation;
+
+    Object*
+    subscription;
 
     std::map<Glib::ustring, Symbol*>
     symbols;
+
+private:
 
     std::vector<Type*>
     forward_type_references;
@@ -107,11 +116,11 @@ private:
     std::map<Glib::ustring, Directive*>
     parse_directives(DirectiveLocation location, DirectiveDefinition* parent_directive_definition);
 
-    std::map<Glib::ustring, Argument*>
+    std::map<Glib::ustring, Argument*>*
     parse_arguments_after_open_paren();
 
     void
-    check_schema_references(Schema* schema);
+    set_root_types(Schema *schema);
 
     void
     check_forward_references();

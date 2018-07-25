@@ -63,14 +63,11 @@ private:
     std::map<Glib::ustring, FragmentDefinition*>
     fragments;
 
+    std::map<Glib::ustring, DirectiveDefinition*>
+    directive_definitions;
+
     std::set<Glib::ustring>
     duplicate_fragments;
-
-    std::set<Glib::ustring>
-    parsed_arguments;
-
-    std::set<Glib::ustring>
-    duplicate_arguments;
 
     std::set<Glib::ustring>
     duplicate_fields;
@@ -91,10 +88,10 @@ private:
     parse_operation_definition_body_after_open_brace(OperationDefinition*);
 
     Syntax*
-    parse_executable_primary_token(GraphQlToken token);
+    parse_primary_token(GraphQlToken token);
 
-    Arguments*
-    parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Field* field);
+    std::map<Glib::ustring, Argument*>*
+    parse_arguments(const std::map<Glib::ustring, InputValueDefinition*>& input_value_definitions, Syntax* target);
 
     Type*
     parse_type();
@@ -104,6 +101,9 @@ private:
 
     BooleanValue*
     parse_boolean_value(Type* type, bool value);
+
+    std::map<Glib::ustring, Directive*>
+    parse_directives(DirectiveLocation location);
 
     VariableDefinitions*
     parse_variable_definitions();
@@ -116,9 +116,6 @@ private:
 
     Name*
     parse_expected_name();
-
-    Name*
-    parse_optional_name();
 
     ObjectField*
     parse_object_field();
@@ -134,7 +131,7 @@ private:
     current_position();
 
     void
-    skip_to_next_query_primary_token();
+    skip_to_next_primary_token();
 };
 
 }

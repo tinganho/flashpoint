@@ -6,12 +6,14 @@
 
 namespace flashpoint::lib {
 
-    class MemoryPool;
-
     class MemoryPoolTicket {
     public:
-        std::size_t offset;
-        std::size_t block;
+
+        std::size_t
+        offset;
+
+        std::size_t
+        block;
 
         MemoryPoolTicket(std::size_t offset, std::size_t block):
             offset(offset),
@@ -21,17 +23,37 @@ namespace flashpoint::lib {
 
     class MemoryPool {
     public:
-        MemoryPool(const std::size_t total_size, const std::size_t block_size);
-        void* allocate(const std::size_t size, const std::size_t alignment, MemoryPoolTicket *ticket);
-        MemoryPoolTicket* take_ticket();
-        void return_ticket(MemoryPoolTicket* ticket);
-        std::size_t allocate_block();
-        void reset();
+
+        MemoryPool(std::size_t total_size, std::size_t block_size);
+
+        void*
+        allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket *ticket);
+
+        MemoryPoolTicket*
+        take_ticket();
+
+        void
+        return_ticket(MemoryPoolTicket* ticket);
+
+        std::size_t
+        allocate_block();
+
+        void
+        reset();
+
     private:
-        std::size_t block_size;
-        std::size_t total_size;
-        char* start_address_of_pool;
-        std::stack<std::size_t> free_blocks;
+
+        std::size_t
+        block_size;
+
+        std::size_t
+        total_size;
+
+        char*
+        start_address_of_pool;
+
+        std::stack<std::size_t>
+        free_blocks;
     };
 }
 
