@@ -22,7 +22,8 @@ public:
 
 private:
 
-    Glib::ustring annotated_source;
+    Glib::ustring
+    annotated_source;
 
 };
 
