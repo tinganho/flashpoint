@@ -14,7 +14,7 @@ TcpClientRaw::TcpClientRaw():
 { }
 
 bool
-TcpClientRaw::_connect(const char* host, unsigned int port)
+TcpClientRaw::bind(const char *host, unsigned int port)
 {
     socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if (socketfd < 0) {

@@ -14,6 +14,7 @@ public:
     static DiagnosticMessageTemplate Cannot_add_an_output_type_to_an_input_location;
     static DiagnosticMessageTemplate Cannot_add_an_input_type_to_an_output_location;
     static DiagnosticMessageTemplate Cannot_annotate_with_a_type_that_recursively_references_the_directive_0;
+    static DiagnosticMessageTemplate Cannot_select_fields_on_a_scalar_field_0;
     static DiagnosticMessageTemplate Directive_cannot_reference_itself;
     static DiagnosticMessageTemplate Duplicate_argument_0;
     static DiagnosticMessageTemplate Duplicate_field_0;

@@ -1,0 +1,9 @@
+type Query {
+    field: Int
+}
+====
+{
+    field {
+        field
+    }
+}

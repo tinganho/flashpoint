@@ -307,8 +307,13 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
                     if ((field_definition_it->second->type->type & TypeEnum::T_ObjectType) != TypeEnum::T_None) {
                         auto object = symbols.find(field_definition_it->second->type->name->identifier)->second->declaration;
                         current_object_types.push(static_cast<ObjectLike*>(object));
+                        field->selection_set = parse_selection_set_after_open_brace();
                     }
-                    field->selection_set = parse_selection_set_after_open_brace();
+                    else {
+                        add_diagnostic(D::Cannot_select_fields_on_a_scalar_field_0, get_type_name(field_definition_it->second->type));
+                        skip_to_next_primary_token();
+                        return nullptr;
+                    }
                 }
                 selection_set->selections.push_back(field);
                 break;

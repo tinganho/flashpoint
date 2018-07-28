@@ -17,10 +17,11 @@ HttpParser::parse()
 {
     auto [method, path, query] = parse_request_line();
     std::unordered_map<HttpHeader, char*> headers = parse_headers();
+    char* body = nullptr;
     if (method != Get) {
         const char* header = headers[HttpHeader::ContentLength];
         if (header != NULL) {
-            parse_body(std::atoll(header));
+            body = parse_body(std::atoll(header));
         }
     }
 
@@ -29,14 +30,16 @@ HttpParser::parse()
         path,
         query,
         headers,
+        body,
         nullptr,
     });
     return request;
 }
 
-void HttpParser::parse_body(long long length)
+char*
+HttpParser::parse_body(long long length)
 {
-    const char* body = scanner.scan_body(length);
+    return scanner.scan_body(length);
 }
 
 std::unordered_map<HttpHeader, char*>

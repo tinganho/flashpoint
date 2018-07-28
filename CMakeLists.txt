@@ -27,6 +27,7 @@ file(GLOB_RECURSE TEST_SRC ${CMAKE_SOURCE_DIR}/src/test/*)
 
 set(Boost_DEBUG on)
 find_package(Boost 1.66 COMPONENTS system filesystem regex REQUIRED)
+find_package(CURL)
 
 add_subdirectory(third_party/glob)
 add_subdirectory(third_party/jsoncpp EXCLUDE_FROM_ALL)
@@ -38,6 +39,7 @@ include_directories(
     third_party/diff_match_patch
     ${GLIB_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIR}
+    ${CURL_INCLUDE_DIR}
     ${JSONCPP_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
 )
@@ -58,5 +60,5 @@ add_executable(generate-diagnostics
     ${LIB_SRC})
 
 target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
-target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
+target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob libuv.a OpenSSL::SSL)
 target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob)

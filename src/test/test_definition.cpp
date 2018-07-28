@@ -4,6 +4,8 @@
 #include <iostream>
 #include <chrono>
 #include <vector>
+#include <sys/ioctl.h>
+#include <iomanip>
 #include "utils.h"
 #include "test_definition.h"
 #include <execinfo.h> // for backtrace
@@ -63,7 +65,25 @@ namespace flashpoint::test {
         current_domain->tests.push_back(test);
     }
 
-    int print_result() {
+
+    std::chrono::steady_clock::time_point start_all;
+    std::chrono::steady_clock::time_point end_all;
+
+
+    std::string get_time_string(long long int ms)
+    {
+        std::stringstream ss;
+        if (ms < 60 * 1000) {
+            ss << std::setprecision(2) << std::fixed << ms / 1000.0 << "s";
+        }
+        else {
+            ss << std::setprecision(2) << std::fixed << ms / (60 * 1000.0) << "m";
+        }
+        return ss.str();
+    }
+
+    int print_stats()
+    {
         std::vector<Test*> failed_tests = {};
         int tests_succeded = 0;
         int tests_failed = 0;
@@ -80,13 +100,14 @@ namespace flashpoint::test {
                 tests++;
             }
         }
-
+        std::cout << "Stats:" << std::endl << std::endl;
         std::cout << "\e[32m    " + std::to_string(tests_succeded) + " passed\e[0m\n";
         std::cout << "\e[31m    " + std::to_string(tests_failed) + " failed\e[0m\n";
         std::cout << "    " + std::to_string(tests_succeded + tests_failed) + " total\n";
         int domain_size = domains.size();
         std::string domain = domain_size == 1 ? " domain" : " domains";
-        std::cout << "    " + std::to_string(domain_size) + domain << std::endl;
+        std::cout << "    " + std::to_string(domain_size) + domain << std::endl << std::endl;
+        std::cout << "    "  << get_time_string(std::chrono::duration_cast<std::chrono::milliseconds>(end_all - start_all).count()) << " total time" << std::endl;
 
         if (tests_failed > 0) {
             std::cout << std::endl;
@@ -101,19 +122,23 @@ namespace flashpoint::test {
         return tests_failed == 0 ? 0 : 1;
     }
 
-    void run_test_suites() {
+    void run_test_suites()
+    {
+        start_all = std::chrono::steady_clock::now();
         std::cout << std::endl;
+        std::cout << "Tests:" << std::endl << std::endl;
         for (auto const & d : domains) {
-            std::cout << d->name + ":" << std::endl;
-            std::cout << "    ";
-            for (auto const & test : d->tests) {
+            std::cout << "  " << d->name + ":" << std::endl << std::endl;
+            float test_count = 0.0;
+            for (auto const& test : d->tests) {
+                bool failed = false;
                 try {
                     if (test->procedure_type == ProcedureType::Normal) {
                         (test->procedure)(test);
                     }
                     else if (test->procedure_type == ProcedureType::Done) {
                         bool is_done = false;
-                        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
                         std::chrono::steady_clock::time_point end;
                         std::async(test->procedure_with_done, test, [&]() {
                             is_done = true;
@@ -121,9 +146,9 @@ namespace flashpoint::test {
                         long long int duration;
                         while (!is_done) {
                             end = std::chrono::steady_clock::now();
-                            duration = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+                            duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
                             if (duration > 10) {
-                                throw std::logic_error("Spent more than 5s on test.");
+                                throw std::logic_error("Spent more than 10s on test.");
                             }
                         }
                     }
@@ -142,25 +167,36 @@ namespace flashpoint::test {
                             end = std::chrono::steady_clock::now();
                             duration = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
                             if (duration > 10) {
-                                throw std::logic_error("Spent more than 5s on test.");
+                                throw std::logic_error("Spent more than 10s on test.");
                             }
                         }
                         if (errors.size() > 0) {
                             throw BaselineAssertionError(join_vector(errors, "\n\n"));
                         }
                     }
-                    std::cout << "\e[32m․\e[0m";
                     test->success = true;
+                    std::cout << "    \e[32m\u2714\e[0m";
                 }
                 catch (BaselineAssertionError& e) {
-                    std::cout << "\e[31m․\e[0m";
                     test->success = false;
                     test->message = e.what();
+                    std::cout << "    \e[31m\u2718";
+                }
+                test_count++;
+                std::cout << " " + test->name;
+                if (!test->success) {
+                    std::cout << "\e[0m" << std::endl;
+                }
+                else {
+                    std::cout << std::endl;
                 }
             }
             std::cout << std::endl;
+            std::cout << "    " << d->tests.size() << " total";
+            std::cout << std::endl << std::endl;
         }
         std::cout << std::endl;
+        end_all = std::chrono::steady_clock::now();
     }
 
 } // flash::lib

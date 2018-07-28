@@ -52,5 +52,6 @@
   "Subscriptions are not supported.": {},
   "Directive cannot reference itself.": {},
   "Cannot annotate with a type that recursively references the directive '{0}'.": {},
-  "Missing required argument '{0}'.": {}
+  "Missing required argument '{0}'.": {},
+  "Cannot select fields on a scalar field '{0}'.": {}
 }

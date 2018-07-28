@@ -29,26 +29,30 @@ namespace flashpoint::test {
 
     class BaselineTestRunner {
     public:
-        BaselineTestRunner(uv_loop_t* loop);
+        BaselineTestRunner();
 
-        void
-        run_http_tests_with_server(const RunOption& option);
-
-        void
+        int
         start_server();
 
         void
-        run_http_tests(const RunOption& run_option);
+        define_http_tests(const RunOption &run_option);
 
         void
-        run_graphql_tests(const RunOption& run_option);
+        define_graphql_tests(const RunOption &run_option);
+
+        void
+        run(const RunOption &run_option);
 
         void
         accept_graphql_tests(const RunOption& run_option);
 
     private:
-        uv_loop_t* loop;
-        std::size_t current_line = 1;
+
+        std::size_t
+        current_line = 1;
+
+        int
+        child_pid = -1;
 
         void
         visit_tests_by_path(

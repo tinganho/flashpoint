@@ -1,11 +1,15 @@
 #include <program/http_server.h>
 #include <program/http_parser.h>
 #include <program/http_response.h>
+#include <program/graphql/graphql_schema.h>
+#include <program/graphql/graphql_executor.h>
+#include <lib/memory_pool.h>
 #include <lib/utils.h>
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/dh.h>
+#include <json/json.h>
 #include <uv.h>
 #include <iostream>
 
@@ -55,7 +59,7 @@ void
 check_outgoing_application_data(Client* c) {
     if (SSL_is_init_finished(c->ssl)) {
         if(c->buffer_out.size() > 0) {
-            std::copy(c->buffer_out.begin(), c->buffer_out.end(), std::ostream_iterator<char>(std::cout,""));
+//            std::copy(c->buffer_out.begin(), c->buffer_out.end(), std::ostream_iterator<char>(std::cout,""));
             int r = SSL_write(c->ssl, &c->buffer_out[0], c->buffer_out.size());
             c->buffer_out.clear();
             handle_error(c, r);
@@ -89,12 +93,40 @@ on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf)
                 uv_close((uv_handle_t*)client->socket, NULL);
                 return;
             }
+            auto header_it = request->headers.find(HttpHeader::Accept);
+            auto memory_pool = client->server->memory_pool;
+            auto ticket = memory_pool->take_ticket();
+            std::vector<Glib::ustring> source;
+            try {
+                if (request->body) {
+                    GraphQlSchema schema("type Query { field: Int }", memory_pool, ticket);
+                    GraphQlExecutor executor(memory_pool, ticket);
+                    executor.add_schema(schema);
+                    Json::Reader json_reader;
+                    Json::Value request_body;
+                    json_reader.parse(request->body, request_body);
+                    std::string graphql_query = request_body["query"].asString();
+                    auto definition = executor.execute(graphql_query);
+                    if (!definition->diagnostics.empty()) {
+                        std::cout << "Some error occurred" << std::endl;
+                    }
+                    for (const auto& operation : definition->operation_definitions) {
+                        if (operation->operation_type == OperationType::Query) {
+
+                        }
+                    }
+                }
+            }
+            catch (std::exception& ex) {
+                std::cerr << ex.what() << std::endl;
+            }
             HttpResponse response;
             response.header(HttpHeader::Host, "localhost:8000");
             response.header(HttpHeader::ContentType, "application/json");
             response.header(HttpHeader::Accept, "*/*");
             response.body = "Hello world";
             response.status(200);
+
             int r = SSL_write(client->ssl, response.to_buffer(), response.size());
             if (r < 0) {
                 return handle_error(client, r);
@@ -139,7 +171,7 @@ on_new_connection(uv_stream_t* server, int status)
 void
 handle_signal(uv_signal_t* signal, int signum)
 {
-    exit(0);
+    uv_loop_close(signal->loop);
 }
 
 
@@ -150,7 +182,8 @@ alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
 }
 
 HttpServer::HttpServer(uv_loop_t* loop):
-    loop(loop) { }
+    loop(loop)
+{ }
 
 void
 HttpServer::listen(const char *host, unsigned int port)
@@ -161,9 +194,12 @@ HttpServer::listen(const char *host, unsigned int port)
     Client* c = new Client;
     c->server = this;
     setup_security_context();
+    memory_pool = new MemoryPool(1024 * 4 * 10000, 1024 * 4);
 
     uv_signal_t* signal = (uv_signal_t*)malloc(sizeof(uv_signal_t));
     uv_signal_init(loop, signal);
+    uv_signal_start(signal, handle_signal, SIGTERM);
+    uv_signal_start(signal, handle_signal, SIGINT);
     uv_signal_start(signal, handle_signal, SIGHUP);
     uv_tcp_t* server = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
     uv_tcp_init(loop, server);

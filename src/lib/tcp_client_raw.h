@@ -30,7 +30,7 @@ public:
     TcpClientRaw();
 
     bool
-    _connect(const char*, unsigned int port);
+    bind(const char *, unsigned int port);
 
     void
     send_message(const char*);

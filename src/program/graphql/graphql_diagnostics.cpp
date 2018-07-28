@@ -7,6 +7,7 @@ namespace flashpoint::program {
     DiagnosticMessageTemplate D::Cannot_add_an_output_type_to_an_input_location = DiagnosticMessageTemplate { "Cannot add an (output) type to an input location." };
     DiagnosticMessageTemplate D::Cannot_add_an_input_type_to_an_output_location = DiagnosticMessageTemplate { "Cannot add an input type to an output location." };
     DiagnosticMessageTemplate D::Cannot_annotate_with_a_type_that_recursively_references_the_directive_0 = DiagnosticMessageTemplate { "Cannot annotate with a type that recursively references the directive '{0}'." };
+    DiagnosticMessageTemplate D::Cannot_select_fields_on_a_scalar_field_0 = DiagnosticMessageTemplate { "Cannot select fields on a scalar field '{0}'." };
     DiagnosticMessageTemplate D::Directive_cannot_reference_itself = DiagnosticMessageTemplate { "Directive cannot reference itself." };
     DiagnosticMessageTemplate D::Duplicate_argument_0 = DiagnosticMessageTemplate { "Duplicate argument '{0}'." };
     DiagnosticMessageTemplate D::Duplicate_field_0 = DiagnosticMessageTemplate { "Duplicate field '{0}'." };

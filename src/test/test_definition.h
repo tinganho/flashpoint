@@ -49,7 +49,7 @@ namespace flashpoint::test {
     void test(const std::string& name, std::function<void(Test* t, std::function<void()>, std::function<void(std::string error)>)> procedure);
     void test(const std::string& name, std::function<void(Test* t, std::function<void()>)> procedure);
     void test(const std::string& name, std::function<void(Test* t)> procedure);
-    int print_result();
+    int print_stats();
     void run_test_suites();
 
 } // Lya::TestFramework

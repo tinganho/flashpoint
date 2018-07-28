@@ -4,6 +4,7 @@
 #include <uv.h>
 #include <openssl/ssl.h>
 #include <program/http_parser.h>
+#include <lib/memory_pool.h>
 #include <vector>
 
 namespace flashpoint::program {
@@ -23,6 +24,9 @@ public:
 
     SSL_CTX*
     ssl_ctx;
+
+    MemoryPool*
+    memory_pool;
 
 private:
 
