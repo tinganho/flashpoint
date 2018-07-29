@@ -21,7 +21,7 @@ endfunction(list_to_string)
 #
 function(print_list LIST)
     if(WIN32)
-        set(NEWLINE "\r")
+        set(NEWLINE "\r\n")
     else()
         set(NEWLINE "\n")
     endif()

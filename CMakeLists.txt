@@ -4,6 +4,8 @@ project(FlashPoint)
 set(CMAKE_CXX_STANDARD 17)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
+find_package(PkgConfig REQUIRED)
+
 include(ExternalProject)
 include(cmake/modules/find_glib.cmake)
 include(cmake/lib/utils.cmake)
@@ -54,6 +56,8 @@ add_executable(flash-test
     ${TEST_SRC}
     ${PROGRAM_SRC}
     ${LIB_SRC})
+
+message("${GLIB_LIBRARIES}")
 
 add_executable(generate-diagnostics
     tasks/generate_diagnostics.cpp

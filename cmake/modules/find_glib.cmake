@@ -2,10 +2,10 @@
 
 include(FindPkgConfig)
 include(FindPackageHandleStandardArgs)
-pkg_check_modules(GLIB_PKGCONF REQUIRED glibmm-2.4 glib-2.0)
+pkg_search_module(GLIB_PKGCONF glibmm-2.4)
 
 find_library(GLIB_LIBRARY
-    NAME glibmm-2.0.a
+    NAME glibmm-2.4
     PATHS ${GLIB_PKGCONF_LIBRARY_DIRS})
 
 if(GLIB_PKGCONF_FOUND)
