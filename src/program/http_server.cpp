@@ -176,9 +176,19 @@ handle_signal(uv_signal_t* signal, int signum)
 
 
 void
-alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
+{
     buf->base = new char[suggested_size];
     buf->len = suggested_size;
+}
+
+void
+on_interval(uv_timer_t* handle)
+{
+    auto http_server = static_cast<HttpServer*>(handle->data);
+    if (getppid() != http_server->parent_pid) {
+        http_server->close();
+    }
 }
 
 HttpServer::HttpServer(uv_loop_t* loop):
@@ -191,6 +201,7 @@ HttpServer::listen(const char *host, unsigned int port)
     SSL_library_init();
     SSL_load_error_strings();
 
+    parent_pid = getppid();
     Client* c = new Client;
     c->server = this;
     setup_security_context();
@@ -201,6 +212,10 @@ HttpServer::listen(const char *host, unsigned int port)
     uv_signal_start(signal, handle_signal, SIGTERM);
     uv_signal_start(signal, handle_signal, SIGINT);
     uv_signal_start(signal, handle_signal, SIGHUP);
+    uv_timer_t* timer_request = (uv_timer_t*)malloc(sizeof(uv_timer_t));
+    uv_timer_init(loop, timer_request);
+    timer_request->data = this;
+    uv_timer_start(timer_request, on_interval, 0, 0);
     uv_tcp_t* server = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
     uv_tcp_init(loop, server);
     server->data = c;
@@ -211,6 +226,12 @@ HttpServer::listen(const char *host, unsigned int port)
     if (r) {
         std::fprintf(stderr, "Listen error %s\n", uv_strerror(r));
     }
+}
+
+void
+HttpServer::close()
+{
+    uv_loop_close(loop);
 }
 
 void

@@ -28,6 +28,9 @@ public:
     MemoryPool*
     memory_pool;
 
+    int
+    parent_pid;
+
 private:
 
     void
