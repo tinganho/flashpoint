@@ -1,0 +1,11 @@
+type Query {
+    field: Int
+}
+====
+{
+    field {
+          ~ (2, 11, 1)
+!!! Cannot select fields on a scalar field 'Int'.
+        field
+    }
+}
