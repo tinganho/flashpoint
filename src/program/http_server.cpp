@@ -186,6 +186,8 @@ void
 on_interval(uv_timer_t* handle)
 {
     auto http_server = static_cast<HttpServer*>(handle->data);
+
+    // If parent is dead(parent id is changed), kill the server.
     if (getppid() != http_server->parent_pid) {
         http_server->close();
     }
