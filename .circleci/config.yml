@@ -7,14 +7,15 @@ jobs:
 
     steps:
       - checkout
-      
+
       - run:
           name: Clone submodules
-          command: git submodule update --init
+          command: git submodule update --init --recursive
 
       - run:
           name: CMake Install
           command: |
+            cmake --version
             mkdir debug
             cd debug
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++-6.0 ..

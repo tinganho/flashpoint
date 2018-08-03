@@ -28,6 +28,8 @@ RUN apt-get install -y \
     clang-6.0 \
     gcc-6 \
     g++-6
+RUN rm /usr/bin/g++
+RUN rm /usr/bin/gcc
 RUN ln -s /usr/bin/g++-6.0 /usr/bin/g++
 RUN ln -s /usr/bin/gcc-6.0 /usr/bin/gcc
 RUN ln -s /usr/bin/clang-6.0 /usr/bin/clang++
