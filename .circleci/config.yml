@@ -7,8 +7,8 @@ jobs:
 
     steps:
       - checkout:
-        post:
-          - git submodule update --init
+          post:
+            - git submodule update --init
       - run:
           name: CMake Install
           command: |
@@ -24,4 +24,4 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-    - build_and_test
+      - build_and_test
