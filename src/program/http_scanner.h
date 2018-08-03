@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <stack>
 #include <vector>
+#include <cstring>
 
 namespace flashpoint::program {
 
@@ -134,7 +135,7 @@ namespace flashpoint::program {
 
     struct char_compare {
         bool operator()(const char* a, const char* b) const {
-            return std::strcmp(a, b) < 0;
+            return strcmp(a, b) < 0;
         }
     };
 

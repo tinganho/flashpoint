@@ -1,6 +1,7 @@
 #include "tcp_client.h"
 #include <functional>
 #include <future>
+#include <cstring>
 #include <uv.h>
 
 namespace flashpoint::program {

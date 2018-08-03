@@ -4,7 +4,7 @@
 
 namespace flashpoint::program {
 
-    std::unordered_map<HttpHeader, const char*> token_to_string = {
+    std::map<HttpHeader, const char*> token_to_string = {
         { HttpHeader::Accept, "Accept" },
         { HttpHeader::AcceptCharset, "Accept-Charset" },
         { HttpHeader::AcceptEncoding, "Accept-Encoding" },

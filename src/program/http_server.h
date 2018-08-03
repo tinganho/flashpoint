@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace flashpoint::program {
+
 class HttpServer {
 public:
 

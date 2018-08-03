@@ -155,11 +155,10 @@ BaselineTestRunner::define_graphql_tests(const RunOption &run_option)
 {
     domain("GraphQL");
     visit_tests_by_path("src/program/graphql", [&](const TestCase test_case) {
-        if (run_option.folder && *run_option.folder != test_case.folder) {
+        if (run_option.folder != nullptr && *run_option.folder != test_case.folder) {
             return;
         }
-        auto s = *run_option.test;
-        if (run_option.test && (s != test_case.aggregate_name && s != test_case.name)) {
+        if (run_option.test != nullptr && (*run_option.test != test_case.aggregate_name && *run_option.test != test_case.name)) {
             return;
         }
         test(test_case.name, [=](Test* test, std::function<void()> done, std::function<void(std::string error)> error) {
@@ -225,7 +224,7 @@ BaselineTestRunner::define_http_tests(const RunOption &run_option)
         if (run_option.test && *run_option.test != test_case.name) {
             return;
         }
-        test(test_case.name, [=](Test* test, std::function<void()> success, std::function<void(std::string error)> error) {
+        test(test_case.name, [&](Test* test, std::function<void()> success, std::function<void(std::string error)> error) -> void {
             CURL *curl;
             CURLcode code;
             std::size_t retries = 0;
@@ -239,7 +238,7 @@ BaselineTestRunner::define_http_tests(const RunOption &run_option)
                     code = curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:8000");
                     if(code != CURLE_OK) {
                         fprintf(stderr, "Failed to set URL [%s]\n", errorBuffer);
-                        return false;
+                        return;
                     }
                     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
                     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
@@ -252,7 +251,7 @@ BaselineTestRunner::define_http_tests(const RunOption &run_option)
                     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"query\":\"{ field }\"}");
                     if(code != CURLE_OK) {
                         fprintf(stderr, "Failed to set body [%s]\n", errorBuffer);
-                        return false;
+                        return;
                     }
 
                     code = curl_easy_perform(curl);
@@ -266,7 +265,7 @@ BaselineTestRunner::define_http_tests(const RunOption &run_option)
                         }
                         else {
                             fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
-                            return false;
+                            return;
                         }
                     }
                     curl_easy_cleanup(curl);

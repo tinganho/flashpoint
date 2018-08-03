@@ -1,4 +1,6 @@
 #include "command.h"
+#include <cstring>
+#include <iostream>
 
 namespace flashpoint::lib {
 
@@ -95,12 +97,13 @@ Command::is(const char* c)
 bool
 Command::has_flag(const char* flag)
 {
-    for (const auto& f : flags) {
+    std::cout << flags.size() << std::endl;
+    for (const auto f : flags) {
         if (strcmp(f.name, flag) == 0) {
             return true;
         }
-        return false;
     }
+    return false;
 }
 
 void Command::for_each_arg(int argc, char** argv, std::function <void(char *)> callback)

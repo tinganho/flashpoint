@@ -2,7 +2,7 @@
 
 include(FindPkgConfig)
 include(FindPackageHandleStandardArgs)
-pkg_search_module(GLIB_PKGCONF glibmm-2.4)
+pkg_search_module(GLIB_PKGCONF glibmm-2.4 glib-2.0)
 
 find_library(GLIB_LIBRARY
     NAME glibmm-2.4

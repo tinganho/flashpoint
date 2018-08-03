@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5)
 project(FlashPoint)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-g")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 find_package(PkgConfig REQUIRED)
@@ -33,12 +35,14 @@ find_package(CURL)
 
 add_subdirectory(third_party/glob)
 add_subdirectory(third_party/jsoncpp EXCLUDE_FROM_ALL)
+add_subdirectory(third_party/libuv EXCLUDE_FROM_ALL)
 
 include_directories(
     src
     src/lib
     third_party/glob
     third_party/diff_match_patch
+    third_party/libuv/include
     ${GLIB_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIR}
     ${CURL_INCLUDE_DIR}
@@ -57,12 +61,10 @@ add_executable(flash-test
     ${PROGRAM_SRC}
     ${LIB_SRC})
 
-message("${GLIB_LIBRARIES}")
-
 add_executable(generate-diagnostics
     tasks/generate_diagnostics.cpp
     ${LIB_SRC})
 
-target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob libuv.a OpenSSL::SSL)
-target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob libuv.a OpenSSL::SSL)
-target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob)
+target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob uv_a OpenSSL::SSL)
+target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob uv_a OpenSSL::SSL)
+target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob pthread dl)

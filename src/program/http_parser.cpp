@@ -16,7 +16,7 @@ std::unique_ptr<HttpRequest>
 HttpParser::parse()
 {
     auto [method, path, query] = parse_request_line();
-    std::unordered_map<HttpHeader, char*> headers = parse_headers();
+    std::map<HttpHeader, char*> headers = parse_headers();
     char* body = nullptr;
     if (method != Get) {
         const char* header = headers[HttpHeader::ContentLength];
@@ -42,10 +42,10 @@ HttpParser::parse_body(long long length)
     return scanner.scan_body(length);
 }
 
-std::unordered_map<HttpHeader, char*>
+std::map<HttpHeader, char*>
 HttpParser::parse_headers()
 {
-    std::unordered_map<HttpHeader, char*> headers = {};
+    std::map<HttpHeader, char*> headers = {};
     while (true) {
         auto header = scanner.scan_header();
         if (header == HttpHeader::End) {

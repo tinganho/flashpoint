@@ -24,7 +24,7 @@ public:
 
 private:
 
-    std::vector<const GraphQlSchema>
+    std::vector<GraphQlSchema>
     schemas;
 
     Glib::ustring

@@ -32,12 +32,13 @@ int main(int argc, char* argv[]) {
         }
         return 1;
     };
-    RunOption run_option;
+    RunOption run_option = { nullptr, nullptr };
+
     if (command.has_flag("test")) {
-        run_option.test = std::string(command.get_flag_value("test"));
+        run_option.test = new std::string(command.get_flag_value("test"));
     }
     else if (command.has_flag("folder")) {
-        run_option.folder = std::string(command.get_flag_value("folder"));
+        run_option.folder = new std::string(command.get_flag_value("folder"));
     }
     if (command.is("accept")) {
         test_runner.accept_graphql_tests(run_option);
@@ -59,14 +60,6 @@ int main(int argc, char* argv[]) {
             kill(child_pid, SIGTERM);
         }
     }
-//    if (argc > 1) {
-//        if(strcmp(argv[1], "--no-server") == 0) {
-//            test_runner.run_http_tests(run_option);
-//        }
-//    }
-//    else {
-//        test_runner.run_http_tests_with_server(run_option);
-//    }
 
     return 0;
 }

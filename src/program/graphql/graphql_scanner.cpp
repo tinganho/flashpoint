@@ -943,7 +943,6 @@ GraphQlScanner::is_line_break(const char32_t& ch) const
 }
 
 
-inline
 std::size_t
 GraphQlScanner::length() const
 {

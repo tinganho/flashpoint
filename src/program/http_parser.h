@@ -20,7 +20,7 @@ struct HttpRequest {
     HttpMethod method;
     char* path;
     char* query;
-    std::unordered_map<HttpHeader, char*> headers;
+    std::map<HttpHeader, char*> headers;
     char* body;
     uv_stream_t* client_stream;
 };
@@ -36,7 +36,7 @@ public:
     RequestLine
     parse_request_line();
 
-    std::unordered_map<HttpHeader, char*>
+    std::map<HttpHeader, char*>
     parse_headers();
 
     char*

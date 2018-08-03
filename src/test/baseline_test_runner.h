@@ -24,8 +24,8 @@ struct TestCase {
 };
 
 struct RunOption {
-    std::experimental::optional<std::string> test;
-    std::experimental::optional<std::string> folder;
+    std::string* test;
+    std::string* folder;
 };
 
 class BaselineTestRunner {

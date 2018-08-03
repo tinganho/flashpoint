@@ -4,6 +4,7 @@
 .DS_Store
 bin/
 cmake-build-debug/
+cmake-build-release/
 debug/
 release/
 **/tests/currents/**

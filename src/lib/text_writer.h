@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <stack>
+#include <memory>
 
 namespace flashpoint::lib {
 

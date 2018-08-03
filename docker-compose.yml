@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  dev.env.flashpoint:
+    image: tinganho/dev.env.flashpoint:latest
+    container_name: dev.env.flashpoint
+    build:
+      context: .
+      dockerfile: docker/dev.env.flashpoint.dockerfile
+    volumes:
+      - .:/flashpoint
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - 9999:9999

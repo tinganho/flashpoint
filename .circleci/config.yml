@@ -1,0 +1,26 @@
+version: 2
+
+jobs:
+  build_and_test:
+    docker:
+      - image: tinganho/dev.env.flashpoint:latest
+    steps:
+      - checkout:
+        post:
+          - git submodule update --init
+      - run:
+          name: CMake Install
+          command: |
+            mkdir debug
+            cd debug
+            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++-6.0 ..
+            make
+      - run:
+          name: Test
+          command: ./bin/flash-test
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+    - build

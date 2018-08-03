@@ -2,6 +2,7 @@
 #include <tuple>
 #include <lib/utils.h>
 #include <lib/character.h>
+#include <ctype.h>
 #include "http_scanner.h"
 
 using namespace flashpoint::lib;
@@ -260,11 +261,11 @@ bool HttpScanner::is_pchar(char ch)
     }
     if (ch == Percent) {
         increment_position();
-        if (!ishexnumber(current_char())) {
+        if (!isxdigit(current_char())) {
             throw std::logic_error("Expected hex number.");
         }
         increment_position();
-        if (!ishexnumber(current_char())) {
+        if (!isxdigit(current_char())) {
             throw std::logic_error("Expected hex number.");
         }
         return true;
