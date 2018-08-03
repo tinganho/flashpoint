@@ -39,20 +39,22 @@ RUN curl -L https://cmake.org/files/v3.12/cmake-3.12.0.tar.gz -o cmake-3.12.0.ta
 RUN tar xvfz cmake-3.12.0.tar.gz
 
 WORKDIR cmake-3.12.0
-RUN ./bootstrap
+RUN ./bootstrap --prefix=/usr
 RUN make -j$(nproc)
 RUN make install
 
 WORKDIR ../
 
 # Install Boost
+ENV CC=gcc-6
+ENV CXX=clang++-6.0
 RUN curl -L https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.gz -o boost_1_67_0.tar.gz
 RUN echo "8aa4e330c870ef50a896634c931adf468b21f8a69b77007e45c444151229f665 boost_1_67_0.tar.gz" | sha256sum -c
 RUN tar xzvf boost_1_67_0.tar.gz
 WORKDIR boost_1_67_0
-RUN ./bootstrap.sh
+RUN ./bootstrap.sh --with-toolset=clang --prefix=/usr/
 RUN ./b2 toolset=clang -j$(nproc)
-RUN ./b2 install
+RUN ./b2 install toolset=clang
 
 WORKDIR ../
 

@@ -7,7 +7,6 @@
 #include "test_case_scanner.h"
 #include <boost/filesystem/path.hpp>
 #include <uv.h>
-#include <experimental/optional>
 
 using namespace boost::filesystem;
 using namespace flashpoint::lib;

@@ -10,7 +10,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string_regex.hpp>
-#include <diff_match_patch.h>
 #include <algorithm>
 #include <string>
 #include <sstream>
