@@ -5,10 +5,6 @@ dist: trusty
 
 addons:
   apt:
-    sources:
-      - sourceline: 'ppa:ubuntu-toolchain-r/test'
-      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main'
-        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - pkg-config
       - glibmm-2.4
@@ -21,14 +17,26 @@ addons:
       - libicu-dev
       - build-essential
       - libbz2-dev
-      - clang-6.0
-      - gcc-6
-      - g++-6
+
+before_script:
+  - curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+  - sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main"
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update
+  - sudo apt-get install -y \
+      clang-6.0 \
+      gcc-6 \
+      g++-6
 
 install:
   # Set the ${CXX} variable properly
   - export CXX=clang++-6.0
   - ${CXX} --version
+
+  # Dependencies required by the CI are installed in ${TRAVIS_BUILD_DIR}/deps/
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir -p "${DEPS_DIR}"
+  - cd "${DEPS_DIR}"
 
   # Travis machines have 2 cores
   - JOBS=2
