@@ -1,23 +1,6 @@
 language: cpp
 compiler: clang
 
-os: linux
-dist: trusty
-
-cache:
-  directories:
-  - ${TRAVIS_BUILD_DIR}/deps
-
-addons:
-  apt:
-    packages:
-    - clang-6.0
-    sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-6.0
-    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-
 install:
   # Set the ${CXX} variable properly
   - export CXX=${COMPILER}
@@ -35,7 +18,7 @@ install:
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
-  - CMAKE_VERSION=3.7.2
+  - CMAKE_VERSION=3.12.0
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
       CMAKE_URL="https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
@@ -46,6 +29,8 @@ install:
     fi
   - cmake --version
 
+#before_install:
+#  - eval "${MATRIX_EVAL}"
 
 before_script:
   # have CMake to generate build files
