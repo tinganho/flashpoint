@@ -20,6 +20,7 @@ jobs:
             cd debug
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++-6.0 ..
             make
+
       - run:
           name: Test
           command: ./bin/flash-test
@@ -29,10 +30,16 @@ jobs:
     working_directory: /Users/distiller/project
     steps:
       - checkout
+
+      - run:
+          name: Clone submodules
+          command: git submodule update --init --recursive
+
       - run:
           name: Install
           command: |
             brew install cmake boost pkg-config
+
       - run:
           name: Build
           command: |
@@ -41,6 +48,7 @@ jobs:
             cd debug
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang ..
             make
+
       - run:
           name: Test
           command: ./bin/flash-test
