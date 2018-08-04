@@ -1,7 +1,7 @@
 
 FlashPoint
 ==============
-Microservice gateway with support of GraphQL.
+Microservice gateway with support for GraphQL.
 
 ### Status
 |Branch|Ubuntu16|macOS|Windows
