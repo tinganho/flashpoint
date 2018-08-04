@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Install
           command: |
-            brew install cmake boost pkg-config
+            brew install cmake boost pkg-config glibmm curl
 
       - run:
           name: Build
