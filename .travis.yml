@@ -27,23 +27,13 @@ before_script:
       clang-6.0 \
       gcc-6 \
       g++-6
+  - rm /usr/bin/g++
+  - rm /usr/bin/gcc
+  - ln -s /usr/bin/g++-6.0 /usr/bin/g++
+  - ln -s /usr/bin/gcc-6.0 /usr/bin/gcc
+  - ln -s /usr/bin/clang-6.0 /usr/bin/clang++
+  - ln -s /usr/bin/clang-6.0 /usr/bin/clang
 
-install:
-  # Set the ${CXX} variable properly
-  - export CXX=clang++-6.0
-  - ${CXX} --version
-
-  # Dependencies required by the CI are installed in ${TRAVIS_BUILD_DIR}/deps/
-  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-  - mkdir -p "${DEPS_DIR}"
-  - cd "${DEPS_DIR}"
-
-  # Travis machines have 2 cores
-  - JOBS=2
-
-  ############################################################################
-  # Install a recent CMake (unless already installed on OS X)
-  ############################################################################
   - CMAKE_VERSION=3.12.0
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
