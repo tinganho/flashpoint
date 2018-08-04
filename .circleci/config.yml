@@ -30,8 +30,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install cmake
-          command: brew install cmake
+          name: Install
+          command: |
+            brew install cmake
+            brew install pkg-config
       - run:
           name: Build
           command: |
