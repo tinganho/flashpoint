@@ -1,7 +1,7 @@
 version: 2
 
 jobs:
-  build_and_test:
+  linux:
     docker:
       - image: tinganho/dev.env.flashpoint:latest
 
@@ -18,6 +18,26 @@ jobs:
             cmake --version
             mkdir debug
             cd debug
+            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang ..
+            make
+      - run:
+          name: Test
+          command: ./bin/flash-test
+  mac-:
+    macos:
+      xcode: "9.0"
+    working_directory: /Users/distiller/project
+    steps:
+      - checkout
+      - run:
+          name: Install cmake
+          command: brew install cmake
+      - run:
+          name: Build
+          command: |
+            cmake --version
+            mkdir debug
+            cd debug
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++-6.0 ..
             make
       - run:
@@ -26,6 +46,9 @@ jobs:
 
 workflows:
   version: 2
-  build_and_test:
+  linux:
     jobs:
-      - build_and_test
+      - linux
+  mac:
+    jobs:
+      - mac
