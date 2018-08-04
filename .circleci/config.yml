@@ -26,7 +26,7 @@ jobs:
           command: ./bin/flash-test
   mac:
     macos:
-      xcode: "9.1"
+      xcode: "10.0.0"
     working_directory: /Users/distiller/project
     steps:
       - checkout
