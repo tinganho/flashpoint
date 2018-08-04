@@ -1,9 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.9)
 project(FlashPoint)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-g")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 find_package(PkgConfig REQUIRED)
@@ -30,7 +29,7 @@ file(GLOB_RECURSE PROGRAM_SRC ${CMAKE_SOURCE_DIR}/src/program/*)
 file(GLOB_RECURSE TEST_SRC ${CMAKE_SOURCE_DIR}/src/test/*)
 
 set(Boost_DEBUG on)
-find_package(Boost 1.66 COMPONENTS system filesystem regex REQUIRED)
+find_package(Boost 1.67 COMPONENTS system filesystem regex REQUIRED)
 find_package(CURL)
 
 add_subdirectory(third_party/glob)
@@ -65,6 +64,6 @@ add_executable(generate-diagnostics
     tasks/generate_diagnostics.cpp
     ${LIB_SRC})
 
-target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob uv_a OpenSSL::SSL)
-target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob uv_a OpenSSL::SSL)
-target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob pthread dl)
+target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} glob uv_a OpenSSL::SSL stdc++)
+target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob uv_a OpenSSL::SSL stdc++)
+target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob pthread dl stdc++)
