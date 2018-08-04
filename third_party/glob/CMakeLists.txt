@@ -10,6 +10,3 @@ else()
 endif()
 
 add_library(glob STATIC ${sources})
-
-add_executable(find find.cpp)
-target_link_libraries(find glob)
