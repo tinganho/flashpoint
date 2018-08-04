@@ -38,7 +38,7 @@ jobs:
             cmake --version
             mkdir debug
             cd debug
-            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/clang++-6.0 ..
+            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang ..
             make
       - run:
           name: Test
