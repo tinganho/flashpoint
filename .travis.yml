@@ -1,11 +1,20 @@
 language: cpp
 compiler: clang
 
+before_script:
+  - curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+  - sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main"
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update
+  - sudo apt-get install -y \
+      clang-6.0 \
+      gcc-6 \
+      g++-6
+
 install:
   # Set the ${CXX} variable properly
-  - export CXX=${COMPILER}
+  - export CXX=clang++-6.0
   - ${CXX} --version
-
 
   # Dependencies required by the CI are installed in ${TRAVIS_BUILD_DIR}/deps/
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
@@ -28,15 +37,6 @@ install:
       brew install cmake || brew upgrade cmake
     fi
   - cmake --version
-
-#before_install:
-#  - eval "${MATRIX_EVAL}"
-
-before_script:
-  # have CMake to generate build files
-  - cd "${TRAVIS_BUILD_DIR}"
-  - mkdir build && cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=Release
 
 script:
   - cmake --build . -- -j${JOBS}

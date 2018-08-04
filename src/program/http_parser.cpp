@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <program/http_parser.h>
 #include <lib/character.h>
 
