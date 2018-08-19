@@ -69,14 +69,10 @@ target_link_libraries(flash jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARI
 target_link_libraries(flash-test jsoncpp_lib_static ${GLIB_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} glob uv_a OpenSSL::SSL stdc++)
 target_link_libraries(generate-diagnostics jsoncpp_lib_static ${Boost_LIBRARIES} glob pthread dl stdc++)
 
-add_executable(buffer_before_write
-    bench/libuv_stream_write/buffer_before_write.cpp)
+add_executable(bench_stream_write
+    bench/libuv_stream_write/stream_write.cpp)
 
-add_executable(stream_write
-        bench/libuv_stream_write/stream_write.cpp)
+add_executable(bench_int_string_alloc
+    bench/int_string_alloc/test.cpp)
 
-add_executable(int_string_alloc
-    bench/libuv_stream_write/buffer_before_write.cpp)
-
-target_link_libraries(buffer_before_write uv_a)
-target_link_libraries(stream_write uv_a)
+target_link_libraries(bench_stream_write uv_a)
