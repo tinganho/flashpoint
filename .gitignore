@@ -9,3 +9,4 @@ debug/
 release/
 **/tests/currents/**
 CMakeLists.txt.user
+bench/*/out

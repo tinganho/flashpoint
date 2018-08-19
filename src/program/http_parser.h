@@ -28,13 +28,13 @@ struct HttpRequest {
 class HttpParser final {
 public:
 
-    HttpParser(char* text, unsigned int length);
+    HttpParser(const char* text, std::size_t length);
 
     std::unique_ptr<HttpRequest>
-    parse();
+    Parse();
 
     RequestLine
-    parse_request_line();
+    ParseRequestLine();
 
     std::map<HttpHeader, char*>
     parse_headers();
@@ -43,13 +43,8 @@ public:
     parse_body(long long length);
 
 private:
-
-    HttpScanner
-    scanner;
-
-    unsigned int
-    length;
-
+    HttpScanner scanner;
+    unsigned int length;
 };
 
 }

@@ -7,14 +7,13 @@ using namespace flashpoint::lib;
 
 namespace flashpoint::program {
 
-HttpParser::HttpParser(char* text, unsigned int size):
-    scanner(text, size)
-{ }
+HttpParser::HttpParser(const char* text,
+                       std::size_t size)
+    : scanner(text, size) {
+}
 
-std::unique_ptr<HttpRequest>
-HttpParser::parse()
-{
-    auto [method, path, query] = parse_request_line();
+std::unique_ptr<HttpRequest> HttpParser::Parse() {
+    auto [method, path, query] = ParseRequestLine();
     std::map<HttpHeader, char*> headers = parse_headers();
     char* body = nullptr;
     if (method != Get) {
@@ -55,9 +54,7 @@ HttpParser::parse_headers()
     return headers;
 }
 
-RequestLine
-HttpParser::parse_request_line()
-{
+RequestLine HttpParser::ParseRequestLine() {
     HttpMethod method = scanner.scan_method();
     scanner.scan_expected(Character::Space);
     char* path = scanner.scan_absolute_path();
@@ -66,6 +63,7 @@ HttpParser::parse_request_line()
     scanner.scan_http_version();
     scanner.scan_expected(Character::CarriageReturn);
     scanner.scan_expected(Character::NewLine);
+
     return RequestLine {
         method,
         path,

@@ -97,7 +97,6 @@ Command::is(const char* c)
 bool
 Command::has_flag(const char* flag)
 {
-    std::cout << flags.size() << std::endl;
     for (const auto f : flags) {
         if (strcmp(f.name, flag) == 0) {
             return true;

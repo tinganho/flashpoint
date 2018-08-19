@@ -51,7 +51,7 @@ public:
     directive_definitions;
 
     TToken
-    take_next_token();
+    TakeNextToken();
 
     TToken
     take_next_token(bool treat_keyword_as_name);
@@ -103,11 +103,11 @@ public:
 
     template<typename TSyntax, typename TSyntaxKind, typename ... Args>
     TSyntax*
-    create_syntax(TSyntaxKind kind, Args ... args);
+    CreateSyntax(TSyntaxKind kind, Args ... args);
 
     template<typename TSyntax>
     TSyntax*
-    finish_syntax(TSyntax* syntax);
+    FinishSyntax(TSyntax *syntax);
 
     template<typename TSyntax>
     Location

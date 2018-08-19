@@ -248,7 +248,7 @@ namespace flashpoint::program {
 
     class HttpScanner final {
     public:
-        HttpScanner(char* text, unsigned int length);
+        HttpScanner(const char* text, std::size_t length);
         void scan_request_target();
         HttpHeader scan_header();
         char* scan_absolute_path();
@@ -271,7 +271,7 @@ namespace flashpoint::program {
         char* current_header;
         ParserMode parser_mode;
         std::stack<SavedTextCursor> saved_text_cursors;
-        char* text;
+        const char* text;
         long long size;
         bool is_pchar(char ch);
         void save();

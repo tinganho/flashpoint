@@ -17,7 +17,7 @@ public:
     GraphQlExecutor(MemoryPool* memory_pool, MemoryPoolTicket* ticket);
 
     ExecutableDefinition*
-    execute(const Glib::ustring& query);
+    Execute(const Glib::ustring &query);
 
     void
     add_schema(const GraphQlSchema& schema);

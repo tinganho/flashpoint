@@ -22,16 +22,13 @@ GraphQlParser<TParser, TToken, TScanner>::GraphQlParser(MemoryPool* memory_pool,
 { }
 
 template<typename TParser, typename TToken, typename TScanner>
-TToken
-GraphQlParser<TParser, TToken, TScanner>::take_next_token()
+TToken GraphQlParser<TParser, TToken, TScanner>::TakeNextToken()
 {
     return scanner->take_next_token(false, true);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
-inline
-TToken
-GraphQlParser<TParser, TToken, TScanner>::take_next_token(bool treat_keyword_as_name)
+inline TToken GraphQlParser<TParser, TToken, TScanner>::take_next_token(bool treat_keyword_as_name)
 {
     return scanner->take_next_token(treat_keyword_as_name, true);
 }
@@ -256,26 +253,20 @@ GraphQlParser<TParser, TToken, TScanner>::skip_to(const std::vector<TToken>& tok
 
 template<typename TParser, typename TToken, typename TScanner>
 template<typename TSyntax, typename TSyntaxKind, typename ... Args>
-TSyntax*
-GraphQlParser<TParser, TToken, TScanner>::create_syntax(TSyntaxKind kind, Args ... args) {
+TSyntax* GraphQlParser<TParser, TToken, TScanner>::CreateSyntax(TSyntaxKind kind, Args ... args) {
     return new (memory_pool, ticket) TSyntax (kind, scanner->start_position, scanner->position, args...);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 template<typename TSyntax>
-inline
-TSyntax*
-GraphQlParser<TParser, TToken, TScanner>::finish_syntax(TSyntax* syntax)
-{
+inline TSyntax* GraphQlParser<TParser, TToken, TScanner>::FinishSyntax(TSyntax *syntax) {
     syntax->end = scanner->start_position + scanner->length();
     return syntax;
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 template<typename TSyntax>
-bool
-GraphQlParser<TParser, TToken, TScanner>::has_diagnostic_in_syntax(TSyntax* syntax, const DiagnosticMessageTemplate& diagnostic)
-{
+bool GraphQlParser<TParser, TToken, TScanner>::has_diagnostic_in_syntax(TSyntax* syntax, const DiagnosticMessageTemplate& diagnostic) {
     auto name_location = scanner->get_token_location(syntax);
     auto old_diagnostic_it = std::find_if(static_cast<TParser*>(this)->diagnostics.begin(), static_cast<TParser*>(this)->diagnostics.end(), [&](DiagnosticMessage& diagnostic_message) -> bool {
         auto location = diagnostic_message.location;

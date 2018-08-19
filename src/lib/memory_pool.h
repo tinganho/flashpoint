@@ -27,19 +27,19 @@ public:
     MemoryPool(std::size_t total_size, std::size_t block_size);
 
     void*
-    allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket *ticket);
+    Allocate(std::size_t size, std::size_t alignment, MemoryPoolTicket *ticket);
 
     MemoryPoolTicket*
-    take_ticket();
+    TakeTicket();
 
     void
-    return_ticket(MemoryPoolTicket* ticket);
+    ReturnTicket(MemoryPoolTicket *ticket);
 
     std::size_t
-    allocate_block();
+    AllocateBlock();
 
     void
-    reset();
+    Reset();
 
 private:
 

@@ -27,7 +27,7 @@
 
 #define new_operator(class); \
     void* operator new(std::size_t size, MemoryPool* memory_pool, MemoryPoolTicket* ticket) { \
-        return memory_pool->allocate(size, alignof(class), ticket); \
+        return memory_pool->Allocate(size, alignof(class), ticket); \
     }
 
 using namespace flashpoint::lib;
@@ -114,9 +114,7 @@ namespace flashpoint::program::graphql {
         Glib::ustring identifier;
 
         C(Name, Glib::ustring identifier),
-            I(identifier) { }
-
-        new_operator(Name)
+            I(identifier) { }new_operator(Name)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -142,9 +140,7 @@ namespace flashpoint::program::graphql {
         std::map<Glib::ustring, Directive*> directives;
 
         D(InputValueDefinition, Declaration)
-        { }
-
-        new_operator(InputValueDefinition)
+        { }new_operator(InputValueDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -153,9 +149,7 @@ namespace flashpoint::program::graphql {
         std::vector<InputValueDefinition*> input_value_definitions;
 
         S(ArgumentsDefinition)
-        { }
-
-        new_operator(ArgumentsDefinition)
+        { }new_operator(ArgumentsDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -167,9 +161,7 @@ namespace flashpoint::program::graphql {
         std::map<Glib::ustring, Directive*> directives;
 
         D(FieldDefinition, Declaration)
-        { }
-
-        new_operator(FieldDefinition)
+        { }new_operator(FieldDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -178,9 +170,7 @@ namespace flashpoint::program::graphql {
         Type* type;
 
         D(InputFieldDefinition, InputType)
-        { }
-
-        new_operator(InputFieldDefinition)
+        { }new_operator(InputFieldDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -220,9 +210,7 @@ namespace flashpoint::program::graphql {
 
         Object(SyntaxKind kind, unsigned int start, unsigned int end) noexcept:
             ObjectLike(kind, start, end)
-        { }
-
-        new_operator(Object)
+        { }new_operator(Object)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -232,9 +220,7 @@ namespace flashpoint::program::graphql {
         std::vector<Glib::ustring> required_fields;
 
         D(InputObject, InputType)
-        { }
-
-        new_operator(InputObject)
+        { }new_operator(InputObject)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -242,9 +228,7 @@ namespace flashpoint::program::graphql {
     struct Interface : ObjectLike {
         Interface(SyntaxKind kind, unsigned int start, unsigned int end) noexcept:
             ObjectLike(kind, start, end)
-        { }
-
-        new_operator(Interface)
+        { }new_operator(Interface)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -254,9 +238,7 @@ namespace flashpoint::program::graphql {
         std::map<Glib::ustring, Directive*> directives;
 
         D(UnionTypeDefinition, Declaration)
-        { }
-
-        new_operator(UnionTypeDefinition)
+        { }new_operator(UnionTypeDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -317,9 +299,7 @@ namespace flashpoint::program::graphql {
         std::set<DirectiveLocation> locations;
 
         D(DirectiveDefinition, Declaration)
-        { }
-
-        new_operator(DirectiveDefinition)
+        { }new_operator(DirectiveDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -329,9 +309,7 @@ namespace flashpoint::program::graphql {
 
         EnumValueDefinition(SyntaxKind kind, unsigned int start, unsigned int end, Glib::ustring identifier) noexcept:
             Name(kind, start, end, identifier)
-        { }
-
-        new_operator(EnumValueDefinition)
+        { }new_operator(EnumValueDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -340,9 +318,7 @@ namespace flashpoint::program::graphql {
         std::map<Glib::ustring, EnumValueDefinition*> values;
 
         D(EnumTypeDefinition, InputType)
-        { }
-
-        new_operator(EnumTypeDefinition)
+        { }new_operator(EnumTypeDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -428,9 +404,7 @@ namespace flashpoint::program::graphql {
             I(is_non_null),
             I(is_list_type),
             I(is_non_null_list)
-        { }
-
-        new_operator(Type)
+        { }new_operator(Type)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -439,25 +413,19 @@ namespace flashpoint::program::graphql {
         Name* name;
 
         S(NamedType)
-        { }
-
-        new_operator(NamedType)
+        { }new_operator(NamedType)
     };
 
     struct Value : Syntax {
         S(Value)
-        { }
-
-        new_operator(Value)
+        { }new_operator(Value)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
 
     struct NullValue : Value {
         D(NullValue, Value)
-        { }
-
-        new_operator(NullValue)
+        { }new_operator(NullValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -467,9 +435,7 @@ namespace flashpoint::program::graphql {
         Glib::ustring string;
 
         D(FloatValue, Value)
-        { }
-
-        new_operator(FloatValue)
+        { }new_operator(FloatValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -478,9 +444,7 @@ namespace flashpoint::program::graphql {
         int value;
 
         D(IntValue, Value)
-        { }
-
-        new_operator(IntValue)
+        { }new_operator(IntValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -489,9 +453,7 @@ namespace flashpoint::program::graphql {
         Glib::ustring value;
 
         D(StringValue, Value)
-        { }
-
-        new_operator(StringValue)
+        { }new_operator(StringValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -500,9 +462,7 @@ namespace flashpoint::program::graphql {
         bool value;
 
         D(BooleanValue, Value)
-        { }
-
-        new_operator(BooleanValue)
+        { }new_operator(BooleanValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -511,9 +471,7 @@ namespace flashpoint::program::graphql {
         Glib::ustring value;
 
         D(EnumValue, Value)
-        { }
-
-        new_operator(EnumValue)
+        { }new_operator(EnumValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -523,9 +481,7 @@ namespace flashpoint::program::graphql {
         Value* value;
 
         S(ObjectField)
-        { }
-
-        new_operator(ObjectField)
+        { }new_operator(ObjectField)
 
         void accept(GraphQlSyntaxVisitor*) const;
 
@@ -535,9 +491,7 @@ namespace flashpoint::program::graphql {
         std::vector<ObjectField*> object_fields;
 
         D(ObjectValue, Value)
-        { }
-
-        new_operator(ObjectValue)
+        { }new_operator(ObjectValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -546,9 +500,7 @@ namespace flashpoint::program::graphql {
         std::vector<Value*> values;
 
         D(ListValue, Value)
-        { }
-
-        new_operator(ListValue)
+        { }new_operator(ListValue)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -559,9 +511,7 @@ namespace flashpoint::program::graphql {
         Syntax* default_value;
 
         S(VariableDefinition)
-        { }
-
-        new_operator(VariableDefinition)
+        { }new_operator(VariableDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -722,9 +672,7 @@ namespace flashpoint::program::graphql {
         const Glib::ustring* source;
 
         S(ExecutableDefinition)
-        { }
-
-        new_operator(ExecutableDefinition)
+        { }new_operator(ExecutableDefinition)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -744,9 +692,7 @@ namespace flashpoint::program::graphql {
         Name* subscription_key;
 
         S(Schema)
-        { }
-
-        new_operator(Schema)
+        { }new_operator(Schema)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -757,9 +703,7 @@ namespace flashpoint::program::graphql {
         const Glib::ustring* source;
 
         S(SchemaDocument)
-        { }
-
-        new_operator(SchemaDocument)
+        { }new_operator(SchemaDocument)
 
         void accept(GraphQlSyntaxVisitor*) const;
     };
@@ -801,9 +745,7 @@ namespace flashpoint::program::graphql {
             name(name),
             declaration(declaration),
             kind(kind)
-        { }
-
-        new_operator(Symbol)
+        { }new_operator(Symbol)
     };
 
     class GraphQlSyntaxVisitor {

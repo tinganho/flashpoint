@@ -31,52 +31,30 @@ class BaselineTestRunner {
 public:
     BaselineTestRunner();
 
-    int
-    start_server();
-
-    void
-    define_http_tests(const RunOption &run_option);
-
-    void
-    define_graphql_tests(const RunOption &run_option);
-
-    void
-    run(const RunOption &run_option);
-
-    void
-    accept_graphql_tests(const RunOption& run_option);
-
+    int StartServer();
+    void DefineHttpTests(const RunOption &run_option);
+    void DefineGraphQlTests(const RunOption &run_option);
+    void Run(const RunOption &run_option);
+    void AcceptGraphQlTests(const RunOption &run_option);
 private:
+    std::size_t current_line_ = 1;
+    int child_pid_ = -1;
 
-    std::size_t
-    current_line = 1;
+    void visit_tests_by_path(const path& folder,
+                        std::function<void(const TestCase& test_case)> callback,
+                        bool delete_folder);
 
-    int
-    child_pid = -1;
+    void visit_tests(const path& test_folder,
+                std::vector<std::string>& tests,
+                std::function<void(const TestCase& test_case)> callback);
 
-    void
-    visit_tests_by_path(
-        const path& folder,
-        std::function<void(const TestCase& test_case)> callback,
-        bool delete_folder);
+    bool assert_baselines(const char* current,
+                     const char* reference,
+                     std::stringstream& error_message);
 
-    void
-    visit_tests(
-        const path& test_folder,
-        std::vector<std::string>& tests,
-        std::function<void(const TestCase& test_case)> callback);
-
-    bool
-    assert_baselines(
-        const char* current,
-        const char* reference,
-        std::stringstream& error_message);
-
-    void
-    append_mutation_chunk(
-        const std::string &message,
-        bool is_insertion,
-        TextWriter &tw);
+    void append_mutation_chunk(const std::string &message,
+                               bool is_insertion,
+                               TextWriter &tw);
 
     std::string
     append_all_lines_except_last_line(const std::string &chunk, TextWriter &tw);

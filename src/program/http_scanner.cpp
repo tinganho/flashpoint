@@ -9,7 +9,7 @@ using namespace flashpoint::lib;
 
 namespace flashpoint::program {
 
-HttpScanner::HttpScanner(char* text, unsigned int size):
+HttpScanner::HttpScanner(const char* text, std::size_t size):
     position(0),
     start_position(0),
     text(text),

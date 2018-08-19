@@ -125,7 +125,7 @@ BaselineTestRunner::call_test(
 }
 
 void
-BaselineTestRunner::accept_graphql_tests(const RunOption& run_option)
+BaselineTestRunner::AcceptGraphQlTests(const RunOption &run_option)
 {
     visit_tests_by_path("src/program/graphql", [&](const TestCase& test_case) {
         if (run_option.folder && *run_option.folder != test_case.folder) {
@@ -150,7 +150,7 @@ BaselineTestRunner::accept_graphql_tests(const RunOption& run_option)
 }
 
 void
-BaselineTestRunner::define_graphql_tests(const RunOption &run_option)
+BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
 {
     domain("GraphQL");
     visit_tests_by_path("src/program/graphql", [&](const TestCase test_case) {
@@ -162,7 +162,7 @@ BaselineTestRunner::define_graphql_tests(const RunOption &run_option)
         }
         test(test_case.name, [=](Test* test, std::function<void()> done, std::function<void(std::string error)> error) {
             auto memory_pool = new MemoryPool(1024 * 4 * 10000, 1024 * 4);
-            auto ticket = memory_pool->take_ticket();
+            auto ticket = memory_pool->TakeTicket();
             std::vector<Glib::ustring> source;
             boost::algorithm::split_regex(source, test_case.source, boost::regex("====\n"));
             DiagnosticWriter diagnostic_writer;
@@ -172,7 +172,7 @@ BaselineTestRunner::define_graphql_tests(const RunOption &run_option)
             diagnostic_writer.add_diagnostics(schema.diagnostics, schema.source);
             if (source.size() > 1) {
                 diagnostic_writer.add_source("====\n");
-                diagnostic_writer.add_diagnostics(executor.execute(source[1])->diagnostics, source[1]);
+                diagnostic_writer.add_diagnostics(executor.Execute(source[1])->diagnostics, source[1]);
             }
             auto current_errors_file_source = diagnostic_writer.to_string();
             auto current_error_file = test_case.current_folder / (test_case.name + ".errors");
@@ -194,15 +194,14 @@ BaselineTestRunner::define_graphql_tests(const RunOption &run_option)
                     error("\n" + current_errors_file_source);
                 }
             }
-            memory_pool->return_ticket(ticket);
+            memory_pool->ReturnTicket(ticket);
             done();
         });
     });
 }
 
 void
-BaselineTestRunner::run(const flashpoint::test::RunOption &run_option)
-{
+BaselineTestRunner::Run(const flashpoint::test::RunOption &run_option) {
     run_test_suites();
     print_stats();
 }
@@ -213,7 +212,7 @@ static int write_data(char *data, size_t size, size_t nmemb, std::string *userp)
 }
 
 void
-BaselineTestRunner::define_http_tests(const RunOption &run_option)
+BaselineTestRunner::DefineHttpTests(const RunOption &run_option)
 {
     domain("HTTP");
     visit_tests_by_path("src/program", [&](const TestCase& test_case) {
@@ -255,17 +254,17 @@ BaselineTestRunner::define_http_tests(const RunOption &run_option)
 
                     code = curl_easy_perform(curl);
                     if (code != CURLE_OK) {
-                        if (retries < max_retries) {
+//                        if (retries < max_retries) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(20));
                             curl_easy_cleanup(curl);
                             curl_global_cleanup();
                             retries++;
                             continue;
-                        }
-                        else {
-                            fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
-                            return;
-                        }
+//                        }
+//                        else {
+//                            fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
+//                            return;
+//                        }
                     }
                     curl_easy_cleanup(curl);
                     curl_global_cleanup();
@@ -337,7 +336,7 @@ BaselineTestRunner::get_first_and_rest_lines(const std::string& chunk)
 std::string
 BaselineTestRunner::line_number()
 {
-    return line_number(current_line);
+    return line_number(current_line_);
 }
 
 
@@ -379,10 +378,10 @@ BaselineTestRunner::append_mutation_chunk(
             }
             tw.newline();
             if (is_insertion) {
-                tw.write(line_number(++current_line));
+                tw.write(line_number(++current_line_));
             }
             else {
-                tw.write(line_number(current_line + n));
+                tw.write(line_number(current_line_ + n));
             }
             line.str("");
             n++;
@@ -399,10 +398,10 @@ BaselineTestRunner::append_mutation_chunk(
             }
             tw.newline();
             if (is_insertion) {
-                tw.write(line_number(++current_line));
+                tw.write(line_number(++current_line_));
             }
             else {
-                tw.write(line_number(current_line + n));
+                tw.write(line_number(current_line_ + n));
             }
             line.str("");
             n++;
@@ -458,10 +457,10 @@ BaselineTestRunner::assert_baselines(const char* current, const char* reference,
 
 
 int
-BaselineTestRunner::start_server() {
+BaselineTestRunner::StartServer() {
     uv_loop_t* loop = uv_default_loop();
     HttpServer server(loop);
-    server.listen("0.0.0.0", 8000);
+    server.Listen("0.0.0.0", 8000);
     return uv_run(loop, UV_RUN_DEFAULT);
 }
 

@@ -14,7 +14,8 @@ int main(int argc, char* argv[]) {
         { "", "default", "",
             {
                 { "test", "t", "Run specific test", true, false, "" } ,
-                { "folder", "", "Run specific folder", true, false, "" }
+                { "folder", "", "Run specific folder", true, false, "" },
+                { "use-external-server", "", "Use external server", false, false, "" },
             }
         },
         { "", "accept", "Accept baselines",
@@ -41,21 +42,29 @@ int main(int argc, char* argv[]) {
         run_option.folder = new std::string(command.get_flag_value("folder"));
     }
     if (command.is("accept")) {
-        test_runner.accept_graphql_tests(run_option);
+        test_runner.AcceptGraphQlTests(run_option);
     }
     else {
+        if (command.has_flag("use-external-server")) {
+            test_runner.DefineGraphQlTests(run_option);
+            test_runner.DefineHttpTests(run_option);
+            test_runner.Run(run_option);
+            return 0;
+        }
         pid_t child_pid = fork();
         if (child_pid == -1) {
             std::cerr << "An error occurred when forking process" << std::endl;
             return 1;
         }
         if (child_pid == 0) {
-            test_runner.start_server();
+            if (!command.has_flag("start-server")) {
+                test_runner.StartServer();
+            }
         }
         else {
-            test_runner.define_graphql_tests(run_option);
-            test_runner.define_http_tests(run_option);
-            test_runner.run(run_option);
+            test_runner.DefineGraphQlTests(run_option);
+//            test_runner.DefineHttpTests(run_option);
+            test_runner.Run(run_option);
 
             kill(child_pid, SIGTERM);
         }
