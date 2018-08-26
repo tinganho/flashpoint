@@ -12,12 +12,15 @@ public:
     std::size_t
     offset;
 
+    std::vector<std::size_t>
+    block_indices;
+
     std::size_t
-    block;
+    current_block_index;
 
     MemoryPoolTicket(std::size_t offset, std::size_t block):
         offset(offset),
-        block(block)
+        block_indices(block)
     { }
 };
 

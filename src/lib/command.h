@@ -56,10 +56,10 @@ public:
     errors;
 
     bool
-    is(const char *command);
+    Is(const char *command);
 
     bool
-    has_flag(const char* flag);
+    HasFlag(const char *flag);
 
     const char*
     get_flag_value(const char* flag);

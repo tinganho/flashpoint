@@ -11,7 +11,9 @@ GraphQlExecutor::GraphQlExecutor(MemoryPool* memory_pool, MemoryPoolTicket* tick
     GraphQlParser(memory_pool, ticket)
 { }
 
-ExecutableDefinition* GraphQlExecutor::Execute(const Glib::ustring &query) {
+ExecutableDefinition*
+GraphQlExecutor::Execute(const Glib::ustring &query)
+{
     scanner = new GraphQlScanner(query);
     GraphQlToken token = TakeNextToken();
     auto executableDefinition = CreateSyntax<ExecutableDefinition>(SyntaxKind::S_QueryDocument);
@@ -38,7 +40,7 @@ ExecutableDefinition* GraphQlExecutor::Execute(const Glib::ustring &query) {
 }
 
 void
-GraphQlExecutor::add_schema(const GraphQlSchema& schema)
+GraphQlExecutor::AddSchema(const GraphQlSchema &schema)
 {
     schemas.push_back(schema);
     query = schema.query;
@@ -63,7 +65,7 @@ GraphQlExecutor::check_forward_fragment_references(const std::vector<FragmentDef
         }
         if (current_fragment_definition == nullptr) {
             add_diagnostic(
-                get_location_from_syntax(name),
+                GetLocationFromSyntax(name),
                 D::Fragment_0_is_not_defined,
                 name->identifier
             );
@@ -119,17 +121,17 @@ FragmentDefinition*
 GraphQlExecutor::parse_fragment_definition_after_fragment_keyword()
 {
     auto fragment = CreateSyntax<FragmentDefinition>(SyntaxKind::S_FragmentDefinition);
-    if (!scan_expected(GraphQlToken::G_Name)) {
+    if (!ScanExpected(GraphQlToken::G_Name)) {
         return nullptr;
     }
-    auto token_value = get_token_value();
+    auto token_value = GetTokenValue();
     fragment->name = CreateSyntax<Name>(SyntaxKind::S_Name, token_value);
     const auto& fragments_it = fragments.find(token_value);
     if (fragments_it != fragments.end()) {
         add_diagnostic(D::Duplicate_fragment_0, token_value);
         if (duplicate_fragments.find(token_value) == duplicate_fragments.end()) {
             add_diagnostic(
-                get_location_from_syntax(fragments_it->second->name),
+                GetLocationFromSyntax(fragments_it->second->name),
                 D::Duplicate_fragment_0,
                 fragments_it->second->name->identifier
             );
@@ -138,13 +140,13 @@ GraphQlExecutor::parse_fragment_definition_after_fragment_keyword()
     else {
         fragments.emplace(token_value, fragment);
     }
-    if (!scan_expected(GraphQlToken::OnKeyword)) {
+    if (!ScanExpected(GraphQlToken::OnKeyword)) {
         return nullptr;
     }
-    if (!scan_expected(GraphQlToken::G_Name)) {
+    if (!ScanExpected(GraphQlToken::G_Name)) {
         return nullptr;
     }
-    const auto& name = get_token_value();
+    const auto& name = GetTokenValue();
     const auto& it = symbols.find(name);
     if (it == symbols.end()) {
         add_diagnostic(D::Type_0_is_not_defined, name);
@@ -159,7 +161,7 @@ GraphQlExecutor::parse_fragment_definition_after_fragment_keyword()
     fragment->directives = parse_directives(DirectiveLocation::FRAGMENT_DEFINITION);
     fragment->selection_set = parse_selection_set();
     if (fragment->selection_set == nullptr) {
-        scanner->skip_block();
+        scanner->SkipBlock();
         return nullptr;
     }
     return fragment;
@@ -170,11 +172,11 @@ GraphQlExecutor::parse_operation_definition(const OperationType& operation_type)
 {
     auto operation_definition = CreateSyntax<OperationDefinition>(SyntaxKind::S_OperationDefinition);
     operation_definition->operation_type = operation_type;
-    if (scan_optional(GraphQlToken::G_Name, /*treat_keyword_as_name*/true)) {
-        operation_definition->name = CreateSyntax<Name>(SyntaxKind::S_Name, get_token_value().c_str());
-        if (scan_optional(GraphQlToken::OpenParen)) {
+    if (ScanOptional(GraphQlToken::G_Name, /*treat_keyword_as_name*/true)) {
+        operation_definition->name = CreateSyntax<Name>(SyntaxKind::S_Name, GetTokenValue().c_str());
+        if (ScanOptional(GraphQlToken::OpenParen)) {
             operation_definition->variable_definitions = parse_variable_definitions();
-            scan_expected(GraphQlToken::CloseParen);
+            ScanExpected(GraphQlToken::CloseParen);
         }
     }
     DirectiveLocation location;
@@ -215,7 +217,7 @@ GraphQlExecutor::parse_operation_definition_body_after_open_brace(OperationDefin
 
 SelectionSet* GraphQlExecutor::parse_selection_set()
 {
-    if (!scan_expected(GraphQlToken::OpenBrace)) {
+    if (!ScanExpected(GraphQlToken::OpenBrace)) {
         return nullptr;
     }
     return parse_selection_set_after_open_brace();
@@ -226,22 +228,22 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
     auto selection_set = CreateSyntax<SelectionSet>(SyntaxKind::S_SelectionSet);
     while (true) {
         std::size_t start_position = current_position();
-        GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
+        GraphQlToken token = TakeNextToken(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
         switch (token) {
             case GraphQlToken::Ellipses: {
                 GraphQlToken target_token = TakeNextToken();
                 if (target_token == GraphQlToken::OnKeyword) {
-                    if (!scan_expected(GraphQlToken::G_Name)) {
+                    if (!ScanExpected(GraphQlToken::G_Name)) {
                         add_diagnostic(D::Expected_name_of_object);
-                        scanner->skip_block();
+                        scanner->SkipBlock();
                         return nullptr;
                     }
-                    const auto& token_value = get_token_value();
+                    const auto& token_value = GetTokenValue();
                     const auto& name = CreateSyntax<Name>(SyntaxKind::S_Name, token_value);
                     auto it = symbols.find(token_value);
                     if (it == symbols.end()) {
                         add_diagnostic(D::Type_0_is_not_defined, token_value);
-                        scanner->skip_block();
+                        scanner->SkipBlock();
                         break;
                     }
                     auto inline_fragment = CreateSyntax<InlineFragment>(SyntaxKind::S_InlineFragment);
@@ -249,7 +251,7 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
                     const auto& object = static_cast<Object*>(it->second->declaration);
                     if (object->kind != SyntaxKind::S_Object) {
                         add_diagnostic(D::The_type_0_is_not_an_object, token_value);
-                        scanner->skip_block();
+                        scanner->SkipBlock();
                         break;
                     }
                     auto current_object_type = static_cast<Declaration*>(current_object_types.top());
@@ -262,53 +264,54 @@ SelectionSet* GraphQlExecutor::parse_selection_set_after_open_brace()
                 }
                 else if (target_token == GraphQlToken::G_Name) {
                     auto fragment_spread = CreateSyntax<FragmentSpread>(SyntaxKind::S_FragmentSpread);
-                    fragment_spread->name = CreateSyntax<Name>(SyntaxKind::S_Name, get_token_value());
+                    fragment_spread->name = CreateSyntax<Name>(SyntaxKind::S_Name, GetTokenValue());
                     forward_fragment_references.emplace_back(fragment_spread->name, current_object_types.top());
                     fragment_spread->directives = parse_directives(DirectiveLocation::FRAGMENT_SPREAD);
                     selection_set->selections.push_back(fragment_spread);
                 }
                 else {
                     add_diagnostic(D::Expected_fragment_spread_or_inline_fragment);
-                    scanner->skip_block();
+                    scanner->SkipBlock();
                 }
                 break;
             }
 
             case GraphQlToken::G_Name: {
-                auto token_value = get_token_value();
+                auto token_value = GetTokenValue();
                 auto current_object_type = current_object_types.top();
                 auto fields = current_object_type->fields;
                 auto field_definition_it = fields->find(token_value);
                 if (field_definition_it == fields->end()) {
                     add_diagnostic(D::Field_0_does_not_exist_on_type_1, token_value, current_object_type->name->identifier);
-                    scanner->skip_to({
-                        GraphQlToken::G_Name,
-                        GraphQlToken::CloseBrace,
-                        GraphQlToken::Ellipses,
-                    });
+                    scanner->SkipTo({
+                                        GraphQlToken::G_Name,
+                                        GraphQlToken::CloseBrace,
+                                        GraphQlToken::Ellipses,
+                                    });
                     continue;
                 }
                 auto field = CreateSyntax<Field>(SyntaxKind::S_Field);
                 auto name = CreateSyntax<Name>(SyntaxKind::S_Name, token_value);
-                if (scan_optional(GraphQlToken::Colon)) {
+                if (ScanOptional(GraphQlToken::Colon)) {
                     field->alias = name;
-                    field->name = parse_expected_name();
+                    field->name = ParseExpectedName();
                 }
                 else {
                     field->name = name;
                 }
-                if (scan_optional(GraphQlToken::OpenParen)) {
+                if (ScanOptional(GraphQlToken::OpenParen)) {
                     field->arguments = parse_arguments(field_definition_it->second->arguments, field);
                 }
                 field->directives = parse_directives(DirectiveLocation::FIELD);
-                if (scan_optional(GraphQlToken::OpenBrace)) {
+                if (ScanOptional(GraphQlToken::OpenBrace)) {
                     if ((field_definition_it->second->type->type & TypeEnum::T_ObjectType) != TypeEnum::T_None) {
                         auto object = symbols.find(field_definition_it->second->type->name->identifier)->second->declaration;
                         current_object_types.push(static_cast<ObjectLike*>(object));
                         field->selection_set = parse_selection_set_after_open_brace();
                     }
                     else {
-                        add_diagnostic(D::Cannot_select_fields_on_a_scalar_field_0, get_type_name(field_definition_it->second->type));
+                        add_diagnostic(D::Cannot_select_fields_on_a_scalar_field_0,
+                                       GetTypeName(field_definition_it->second->type));
                         skip_to_next_primary_token();
                         return nullptr;
                     }
@@ -346,7 +349,7 @@ GraphQlExecutor::check_fragment_assignment(Name* name, Object* object, Declarati
     if (current_object_type->kind == SyntaxKind::S_Interface) {
         if (object->implementations == nullptr || object->implementations->implementations.count(current_object_type->name->identifier) == 0) {
             add_diagnostic(
-                get_location_from_syntax(name),
+                GetLocationFromSyntax(name),
                 D::The_object_0_does_not_implement_the_interface_1,
                 object->name->identifier,
                 current_object_type->name->identifier
@@ -356,7 +359,7 @@ GraphQlExecutor::check_fragment_assignment(Name* name, Object* object, Declarati
     else if (current_object_type->kind == SyntaxKind::S_Object) {
         if (current_object_type->name->identifier != object->name->identifier) {
             add_diagnostic(
-                get_location_from_syntax(name),
+                GetLocationFromSyntax(name),
                 D::The_object_0_does_not_match_the_object_1,
                 object->name->identifier,
                 current_object_type->name->identifier
@@ -367,7 +370,7 @@ GraphQlExecutor::check_fragment_assignment(Name* name, Object* object, Declarati
         const auto& members = static_cast<UnionTypeDefinition*>(current_object_type)->members;
         if (members.find(object->name->identifier) == members.end()) {
             add_diagnostic(
-                get_location_from_syntax(name),
+                GetLocationFromSyntax(name),
                 D::The_type_0_is_not_member_of_the_union_1,
                 object->name->identifier,
                 current_object_type->name->identifier
@@ -376,7 +379,7 @@ GraphQlExecutor::check_fragment_assignment(Name* name, Object* object, Declarati
     }
     else {
         add_diagnostic(
-            get_location_from_syntax(name),
+            GetLocationFromSyntax(name),
             D::Type_conditions_are_only_applicable_inside_object_interfaces_and_unions
         );
     }
@@ -387,11 +390,11 @@ GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputValueDefinit
 {
     auto arguments = new std::map<Glib::ustring, Argument*>();
     while (true) {
-        auto token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
+        auto token = TakeNextToken(/*treat_keyword_as_name*/true, /*skip_white_space*/true);
         if (token != GraphQlToken::G_Name) {
             break;
         }
-        auto token_value = get_token_value();
+        auto token_value = GetTokenValue();
         auto name = CreateSyntax<Name>(SyntaxKind::S_Name, token_value);
         auto argument = CreateSyntax<Argument>(SyntaxKind::S_Argument);
         argument->name = name;
@@ -401,18 +404,18 @@ GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputValueDefinit
             add_diagnostic(D::Unknown_argument_0, token_value);
             is_defined = false;
         }
-        if (!scan_expected(GraphQlToken::Colon)) {
-            scanner->skip_to({ GraphQlToken::CloseBrace });
+        if (!ScanExpected(GraphQlToken::Colon)) {
+            scanner->SkipTo({GraphQlToken::CloseBrace});
             return nullptr;
         }
         if (is_defined) {
             argument->value = parse_value(input_value_definition_it->second->type);
         }
         else {
-            scanner->skip_to({
-                GraphQlToken::G_Name,
-                GraphQlToken::CloseParen,
-            });
+            scanner->SkipTo({
+                                GraphQlToken::G_Name,
+                                GraphQlToken::CloseParen,
+                            });
         }
         argument->directives = parse_directives(DirectiveLocation::ARGUMENT_DEFINITION);
         arguments->emplace(token_value, argument);
@@ -423,7 +426,7 @@ GraphQlExecutor::parse_arguments(const std::map<Glib::ustring, InputValueDefinit
         if ((type->is_non_null && !type->is_list_type) || type->is_non_null_list) {
             if (arguments->find(argument_definition.second->name->identifier) == arguments->end()) {
                 add_diagnostic(
-                    get_location_from_syntax(target),
+                    GetLocationFromSyntax(target),
                     D::Missing_required_argument_0,
                     argument_definition.second->name->identifier
                 );
@@ -442,13 +445,13 @@ VariableDefinitions* GraphQlExecutor::parse_variable_definitions()
         if (token != GraphQlToken::G_Name) {
             break;
         }
-        variable_definition->name = CreateSyntax<Name>(SyntaxKind::S_Name, get_token_value().c_str());
-        scan_expected(GraphQlToken::Colon);
+        variable_definition->name = CreateSyntax<Name>(SyntaxKind::S_Name, GetTokenValue().c_str());
+        ScanExpected(GraphQlToken::Colon);
         variable_definition->type = parse_type();
-        if (scan_optional(GraphQlToken::Equal)) {
+        if (ScanOptional(GraphQlToken::Equal)) {
             variable_definition->default_value = parse_value(variable_definition->type);
         }
-        if (!scan_optional(GraphQlToken::Comma)) {
+        if (!ScanOptional(GraphQlToken::Comma)) {
             break;
         }
         variable_definitions->variable_definitions.push_back(variable_definition);
@@ -466,7 +469,7 @@ GraphQlExecutor::parse_value(Type* type)
                 add_diagnostic(
                     D::The_value_0_is_not_assignable_to_type_1,
                     "null",
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             const auto list_value = CreateSyntax<ListValue>(SyntaxKind::S_ObjectValue);
@@ -477,7 +480,7 @@ GraphQlExecutor::parse_value(Type* type)
                 value = parse_value(type);
             }
             if (current_value_token != GraphQlToken::CloseBracket) {
-                add_diagnostic(D::Expected_0_but_got_1, "]", get_token_value());
+                add_diagnostic(D::Expected_0_but_got_1, "]", GetTokenValue());
             }
             type->is_list_type = true;
             FinishSyntax(list_value);
@@ -491,7 +494,7 @@ GraphQlExecutor::parse_value(Type* type)
                 add_diagnostic(
                     D::The_value_0_is_not_assignable_to_type_1,
                     "null",
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             return CreateSyntax<NullValue>(SyntaxKind::S_NullValue);
@@ -500,11 +503,11 @@ GraphQlExecutor::parse_value(Type* type)
                 add_diagnostic(
                     D::Type_0_is_not_assignable_to_type_1,
                     "String",
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             auto value = CreateSyntax<StringValue>(SyntaxKind::S_StringValue);
-            value->value = get_token_value();
+            value->value = GetTokenValue();
             return value;
         }
         case GraphQlToken::IntegerLiteral: {
@@ -512,11 +515,11 @@ GraphQlExecutor::parse_value(Type* type)
                 add_diagnostic(
                     D::Type_0_is_not_assignable_to_type_1,
                     "Int",
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             auto value = CreateSyntax<IntValue>(SyntaxKind::S_IntValue);
-            value->value = std::atoi(get_token_value().c_str());
+            value->value = std::atoi(GetTokenValue().c_str());
             return value;
         }
         case GraphQlToken::FloatLiteral: {
@@ -524,11 +527,11 @@ GraphQlExecutor::parse_value(Type* type)
                 add_diagnostic(
                     D::Type_0_is_not_assignable_to_type_1,
                     "Float",
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             auto value = CreateSyntax<FloatValue>(SyntaxKind::S_FloatValue);
-            value->value = std::atof(get_token_value().c_str());
+            value->value = std::atof(GetTokenValue().c_str());
             return value;
         }
         case GraphQlToken::TrueKeyword:
@@ -536,12 +539,12 @@ GraphQlExecutor::parse_value(Type* type)
         case GraphQlToken::FalseKeyword:
             return parse_boolean_value(type, false);
         case GraphQlToken::G_Name: {
-            auto token_value = get_token_value();
+            auto token_value = GetTokenValue();
             if (type->type != TypeEnum::T_Enum || type->is_list_type) {
                 add_diagnostic(
                     D::The_value_0_is_not_assignable_to_type_1,
                     token_value,
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
             }
             auto _enum = static_cast<EnumTypeDefinition*>(symbols.find(type->name->identifier)->second->declaration);
@@ -563,13 +566,13 @@ GraphQlExecutor::parse_value(Type* type)
             auto location = get_token_location();
             if (type->type != TypeEnum::T_Object || type->is_list_type) {
                 // TODO: Create a version of parse_value that doesn't do checking and proper object parsing
-                scanner->skip_block();
+                scanner->SkipBlock();
                 location.length += scanner->position - start_position - 1;
                 add_diagnostic(
                     location,
                     D::The_value_0_is_not_assignable_to_type_1,
                     scanner->get_text_from_location(start_position, scanner->position),
-                    get_type_name(type)
+                    GetTypeName(type)
                 );
                 return nullptr;
             }
@@ -591,13 +594,13 @@ GraphQlExecutor::parse_value(Type* type)
                 }
                 if (token != GraphQlToken::G_Name) {
                     add_diagnostic(D::Expected_object_field_name);
-                    auto t = scanner->skip_to({ GraphQlToken::CloseBrace, GraphQlToken::G_Name });
+                    auto t = scanner->SkipTo({GraphQlToken::CloseBrace, GraphQlToken::G_Name});
                     if (t == GraphQlToken::G_Name) {
                         continue;
                     }
                     break;
                 }
-                const auto& name = get_token_value();
+                const auto& name = GetTokenValue();
                 const auto& field = input_object->fields->find(name);
                 if (field == input_object->fields->end()) {
                     add_diagnostic(
@@ -605,10 +608,10 @@ GraphQlExecutor::parse_value(Type* type)
                         name,
                         type->name->identifier
                     );
-                    skip_to({
-                        GraphQlToken::G_Name,
-                        GraphQlToken::CloseBrace,
-                    });
+                    SkipTo({
+                               GraphQlToken::G_Name,
+                               GraphQlToken::CloseBrace,
+                           });
                     continue;
                 }
                 if (std::find(parsed_fields.begin(), parsed_fields.end(), name) != parsed_fields.end()) {
@@ -617,7 +620,7 @@ GraphQlExecutor::parse_value(Type* type)
                 parsed_fields.push_back(name);
                 auto object_field = CreateSyntax<ObjectField>(SyntaxKind::S_ObjectField);
                 object_field->name = CreateSyntax<Name>(SyntaxKind::S_Name, name);
-                if (!scan_expected(GraphQlToken::Colon)) {
+                if (!ScanExpected(GraphQlToken::Colon)) {
                     return nullptr;
                 }
                 object_field->value = parse_value(static_cast<Type*>(field->second->type));
@@ -626,9 +629,9 @@ GraphQlExecutor::parse_value(Type* type)
             FinishSyntax(object_value);
             if (type->type != TypeEnum::T_Object) {
                 add_diagnostic(
-                    get_location_from_syntax(object_value),
+                    GetLocationFromSyntax(object_value),
                     D::The_value_0_is_not_assignable_to_type_1,
-                    scanner->get_text_from_syntax(object_value),
+                    scanner->GetTextFromSyntax(object_value),
                     type->name->identifier
                 );
             }
@@ -638,7 +641,7 @@ GraphQlExecutor::parse_value(Type* type)
                     for (const auto& object_field : object_value->object_fields) {
                         if (object_field->name->identifier == duplicate_field) {
                             add_diagnostic(
-                                get_location_from_syntax(object_field->name),
+                                GetLocationFromSyntax(object_field->name),
                                 D::Duplicate_field_0,
                                 duplicate_field
                             );
@@ -650,7 +653,7 @@ GraphQlExecutor::parse_value(Type* type)
             for (const auto& required_field : input_object->required_fields) {
                 if (std::find(parsed_fields.begin(), parsed_fields.end(), required_field) == parsed_fields.end()) {
                     add_diagnostic(
-                        get_location_from_syntax(object_value),
+                        GetLocationFromSyntax(object_value),
                         D::Missing_required_field_0,
                         required_field
                     );
@@ -659,11 +662,11 @@ GraphQlExecutor::parse_value(Type* type)
             return object_value;
         }
         default:
-            add_diagnostic(D::Expected_value_instead_got_0, get_token_value());
-            skip_to({
-                GraphQlToken::G_Name,
-                GraphQlToken::CloseParen,
-            });
+            add_diagnostic(D::Expected_value_instead_got_0, GetTokenValue());
+            SkipTo({
+                       GraphQlToken::G_Name,
+                       GraphQlToken::CloseParen,
+                   });
             return nullptr;
     }
 }
@@ -674,7 +677,7 @@ GraphQlExecutor::parse_boolean_value(Type* type, bool value) {
         add_diagnostic(
             D::Type_0_is_not_assignable_to_type_1,
             "Boolean",
-            get_type_name(type)
+            GetTypeName(type)
         );
     }
     auto syntax = CreateSyntax<BooleanValue>(SyntaxKind::S_BooleanValue);
@@ -687,37 +690,37 @@ GraphQlExecutor::parse_directives(DirectiveLocation location)
 {
     std::map<Glib::ustring, Directive*> directives = {};
     while (true) {
-        if (!scan_optional(GraphQlToken::At)) {
+        if (!ScanOptional(GraphQlToken::At)) {
             break;
         }
-        GraphQlToken token = take_next_token(/*treat_keyword_as_name*/true, /*skip_white_space*/false);
+        GraphQlToken token = TakeNextToken(/*treat_keyword_as_name*/true, /*skip_white_space*/false);
         if (token != GraphQlToken::G_Name) {
-            add_diagnostic(D::Expected_name_but_instead_got_0, get_token_value());
+            add_diagnostic(D::Expected_name_but_instead_got_0, GetTokenValue());
             skip_to_next_primary_token();
             break;
         }
         auto directive = CreateSyntax<Directive>(SyntaxKind::S_Directive);
         directive->start = directive->start - 1;
         directive->location = location;
-        auto name = get_token_value();
+        auto name = GetTokenValue();
         auto definition = directive_definitions.find(name);
         if (definition == directive_definitions.end()) {
-            add_diagnostic(get_location_from_syntax(directive), D::Undefined_directive_0, name);
-            skip_to({ GraphQlToken::CloseParen });
+            add_diagnostic(GetLocationFromSyntax(directive), D::Undefined_directive_0, name);
+            SkipTo({GraphQlToken::CloseParen});
             return directives;
         }
         directive->name = CreateSyntax<Name>(SyntaxKind::S_Name, name);
         auto location_it = definition->second->locations.find(directive->location);
         if (location_it == definition->second->locations.end()) {
             add_diagnostic(
-                get_location_from_syntax(directive),
+                GetLocationFromSyntax(directive),
                 D::The_directive_0_does_not_support_the_location_1,
                 "@" + directive->name->identifier,
                 directiveLocationToString.at(directive->location)
             );
         }
         directive->name = CreateSyntax<Name>(SyntaxKind::S_Name, name);
-        if (scan_optional(GraphQlToken::OpenParen)) {
+        if (ScanOptional(GraphQlToken::OpenParen)) {
             directive->arguments = parse_arguments(definition->second->arguments, directive->name);
             if (directive->arguments == nullptr) {
                 return directives;
@@ -739,19 +742,19 @@ GraphQlExecutor::parse_directives(DirectiveLocation location)
 }
 
 Name*
-GraphQlExecutor::parse_expected_name()
+GraphQlExecutor::ParseExpectedName()
 {
-    if (!scan_expected(GraphQlToken::G_Name)) {
+    if (!ScanExpected(GraphQlToken::G_Name)) {
         return nullptr;
     }
-    return CreateSyntax<Name>(SyntaxKind::S_Name, scanner->get_value().c_str());
+    return CreateSyntax<Name>(SyntaxKind::S_Name, scanner->GetValue().c_str());
 }
 
 Type*
 GraphQlExecutor::parse_type()
 {
     TypeEnum type;
-    bool is_list_type = scan_optional(GraphQlToken::OpenBracket);
+    bool is_list_type = ScanOptional(GraphQlToken::OpenBracket);
     bool is_non_null_list = false;
     switch (TakeNextToken()) {
         case GraphQlToken::BooleanKeyword:
@@ -772,10 +775,10 @@ GraphQlExecutor::parse_type()
         default:
             type = TypeEnum::T_Object;
     }
-    bool is_non_null = scan_optional(GraphQlToken::Exclamation);
+    bool is_non_null = ScanOptional(GraphQlToken::Exclamation);
     if (is_list_type) {
-        scan_expected(GraphQlToken::CloseBracket);
-        is_non_null_list = scan_optional(GraphQlToken::Exclamation);
+        ScanExpected(GraphQlToken::CloseBracket);
+        is_non_null_list = ScanOptional(GraphQlToken::Exclamation);
     }
     return CreateSyntax<Type>(SyntaxKind::S_Type, type, is_non_null, is_list_type, is_non_null_list, false);
 }
@@ -790,7 +793,7 @@ GraphQlExecutor::current_position()
 void
 GraphQlExecutor::skip_to_next_primary_token()
 {
-    scanner->skip_to({
+    scanner->SkipTo({
         GraphQlToken::QueryKeyword,
         GraphQlToken::MutationKeyword,
         GraphQlToken::SubscriptionKeyword,

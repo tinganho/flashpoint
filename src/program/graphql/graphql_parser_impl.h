@@ -24,29 +24,29 @@ GraphQlParser<TParser, TToken, TScanner>::GraphQlParser(MemoryPool* memory_pool,
 template<typename TParser, typename TToken, typename TScanner>
 TToken GraphQlParser<TParser, TToken, TScanner>::TakeNextToken()
 {
-    return scanner->take_next_token(false, true);
+    return scanner->TakeNextToken(false, true);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
-inline TToken GraphQlParser<TParser, TToken, TScanner>::take_next_token(bool treat_keyword_as_name)
+inline TToken GraphQlParser<TParser, TToken, TScanner>::TakeNextToken(bool treat_keyword_as_name)
 {
-    return scanner->take_next_token(treat_keyword_as_name, true);
+    return scanner->TakeNextToken(treat_keyword_as_name, true);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 inline
 TToken
-GraphQlParser<TParser, TToken, TScanner>::take_next_token(bool treat_keyword_as_name, bool skip_white_space)
+GraphQlParser<TParser, TToken, TScanner>::TakeNextToken(bool treat_keyword_as_name, bool skip_white_space)
 {
-    return scanner->take_next_token(treat_keyword_as_name, skip_white_space);
+    return scanner->TakeNextToken(treat_keyword_as_name, skip_white_space);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 inline
 Glib::ustring
-GraphQlParser<TParser, TToken, TScanner>::get_token_value() const
+GraphQlParser<TParser, TToken, TScanner>::GetTokenValue() const
 {
-    return scanner->get_value();
+    return scanner->GetValue();
 }
 
 template<typename TParser, typename TToken, typename TScanner>
@@ -56,13 +56,13 @@ GraphQlParser<TParser, TToken, TScanner>::get_token_location()
     return Location {
         scanner->line,
         scanner->start_column,
-        scanner->get_token_length(),
+        scanner->GetTokenLength(),
     };
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 Glib::ustring
-GraphQlParser<TParser, TToken, TScanner>::get_type_name(Type *type)
+GraphQlParser<TParser, TToken, TScanner>::GetTypeName(Type *type)
 {
     Glib::ustring display_type = "";
     if (type->is_list_type) {
@@ -108,20 +108,20 @@ GraphQlParser<TParser, TToken, TScanner>::get_type_name(Type *type)
 template<typename TParser, typename TToken, typename TScanner>
 inline
 Glib::ustring
-GraphQlParser<TParser, TToken, TScanner>::get_string_value() {
-    return scanner->get_string_value();
+GraphQlParser<TParser, TToken, TScanner>::GetStringValue() {
+    return scanner->GetStringValue();
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 Glib::ustring
-GraphQlParser<TParser, TToken, TScanner>::get_value_string(Value* value)
+GraphQlParser<TParser, TToken, TScanner>::GetValueString(Value *value)
 {
     TextWriter tw;
     switch (value->kind) {
         case SyntaxKind::S_ListValue:
             tw.write("[");
             for (const auto& value : static_cast<ListValue*>(value)->values) {
-                tw.write(get_value_string(value));
+                tw.write(GetValueString(value));
                 tw.save();
                 tw.write(", ");
             }
@@ -155,7 +155,7 @@ GraphQlParser<TParser, TToken, TScanner>::get_value_string(Value* value)
             tw.write("{");
             for (const auto& field : static_cast<ObjectValue*>(value)->object_fields) {
                 tw.write(field->name->identifier + ": ");
-                tw.write(get_value_string(field->value));
+                tw.write(GetValueString(field->value));
                 tw.save();
                 tw.write(",");
             }
@@ -169,29 +169,29 @@ GraphQlParser<TParser, TToken, TScanner>::get_value_string(Value* value)
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token)
+GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken &token)
 {
-    return scan_expected(token, false);
+    return ScanExpected(token, false);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, bool treat_keyword_as_name)
+GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, bool treat_keyword_as_name)
 {
-    return scan_expected(token, treat_keyword_as_name, /*skip_white_space*/true);
+    return ScanExpected(token, treat_keyword_as_name, /*skip_white_space*/true);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, bool treat_keyword_as_name, bool skip_white_space)
+GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, bool treat_keyword_as_name, bool skip_white_space)
 {
-    TToken result = scanner->scan_expected(token, treat_keyword_as_name, skip_white_space);
+    TToken result = scanner->ScanExpected(token, treat_keyword_as_name, skip_white_space);
     if (result != token) {
         if (result == TToken::EndOfDocument) {
             static_cast<TParser*>(this)->add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, graphQlTokenToString.at(token));
         }
         else {
-            static_cast<TParser*>(this)->add_diagnostic(D::Expected_0_but_got_1, graphQlTokenToString.at(token), static_cast<TParser*>(this)->get_token_value());
+            static_cast<TParser*>(this)->add_diagnostic(D::Expected_0_but_got_1, graphQlTokenToString.at(token), static_cast<TParser*>(this)->GetTokenValue());
         }
         return false;
     }
@@ -200,11 +200,11 @@ GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, boo
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, DiagnosticMessageTemplate& _template)
+GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, DiagnosticMessageTemplate& _template)
 {
-    TToken result = scanner->scan_expected(token);
+    TToken result = scanner->ScanExpected(token);
     if (result != token) {
-        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->get_token_value());
+        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
         return false;
     }
     return true;
@@ -212,11 +212,11 @@ GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, Dia
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, DiagnosticMessageTemplate& _template, bool treat_keyword_as_name)
+GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, DiagnosticMessageTemplate& _template, bool treat_keyword_as_name)
 {
-    TToken result = scanner->scan_expected(token, treat_keyword_as_name);
+    TToken result = scanner->ScanExpected(token, treat_keyword_as_name);
     if (result != token) {
-        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->get_token_value());
+        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
         return false;
     }
     return true;
@@ -224,31 +224,31 @@ GraphQlParser<TParser, TToken, TScanner>::scan_expected(const TToken& token, Dia
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_optional(const TToken& token)
+GraphQlParser<TParser, TToken, TScanner>::ScanOptional(const TToken &token)
 {
-    return scanner->try_scan(token) == token;
+    return scanner->TryScan(token) == token;
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 bool
-GraphQlParser<TParser, TToken, TScanner>::scan_optional(const TToken& token, bool treat_keyword_as_name)
+GraphQlParser<TParser, TToken, TScanner>::ScanOptional(const TToken &token, bool treat_keyword_as_name)
 {
-    return scanner->try_scan(token, treat_keyword_as_name) == token;
+    return scanner->TryScan(token, treat_keyword_as_name) == token;
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 template<typename TSyntax>
 Location
-GraphQlParser<TParser, TToken, TScanner>::get_location_from_syntax(TSyntax* syntax)
+GraphQlParser<TParser, TToken, TScanner>::GetLocationFromSyntax(TSyntax *syntax)
 {
-    return scanner->get_token_location(syntax);
+    return scanner->GetTokenLocation(syntax);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
 TToken
-GraphQlParser<TParser, TToken, TScanner>::skip_to(const std::vector<TToken>& tokens)
+GraphQlParser<TParser, TToken, TScanner>::SkipTo(const std::vector<TToken> &tokens)
 {
-    return scanner->skip_to(tokens);
+    return scanner->SkipTo(tokens);
 }
 
 template<typename TParser, typename TToken, typename TScanner>
@@ -266,8 +266,9 @@ inline TSyntax* GraphQlParser<TParser, TToken, TScanner>::FinishSyntax(TSyntax *
 
 template<typename TParser, typename TToken, typename TScanner>
 template<typename TSyntax>
-bool GraphQlParser<TParser, TToken, TScanner>::has_diagnostic_in_syntax(TSyntax* syntax, const DiagnosticMessageTemplate& diagnostic) {
-    auto name_location = scanner->get_token_location(syntax);
+bool GraphQlParser<TParser, TToken, TScanner>::HasDiagnosticInSyntax(TSyntax *syntax,
+                                                                     const DiagnosticMessageTemplate &diagnostic) {
+    auto name_location = scanner->GetTokenLocation(syntax);
     auto old_diagnostic_it = std::find_if(static_cast<TParser*>(this)->diagnostics.begin(), static_cast<TParser*>(this)->diagnostics.end(), [&](DiagnosticMessage& diagnostic_message) -> bool {
         auto location = diagnostic_message.location;
         if (diagnostic_message._template == diagnostic.message_template &&
@@ -286,7 +287,7 @@ bool GraphQlParser<TParser, TToken, TScanner>::has_diagnostic_in_syntax(TSyntax*
 
 template<typename TParser, typename TToken, typename TScanner>
 void
-GraphQlParser<TParser, TToken, TScanner>::take_errors_from_scanner()
+GraphQlParser<TParser, TToken, TScanner>::TakeErrorsFromScanner()
 {
     while (!scanner->errors.empty()) {
         auto error = scanner->errors.top();

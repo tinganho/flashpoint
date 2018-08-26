@@ -15,24 +15,24 @@ GraphQlScanner::GraphQlScanner(const Glib::ustring& source):
 { }
 
 char32_t
-GraphQlScanner::current_char() const
+GraphQlScanner::GetCurrentChar() const
 {
     return source[position];
 }
 
 unsigned long long
-GraphQlScanner::get_token_length()
+GraphQlScanner::GetTokenLength()
 {
     return position - start_position;
 }
 
 GraphQlToken
-GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_space)
+GraphQlScanner::TakeNextToken(bool treat_keyword_as_name, bool skip_white_space)
 {
-    set_token_start_position();
+    SetTokenStartPosition();
     while (position < size) {
-        char32_t ch = current_char();
-        increment_position();
+        char32_t ch = GetCurrentChar();
+        IncrementPosition();
         switch (ch) {
             case NewLine:
                 position_to_line_list.emplace_back(position, ++line);
@@ -46,7 +46,7 @@ GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_spac
                 continue;
             case CarriageReturn:
                 if (source[position + 1] == NewLine) {
-                    increment_position();
+                    IncrementPosition();
                 }
                 position_to_line_list.emplace_back(position, ++line);
                 if (!skip_white_space) {
@@ -69,8 +69,8 @@ GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_spac
             case Hash:
                 start_position++;
                 start_column++;
-                while (position < size && !is_line_break(current_char())) {
-                    increment_position();
+                while (position < size && !is_line_break(GetCurrentChar())) {
+                    IncrementPosition();
                     start_position++;
                     start_column++;
                 }
@@ -120,14 +120,14 @@ GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_spac
             default:
                 if (is_name_start(ch)) {
                     std::size_t name_size = 1;
-                    while (position < size && is_name_part(current_char())) {
-                        increment_position();
+                    while (position < size && is_name_part(GetCurrentChar())) {
+                        IncrementPosition();
                         name_size++;
                     }
                     if (treat_keyword_as_name) {
                         return GraphQlToken::G_Name;
                     }
-                    return get_token_from_value(name_size, get_value().c_str());
+                    return get_token_from_value(name_size, GetValue().c_str());
                 }
                 return GraphQlToken::Unknown;
         }
@@ -138,34 +138,34 @@ GraphQlScanner::take_next_token(bool treat_keyword_as_name, bool skip_white_spac
 GraphQlToken
 GraphQlScanner::scan_number()
 {
-    scan_integer_part();
-    switch (current_char()) {
+    ScanIntegerPart();
+    switch (GetCurrentChar()) {
         case Character::Dot: {
-            increment_position();
-            char32_t ch = current_char();
-            if (!is_digit(ch)) {
+            IncrementPosition();
+            char32_t ch = GetCurrentChar();
+            if (!IsDigit(ch)) {
                 return GraphQlToken::Unknown;
             }
-            increment_position();
-            scan_digit_list();
-            ch = current_char();
+            IncrementPosition();
+            ScanDigitList();
+            ch = GetCurrentChar();
             if (ch != Character::e && ch != Character::E) {
                 return GraphQlToken::FloatLiteral;
             }
         }
         case Character::e:
         case Character::E: {
-            increment_position();
-            char32_t ch = current_char();
+            IncrementPosition();
+            char32_t ch = GetCurrentChar();
             if (ch == Character::Minus || ch == Character::Plus) {
-                increment_position();
-                ch = current_char();
+                IncrementPosition();
+                ch = GetCurrentChar();
             }
-            if (!is_digit(ch)) {
+            if (!IsDigit(ch)) {
                 return GraphQlToken::Unknown;
             }
-            increment_position();
-            scan_digit_list();
+            IncrementPosition();
+            ScanDigitList();
             return GraphQlToken::FloatLiteral;
         }
 
@@ -175,54 +175,54 @@ GraphQlScanner::scan_number()
 }
 
 Glib::ustring
-GraphQlScanner::get_text_from_syntax(Syntax* syntax)
+GraphQlScanner::GetTextFromSyntax(Syntax *syntax)
 {
     return source.substr(syntax->start, syntax->end - syntax->start);
 }
 
 GraphQlToken
-GraphQlScanner::scan_integer_part()
+GraphQlScanner::ScanIntegerPart()
 {
-    auto ch = current_char();
+    auto ch = GetCurrentChar();
     if (ch == Character::Minus) {
-        ch = current_char();
+        ch = GetCurrentChar();
     }
     if (ch == Character::_0) {
-        increment_position();
-        ch = current_char();
-        if (is_digit(ch)) {
+        IncrementPosition();
+        ch = GetCurrentChar();
+        if (IsDigit(ch)) {
             return GraphQlToken::Unknown;
         }
         return GraphQlToken::IntegerLiteral;
     }
     else {
-        if (!is_digit(ch)) {
+        if (!IsDigit(ch)) {
             return GraphQlToken::Unknown;
         }
     }
-    scan_digit_list();
+    ScanDigitList();
     return GraphQlToken::IntegerLiteral;
 }
 
 void
-GraphQlScanner::scan_digit_list()
+GraphQlScanner::ScanDigitList()
 {
-    while (is_digit(current_char())) {
-        increment_position();
+    while (IsDigit(GetCurrentChar())) {
+        IncrementPosition();
     }
 }
 
-bool GraphQlScanner::is_digit(char32_t ch)
+bool GraphQlScanner::IsDigit(char32_t ch)
 {
     return ch >= Character::_0 && ch <= Character::_9;
 }
 
-void GraphQlScanner::skip_block()
+void GraphQlScanner::SkipBlock()
 {
     int matched_braces = 0;
     bool encountered_brace = false;
     while (true) {
-        auto token = take_next_token(false, true);
+        auto token = TakeNextToken(false, true);
         switch (token) {
             case GraphQlToken::OpenBrace:
                 matched_braces++;
@@ -244,23 +244,23 @@ void GraphQlScanner::skip_block()
 }
 
 GraphQlToken
-GraphQlScanner::skip_to(std::vector<GraphQlToken> tokens)
+GraphQlScanner::SkipTo(std::vector<GraphQlToken> tokens)
 {
     while (true) {
-        save();
-        GraphQlToken token = take_next_token(false, true);
+        SaveCurrentLocation();
+        GraphQlToken token = TakeNextToken(false, true);
         if (token == GraphQlToken::EndOfDocument) {
             return token;
         }
         if (std::find(tokens.begin(), tokens.end(), token) != tokens.end()) {
-            revert();
+            RevertToPreviousLocation();
             return token;
         }
     }
 }
 
 Glib::ustring
-GraphQlScanner::get_name() const
+GraphQlScanner::GetName() const
 {
     return name;
 }
@@ -416,10 +416,10 @@ GraphQlScanner::get_token_from_value(std::size_t size, const char* value)
 DirectiveLocation
 GraphQlScanner::scan_directive_location()
 {
-    set_token_start_position();
+    SetTokenStartPosition();
     while (position < size) {
-        char32_t ch = current_char();
-        increment_position();
+        char32_t ch = GetCurrentChar();
+        IncrementPosition();
 
         switch (ch) {
             case NewLine:
@@ -431,7 +431,7 @@ GraphQlScanner::scan_directive_location()
                 continue;
             case CarriageReturn:
                 if (source[position + 1] == NewLine) {
-                    increment_position();
+                    IncrementPosition();
                 }
                 position_to_line_list.emplace_back(position, ++line);
                 column = 1;
@@ -449,11 +449,11 @@ GraphQlScanner::scan_directive_location()
         }
         if (is_name_start(ch)) {
             std::size_t name_size = 1;
-            while (position < size && is_name_part(current_char())) {
-                increment_position();
+            while (position < size && is_name_part(GetCurrentChar())) {
+                IncrementPosition();
                 name_size++;
             }
-            return get_directive_from_value(name_size, get_value().c_str());
+            return get_directive_from_value(name_size, GetValue().c_str());
         }
     }
 
@@ -590,22 +590,22 @@ GraphQlScanner::get_directive_from_value(std::size_t size, const char* value)
 }
 
 void
-GraphQlScanner::set_token_start_position()
+GraphQlScanner::SetTokenStartPosition()
 {
     start_position = position;
     start_column = column;
 }
 
 Location
-GraphQlScanner::get_token_location(const Syntax* syntax)
+GraphQlScanner::GetTokenLocation(const Syntax *syntax)
 {
-    Location location = search_for_line(0, position_to_line_list.size() - 1, syntax->start);
+    Location location = SearchForLine(0, position_to_line_list.size() - 1, syntax->start);
     location.length = syntax->end - syntax->start;
     return location;
 }
 
 Location
-GraphQlScanner::search_for_line(std::size_t start, std::size_t end, std::size_t position)
+GraphQlScanner::SearchForLine(std::size_t start, std::size_t end, std::size_t position)
 {
     if (end > start) {
         auto mid = start + (end - start) / 2;
@@ -619,10 +619,10 @@ GraphQlScanner::search_for_line(std::size_t start, std::size_t end, std::size_t 
         }
 
         if (position < position_line.position) {
-            return search_for_line(start, mid - 1, position);
+            return SearchForLine(start, mid - 1, position);
         }
 
-        return search_for_line(mid + 1, end, position);
+        return SearchForLine(mid + 1, end, position);
     }
     else if (end == start) {
         auto position_line = position_to_line_list[end];
@@ -641,9 +641,9 @@ GraphQlScanner::search_for_line(std::size_t start, std::size_t end, std::size_t 
 GraphQlToken
 GraphQlScanner::scan_string_value()
 {
-    if (current_char() == Character::DoubleQuote && source[position + 1] == Character::DoubleQuote) {
-        increment_position();
-        increment_position();
+    if (GetCurrentChar() == Character::DoubleQuote && source[position + 1] == Character::DoubleQuote) {
+        IncrementPosition();
+        IncrementPosition();
         return scan_string_block_after_double_quotes();
     }
     return scan_string_literal();
@@ -657,24 +657,24 @@ GraphQlScanner::scan_string_block_after_double_quotes()
         if (position > size) {
             break;
         }
-        char32_t ch = current_char();
+        char32_t ch = GetCurrentChar();
         if (ch == Character::DoubleQuote) {
             if (position + 2 >= size) {
                 return GraphQlToken::Unknown;
             }
             if (source[position + 1] == DoubleQuote && source[position + 2] == DoubleQuote) {
-                increment_position();
-                increment_position();
-                increment_position();
+                IncrementPosition();
+                IncrementPosition();
+                IncrementPosition();
                 return GraphQlToken::G_StringValue;
             }
         }
         if (is_source_character(ch)) {
             string_literal += ch;
-            increment_position();
+            IncrementPosition();
             continue;
         }
-        increment_position();
+        IncrementPosition();
     }
     return GraphQlToken::Unknown;
 }
@@ -708,7 +708,7 @@ GraphQlScanner::scan_string_literal()
         if (position > size) {
             break;
         }
-        char32_t ch = current_char();
+        char32_t ch = GetCurrentChar();
         if (ch == Character::Backslash) {
             try {
                 scan_escape_sequence();
@@ -720,15 +720,15 @@ GraphQlScanner::scan_string_literal()
         }
         if (ch == Character::NewLine || ch == Character::CarriageReturn) {
             is_truncated = true;
-            increment_position();
+            IncrementPosition();
             continue;
         }
         if (ch == Character::DoubleQuote) {
             string_literal += source.substr(start, position - start);
-            increment_position();
+            IncrementPosition();
             break;
         }
-        increment_position();
+        IncrementPosition();
     }
     if (is_truncated) {
         errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Unterminated_string_value));
@@ -743,8 +743,8 @@ GraphQlScanner::scan_escape_sequence()
     std::size_t start_position = position;
     std::size_t start_line = line;
     std::size_t start_column = column;
-    increment_position();
-    char32_t ch = current_char();
+    IncrementPosition();
+    char32_t ch = GetCurrentChar();
     switch (ch) {
         case Character::DoubleQuote:
         case Character::Backslash:
@@ -754,10 +754,10 @@ GraphQlScanner::scan_escape_sequence()
         case Character::n:
         case Character::r:
         case Character::t:
-            increment_position();
+            IncrementPosition();
             return;
         case Character::u:
-            increment_position();
+            IncrementPosition();
             return scan_hexadecimal_escape(start_position, start_line, start_column);
         default:;
     }
@@ -770,7 +770,7 @@ GraphQlScanner::scan_hexadecimal_escape(const std::size_t& start_position, const
     Glib::ustring value = "";
     bool is_invalid = false;
     while (true) {
-        char32_t ch = current_char();
+        char32_t ch = GetCurrentChar();
         if (n == 4) {
             break;
         }
@@ -782,11 +782,11 @@ GraphQlScanner::scan_hexadecimal_escape(const std::size_t& start_position, const
             errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Invalid_Unicode_escape_sequence));
             break;
         }
-        increment_position();
+        IncrementPosition();
         n++;
     }
     if (is_invalid) {
-        increment_position();
+        IncrementPosition();
         throw InvalidStringException();
     }
 }
@@ -801,16 +801,16 @@ GraphQlScanner::is_hexadecimal(char32_t ch) {
 GraphQlToken
 GraphQlScanner::scan_ellipses_after_first_dot()
 {
-    char32_t ch = current_char();
+    char32_t ch = GetCurrentChar();
     if (ch != Character::Dot) {
         return GraphQlToken::Unknown;
     }
-    increment_position();
-    ch = current_char();
+    IncrementPosition();
+    ch = GetCurrentChar();
     if (ch != Character::Dot) {
         return GraphQlToken::Unknown;
     }
-    increment_position();
+    IncrementPosition();
     return GraphQlToken::Ellipses;
 }
 
@@ -839,23 +839,23 @@ GraphQlScanner::is_name_part(const char32_t &ch) const
 }
 
 void
-GraphQlScanner::increment_position()
+GraphQlScanner::IncrementPosition()
 {
     column++;
     position++;
 }
 
 GraphQlToken
-GraphQlScanner::peek_next_token()
+GraphQlScanner::PeekNextToken()
 {
-    save();
-    GraphQlToken token = take_next_token(false, true);
-    revert();
+    SaveCurrentLocation();
+    GraphQlToken token = TakeNextToken(false, true);
+    RevertToPreviousLocation();
     return token;
 }
 
 void
-GraphQlScanner::save()
+GraphQlScanner::SaveCurrentLocation()
 {
     saved_text_cursors.emplace(
         position,
@@ -868,7 +868,7 @@ GraphQlScanner::save()
 }
 
 void
-GraphQlScanner::revert()
+GraphQlScanner::RevertToPreviousLocation()
 {
     const SavedTextCursor& saved_text_cursor = saved_text_cursors.top();
     position = saved_text_cursor.position;
@@ -881,46 +881,46 @@ GraphQlScanner::revert()
 }
 
 GraphQlToken
-GraphQlScanner::try_scan(const GraphQlToken& token)
+GraphQlScanner::TryScan(const GraphQlToken &token)
 {
-    return try_scan(token, false);
+    return TryScan(token, false);
 }
 
 GraphQlToken
-GraphQlScanner::try_scan(const GraphQlToken& token, bool treat_keyword_as_name)
+GraphQlScanner::TryScan(const GraphQlToken &token, bool treat_keyword_as_name)
 {
-    return try_scan(token, treat_keyword_as_name, true);
+    return TryScan(token, treat_keyword_as_name, true);
 }
 
 GraphQlToken
-GraphQlScanner::try_scan(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space)
+GraphQlScanner::TryScan(const GraphQlToken &token, bool treat_keyword_as_name, bool skip_white_space)
 {
-    save();
-    auto result = take_next_token(treat_keyword_as_name, skip_white_space);
+    SaveCurrentLocation();
+    auto result = TakeNextToken(treat_keyword_as_name, skip_white_space);
     if (result == token) {
         return token;
     }
-    revert();
+    RevertToPreviousLocation();
     return result;
 }
 
 GraphQlToken
-GraphQlScanner::scan_expected(const GraphQlToken& token)
+GraphQlScanner::ScanExpected(const GraphQlToken &token)
 {
-    return scan_expected(token, false, true);
+    return ScanExpected(token, false, true);
 }
 
 GraphQlToken
-GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_name)
+GraphQlScanner::ScanExpected(const GraphQlToken &token, bool treat_keyword_as_name)
 {
-    return scan_expected(token, treat_keyword_as_name, true);
+    return ScanExpected(token, treat_keyword_as_name, true);
 }
 
 
 GraphQlToken
-GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space)
+GraphQlScanner::ScanExpected(const GraphQlToken &token, bool treat_keyword_as_name, bool skip_white_space)
 {
-    GraphQlToken result = take_next_token(treat_keyword_as_name, skip_white_space);
+    GraphQlToken result = TakeNextToken(treat_keyword_as_name, skip_white_space);
     if (result == token) {
         return token;
     }
@@ -928,10 +928,10 @@ GraphQlScanner::scan_expected(const GraphQlToken& token, bool treat_keyword_as_n
 }
 
 void
-GraphQlScanner::scan_rest_of_line()
+GraphQlScanner::ScanRestOfLine()
 {
-    while (position < size && !is_line_break(current_char())) {
-        increment_position();
+    while (position < size && !is_line_break(GetCurrentChar())) {
+        IncrementPosition();
     }
 }
 
@@ -950,19 +950,19 @@ GraphQlScanner::length() const
 }
 
 Glib::ustring
-GraphQlScanner::get_value() const
+GraphQlScanner::GetValue() const
 {
     return source.substr(start_position, length());
 }
 
 Glib::ustring
-GraphQlScanner::get_value_from_syntax(Syntax* syntax) const
+GraphQlScanner::GetValueFromSyntax(Syntax *syntax) const
 {
     return source.substr(syntax->start, syntax->end);
 }
 
 Glib::ustring
-GraphQlScanner::get_string_value()
+GraphQlScanner::GetStringValue()
 {
     return string_literal;
 }

@@ -7,7 +7,9 @@ namespace flashpoint {
 
 namespace HttpWriterHelperMethods {
 
-void OnWriteEnd(uv_write_t *write_request, int status) {
+void
+OnWriteEnd(uv_write_t *write_request, int status)
+{
     if (status == -1) {
         fprintf(stderr, "error on_write_end");
         return;
@@ -18,23 +20,21 @@ void OnWriteEnd(uv_write_t *write_request, int status) {
 
 }
 
-HttpWriter::HttpWriter(uv_stream_t* tcp_handle)
+HttpWriter::HttpWriter(uv_tcp_t *tcp_handle, SSL *ssl_handle)
     : tcp_handle(tcp_handle),
-      use_ssl_(false) {
-
+      ssl_handle(ssl_handle)
+{
+    if (ssl_handle != nullptr) {
+        use_ssl_ = true;
+    }
     write_buffer_ = new char[buffer_size_];
 }
 
-HttpWriter::HttpWriter(uv_stream_t *tcp_handle, SSL *ssl_handle)
-    : tcp_handle(tcp_handle),
-      ssl_handle(ssl_handle),
-      use_ssl_(true) {
-
-    write_buffer_ = new char[buffer_size_];
-}
-
-void HttpWriter::WriteRequest(HttpMethod method,
-                              const char *path) {
+void
+HttpWriter::WriteRequest(
+    HttpMethod method,
+    const char *path)
+{
     switch (method) {
         case HttpMethod::Get:
             Write("GET ");
@@ -54,8 +54,9 @@ void HttpWriter::WriteRequest(HttpMethod method,
     Write(" HTTP/1.1\r\n");
 }
 
-void HttpWriter::Write(const char *text) {
-
+void
+HttpWriter::Write(const char *text)
+{
     for (std::size_t i = 0; i < strlen(text); i++) {
         if (position_ == buffer_size_) {
             FlushBuffer();
@@ -65,17 +66,22 @@ void HttpWriter::Write(const char *text) {
     }
 }
 
-void HttpWriter::WriteLine() {
+void
+HttpWriter::WriteLine()
+{
     Write("\r\n");
 }
 
-void HttpWriter::WriteLine(const char *text) {
-
+void
+HttpWriter::WriteLine(const char *text)
+{
     Write(text);
     Write("\r\n");
 }
 
-void HttpWriter::FlushBuffer() {
+void
+HttpWriter::FlushBuffer()
+{
     if (position_ == 0) {
         return;
     }
@@ -87,7 +93,7 @@ void HttpWriter::FlushBuffer() {
             auto write_request = (uv_write_t*)malloc(sizeof(uv_write_t));
             write_request->data = this;
             uv_buf_t buffer = uv_buf_init(buf, (unsigned int)bytes_read);
-            int r = uv_write(write_request, tcp_handle, &buffer, 1, HttpWriterHelperMethods::OnWriteEnd);
+            int r = uv_write(write_request, (uv_stream_t*)tcp_handle, &buffer, 1, HttpWriterHelperMethods::OnWriteEnd);
             if(r < 0) {
                 printf("ERROR: WriteToSocket erro");
                 return;
@@ -100,17 +106,21 @@ void HttpWriter::FlushBuffer() {
     position_ = 0;
 }
 
-void HttpWriter::WriteToSocket() {
+void
+HttpWriter::WriteToSocket()
+{
     uv_write_t *write_request = (uv_write_t*)malloc(sizeof(uv_write_t));
     write_request->data = this;
     uv_buf_t buffer = uv_buf_init(write_buffer_, (int)position_);
-    int r = uv_write(write_request, tcp_handle, &buffer, 1, HttpWriterHelperMethods::OnWriteEnd);
+    int r = uv_write(write_request, (uv_stream_t*)tcp_handle, &buffer, 1, HttpWriterHelperMethods::OnWriteEnd);
     if(r < 0) {
         printf("ERROR: WriteToSocket erro");
     }
 }
 
-void HttpWriter::End() {
+void
+HttpWriter::End()
+{
     FlushBuffer();
     is_end = true;
 }

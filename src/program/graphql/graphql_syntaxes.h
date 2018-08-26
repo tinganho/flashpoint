@@ -745,7 +745,9 @@ namespace flashpoint::program::graphql {
             name(name),
             declaration(declaration),
             kind(kind)
-        { }new_operator(Symbol)
+        { }
+
+        new_operator(Symbol)
     };
 
     class GraphQlSyntaxVisitor {

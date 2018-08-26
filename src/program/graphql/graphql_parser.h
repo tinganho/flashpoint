@@ -54,52 +54,52 @@ public:
     TakeNextToken();
 
     TToken
-    take_next_token(bool treat_keyword_as_name);
+    TakeNextToken(bool treat_keyword_as_name);
 
     TToken
-    take_next_token(bool treat_keyword_as_name, bool skip_white_space);
+    TakeNextToken(bool treat_keyword_as_name, bool skip_white_space);
 
     bool
-    scan_expected(const TToken&);
+    ScanExpected(const TToken &);
 
     bool
-    scan_expected(const TToken&, bool treat_keyword_as_name);
+    ScanExpected(const TToken&, bool treat_keyword_as_name);
 
     bool
-    scan_expected(const TToken&, bool treat_keyword_as_name, bool skip_white_space);
+    ScanExpected(const TToken&, bool treat_keyword_as_name, bool skip_white_space);
 
     bool
-    scan_expected(const TToken& token, DiagnosticMessageTemplate& _template);
+    ScanExpected(const TToken& token, DiagnosticMessageTemplate& _template);
 
     bool
-    scan_expected(const TToken& token, DiagnosticMessageTemplate& _template, bool treat_keyword_as_name);
+    ScanExpected(const TToken& token, DiagnosticMessageTemplate& _template, bool treat_keyword_as_name);
 
     bool
-    scan_optional(const TToken&);
+    ScanOptional(const TToken &);
 
     bool
-    scan_optional(const TToken&, bool treat_keyword_as_name);
+    ScanOptional(const TToken &, bool treat_keyword_as_name);
 
     bool
-    scan_optional(const TToken&, bool treat_keyword_as_name, bool skip_white_space);
+    ScanOptional(const TToken &, bool treat_keyword_as_name, bool skip_white_space);
 
     Glib::ustring
-    get_token_value() const;
+    GetTokenValue() const;
 
     Location
-    get_token_location() const;
+    GetTokenLocation() const;
 
     Glib::ustring
-    get_string_value();
+    GetStringValue();
 
     TToken
-    skip_to(const std::vector<TToken>& tokens);
+    SkipTo(const std::vector<TToken> &tokens);
 
     Glib::ustring
-    get_type_name(Type* type);
+    GetTypeName(Type *type);
 
     Glib::ustring
-    get_value_string(Value* value);
+    GetValueString(Value *value);
 
     template<typename TSyntax, typename TSyntaxKind, typename ... Args>
     TSyntax*
@@ -111,14 +111,14 @@ public:
 
     template<typename TSyntax>
     Location
-    get_location_from_syntax(TSyntax* syntax);
+    GetLocationFromSyntax(TSyntax *syntax);
 
     template<typename TSyntax>
     bool
-    has_diagnostic_in_syntax(TSyntax* syntax, const DiagnosticMessageTemplate& diagnostic);
+    HasDiagnosticInSyntax(TSyntax *syntax, const DiagnosticMessageTemplate &diagnostic);
 
     void
-    take_errors_from_scanner();
+    TakeErrorsFromScanner();
 };
 
 #include "graphql_parser_impl.h"

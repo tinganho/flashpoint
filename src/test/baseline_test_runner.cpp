@@ -19,6 +19,8 @@
 #include <curl/curl.h>
 #include <thread>
 #include <chrono>
+#include <unistd.h>
+#include <stdio.h>
 
 using namespace flashpoint::lib;
 using namespace flashpoint::program;
@@ -30,10 +32,14 @@ namespace flashpoint::test {
     static char errorBuffer[CURL_ERROR_SIZE];
     static std::string buffer;
 
-BaselineTestRunner::BaselineTestRunner()
+BaselineTestRunner::BaselineTestRunner(const BaselineTestRunnerOption &option):
+    option(option)
 { }
 
-void BaselineTestRunner::visit_tests_by_path(const path& folder, std::function<void(const TestCase& test_case)> callback, bool delete_folder = true)
+void BaselineTestRunner::VisistTestsByPath(
+    const path &folder,
+    std::function<void(const TestCase &test_case)> callback,
+    bool delete_folder = true)
 {
     path tests_folder = root_dir() / folder / "/tests";
     path current_folder = tests_folder / "currents";
@@ -124,14 +130,12 @@ BaselineTestRunner::call_test(
     });
 }
 
-void
-BaselineTestRunner::AcceptGraphQlTests(const RunOption &run_option)
-{
-    visit_tests_by_path("src/program/graphql", [&](const TestCase& test_case) {
-        if (run_option.folder && *run_option.folder != test_case.folder) {
+void BaselineTestRunner::AcceptGraphQlTests() {
+    VisistTestsByPath("src/program/graphql", [&](const TestCase &test_case) {
+        if (option.folder && *option.folder != test_case.folder) {
             return;
         }
-        if (run_option.test && *run_option.test != test_case.name) {
+        if (option.test && *option.test != test_case.name) {
             return;
         }
         auto current_error_file = test_case.current_folder / (test_case.name + ".errors");
@@ -150,17 +154,16 @@ BaselineTestRunner::AcceptGraphQlTests(const RunOption &run_option)
 }
 
 void
-BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
-{
+BaselineTestRunner::DefineGraphQlTests() {
     domain("GraphQL");
-    visit_tests_by_path("src/program/graphql", [&](const TestCase test_case) {
-        if (run_option.folder != nullptr && *run_option.folder != test_case.folder) {
+    VisistTestsByPath("src/program/graphql", [&](const TestCase test_case) {
+        if (option.folder != nullptr && *option.folder != test_case.folder) {
             return;
         }
-        if (run_option.test != nullptr && (*run_option.test != test_case.aggregate_name && *run_option.test != test_case.name)) {
+        if (option.test != nullptr && (*option.test != test_case.aggregate_name && *option.test != test_case.name)) {
             return;
         }
-        test(test_case.name, [=](Test* test, std::function<void()> done, std::function<void(std::string error)> error) {
+        test(test_case.name, [=](Test *test, std::function<void()> done, std::function<void(std::string error)> error) {
             auto memory_pool = new MemoryPool(1024 * 4 * 10000, 1024 * 4);
             auto ticket = memory_pool->TakeTicket();
             std::vector<Glib::ustring> source;
@@ -168,7 +171,7 @@ BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
             DiagnosticWriter diagnostic_writer;
             GraphQlSchema schema(source[0], memory_pool, ticket);
             GraphQlExecutor executor(memory_pool, ticket);
-            executor.add_schema(schema);
+            executor.AddSchema(schema);
             diagnostic_writer.add_diagnostics(schema.diagnostics, schema.source);
             if (source.size() > 1) {
                 diagnostic_writer.add_source("====\n");
@@ -179,7 +182,7 @@ BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
             write_file(current_error_file, current_errors_file_source.c_str());
             std::stringstream error_message;
             auto reference_error_file = test_case.reference_folder / (test_case.name + ".errors");
-            const char* reference_errors_file_source = "";
+            const char *reference_errors_file_source = "";
             bool reference_file_exists = false;
             if (exists(reference_error_file)) {
                 reference_errors_file_source = read_file(reference_error_file);
@@ -187,10 +190,11 @@ BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
             }
             if (!assert_baselines(current_errors_file_source.c_str(), reference_errors_file_source, error_message)) {
                 if (reference_file_exists) {
-                    auto command = std::string("git diff --no-index --color \"") + reference_error_file.c_str() + "\" \"" + current_error_file.c_str() + "\" | cat";
+                    auto command =
+                      std::string("git diff --no-index --color \"") + reference_error_file.c_str() + "\" \"" +
+                      current_error_file.c_str() + "\" | cat";
                     error(execute_command(command));
-                }
-                else {
+                } else {
                     error("\n" + current_errors_file_source);
                 }
             }
@@ -200,78 +204,103 @@ BaselineTestRunner::DefineGraphQlTests(const RunOption &run_option)
     });
 }
 
-void
-BaselineTestRunner::Run(const flashpoint::test::RunOption &run_option) {
-    run_test_suites();
-    print_stats();
+void BaselineTestRunner::Run() {
+  RunTestSuites(option.with_timeout);
+  PrintStats();
 }
 
-static int write_data(char *data, size_t size, size_t nmemb, std::string *userp)
-{
-    return size * nmemb;
+static int write_data(char *data, size_t size, size_t nmemb, std::string *userp) {
+  return size * nmemb;
 }
 
 void
-BaselineTestRunner::DefineHttpTests(const RunOption &run_option)
-{
+BaselineTestRunner::DefineHttpTests() {
     domain("HTTP");
-    visit_tests_by_path("src/program", [&](const TestCase& test_case) {
-        if (run_option.folder && *run_option.folder != test_case.folder) {
+    VisistTestsByPath("src/program", [&](const TestCase &test_case) {
+        if (option.folder && *option.folder != test_case.folder) {
             return;
         }
-        if (run_option.test && *run_option.test != test_case.name) {
+        if (option.test && *option.test != test_case.name) {
             return;
         }
-        test(test_case.name, [&](Test* test, std::function<void()> success, std::function<void(std::string error)> error) -> void {
-            CURL *curl;
-            CURLcode code;
-            std::size_t retries = 0;
-            std::size_t max_retries = 50;
-            do {
-                curl = curl_easy_init();
-                curl_global_init(CURL_GLOBAL_ALL);
+        test(test_case.name,
+             [&](Test *test, std::function<void()> success, std::function<void(std::string error)> error) -> void {
+                 CURL *curl;
+                 CURLcode code;
+                 std::size_t retries = 0;
 
-                if (curl) {
-                    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorBuffer);
-                    code = curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:8000");
-                    if(code != CURLE_OK) {
-                        fprintf(stderr, "Failed to set URL [%s]\n", errorBuffer);
-                        return;
-                    }
-                    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-                    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-                    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-                    curl_slist* slist1 = nullptr;
-                    slist1 = curl_slist_append(slist1, "Content-Type: application/json");
-                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist1);
-                    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"query\":\"{ field }\"}");
-                    if(code != CURLE_OK) {
-                        fprintf(stderr, "Failed to set body [%s]\n", errorBuffer);
-                        return;
-                    }
+                 auto start = std::chrono::steady_clock::now();
+                 std::size_t max_retries = 50;
+                 int pipe_fds[2];
+                 pipe(pipe_fds);
+                 pid_t child_pid = fork();
+                 if (child_pid == -1) {
+                     printf("Could not fork child process. %s\n", strerror(errno));
+                     return;
+                 }
 
-                    code = curl_easy_perform(curl);
-                    if (code != CURLE_OK) {
-//                        if (retries < max_retries) {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                            curl_easy_cleanup(curl);
-                            curl_global_cleanup();
-                            retries++;
-                            continue;
-//                        }
-//                        else {
-//                            fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
-//                            return;
-//                        }
-                    }
-                    curl_easy_cleanup(curl);
-                    curl_global_cleanup();
-                    break;
-                }
-            }
-            while (true);
+                 if (child_pid == 0) {
+                     close(pipe_fds[1]);
+                     auto p = resolve_paths(root_dir(), "src/test/test_server/bin/test");
+                     const char *command = p.c_str();
+                     char fd_flag[10];
+                     sprintf(fd_flag, "--fd=%d", pipe_fds[0]);
+                     int r = execl(command,
+                                   "test",
+                                   R"(--response="{ "query": "{ "field": 1 }"})",
+                                   fd_flag,
+                                   (char *) NULL);
+                     if (r == -1) {
+                         printf("Could not execute script. %s\n", strerror(errno));
+                     }
+                     return;
+                 }
+
+                 do {
+                     close(pipe_fds[0]);
+                     curl = curl_easy_init();
+                     curl_global_init(CURL_GLOBAL_ALL);
+
+                     if (curl) {
+                         curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorBuffer);
+                         code = curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:8000");
+                         if (code != CURLE_OK) {
+                             fprintf(stderr, "Failed to set URL [%s]\n", errorBuffer);
+                             return;
+                         }
+                         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+                         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+                         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                         curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+                         curl_slist *slist1 = nullptr;
+                         slist1 = curl_slist_append(slist1, "Content-Type: application/json");
+                         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist1);
+                         code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"query\":\"{ field }\"}");
+                         if (code != CURLE_OK) {
+                             fprintf(stderr, "Failed to set body [%s]\n", errorBuffer);
+                             return;
+                         }
+
+                         code = curl_easy_perform(curl);
+                         if (code != CURLE_OK) {
+                             auto end = std::chrono::steady_clock::now();
+                             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+                             if (duration < 5000) {
+                                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                                 curl_easy_cleanup(curl);
+                                 curl_global_cleanup();
+                                 continue;
+                             } else {
+                                 fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
+                                 return;
+                             }
+                         }
+                         curl_easy_cleanup(curl);
+                         curl_global_cleanup();
+                         break;
+                     }
+                 } while (true);
 //                tcp_client.bind("0.0.0.0", 8000);
 //                tcp_client.send_message(test_case.source.c_str());
 //                const char* current_file_content = tcp_client.recieve_message();
@@ -280,8 +309,9 @@ BaselineTestRunner::DefineHttpTests(const RunOption &run_option)
 //                if (!assert_baselines(current_file_content, test_case.reference_folder, error_message)) {
 //                    return error(error_message.str());
 //                }
-            success();
-        });
+                 success();
+                 kill(child_pid, SIGTERM);
+             });
     });
 }
 
@@ -446,8 +476,7 @@ BaselineTestRunner::append_all_lines(const std::string &chunk, TextWriter &tw)
     return std::make_tuple(*tw.text, n > 0);
 }
 
-bool
-BaselineTestRunner::assert_baselines(const char* current, const char* reference, std::stringstream& error_message)
+bool BaselineTestRunner::assert_baselines(const char* current, const char* reference, std::stringstream& error_message)
 {
     if (strcmp(current, reference) != 0) {
         return false;
@@ -456,10 +485,10 @@ BaselineTestRunner::assert_baselines(const char* current, const char* reference,
 }
 
 
-int
-BaselineTestRunner::StartServer() {
+int BaselineTestRunner::StartServer(int fd) {
     uv_loop_t* loop = uv_default_loop();
     HttpServer server(loop);
+    server.fd = fd;
     server.Listen("0.0.0.0", 8000);
     return uv_run(loop, UV_RUN_DEFAULT);
 }

@@ -17,10 +17,12 @@ class HttpServer {
 public:
     HttpServer(uv_loop_t* loop);
     void Listen(const char *host, unsigned int port);
+    void Listen(const char *host, unsigned int port, int fd);
     void Close();
 
     uv_loop_t* loop;
     SSL_CTX* ssl_ctx;
+    int fd;
     MemoryPool* memory_pool;
     int parent_pid;
 private:
@@ -30,11 +32,16 @@ private:
 struct GatewayClient {
     uv_tcp_t* tcp_handle;
     HttpServer* server;
-    std::map<const char*, Field*> fields;
-    std::vector<FragmentDefinition*>* fragments;
     SSL* ssl_handle;
     BIO* read_bio;
     BIO* write_bio;
+    HttpParser *http_parser;
+    MemoryPoolTicket *ticket;
+    std::map<const char*, Field*> fields;
+    unsigned int resolved_fields = 0;
+    unsigned int fields_to_resolve = 0;
+    std::map<const char*, std::vector<const uv_buf_t*>*> fields_result;
+    std::vector<FragmentDefinition*>* fragments;
 };
 
 struct BackendEndpoint {
@@ -45,15 +52,16 @@ struct BackendEndpoint {
     const char* path;
 };
 
-struct cmp_str {
+struct CompareStrings {
     bool operator()(const char *a, const char *b) const {
         return std::strcmp(a, b) < 0;
     }
 };
 
-extern std::map<const char*, BackendEndpoint, cmp_str> field_to_endpoint;
+extern std::map<const char*, BackendEndpoint, CompareStrings> field_to_endpoint;
 
-struct ClientRequest {
+struct GraphQlFieldRequest {
+    const char* field;
     const char* hostname;
     unsigned int port;
     const char* host;
@@ -62,9 +70,7 @@ struct ClientRequest {
     GatewayClient* gateway_client;
 };
 
-void on_read(uv_stream_t *client_stream, ssize_t length, const uv_buf_t *buf);
-
-void echo_write(uv_write_t* req, int status);
+void OnGatewayClientRequestRead(uv_stream_t *client_stream, ssize_t read_length, const uv_buf_t *buf);
 
 void OnNewConnection(uv_stream_t *server, int status);
 

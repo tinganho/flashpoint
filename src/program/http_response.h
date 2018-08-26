@@ -6,6 +6,7 @@
 #include <program/http_server.h>
 #include <unordered_map>
 #include <openssl/ssl.h>
+#include <exception>
 #include <uv.h>
 
 #define BUFFER_SIZE 1024
@@ -52,47 +53,44 @@ public:
     ~mmap_allocator() throw() { }
 };
 
-class HttpHeaderWriter {
+class HttpHeaderWriter
+{
 public:
     HttpHeaderWriter(char* header);
 };
 
-class HttpWriter {
+class HttpWriter
+{
 public:
-    HttpWriter(uv_stream_t *tcp_handle);
-    HttpWriter(uv_stream_t *tcp_handle, SSL *ssl_handle);
+    HttpWriter(uv_tcp_t *tcp_handle, SSL *ssl_handle);
 
-    // Write text to buffer
-    // @param text the text
-    // @param text the size of the text
-    void Write(const char *text);
+    void
+    Write(const char *text);
 
     template<typename ...Args>
-    void Write(const char*, Args ...args);
+    void
+    Write(const char*, Args ...args);
 
-    // Write text with newline in the end to buffer
-    // @param text the text
-    // @param text the size of the text
-    void WriteLine();
-    void WriteLine(const char *text);
+    void
+    WriteLine();
+
+    void
+    WriteLine(const char *text);
+
     template<typename ...Args>
-    void WriteLine(const char*, Args ...args);
+    void
+    WriteLine(const char*, Args ...args);
 
-    // Write HTTP request line to buffer
-    // @param method the HTTP method.
-    // @param path the HTTP path.
-    // @param path_size the HTTP path size in bytes.
-    void WriteRequest(HttpMethod method,
-                      const char *path);
+    void
+    WriteRequest(HttpMethod method, const char *path);
 
-    // End the writer. It also flushes the buffer.
     void End();
 
     void(*Read)(uv_stream_t* tcp_handle, ssize_t nread, const uv_buf_t* buf);
 
     bool is_end = false;
     SSL* ssl_handle;
-    uv_stream_t *tcp_handle;
+    uv_tcp_t *tcp_handle;
 
 private:
     bool use_ssl_;
@@ -108,13 +106,17 @@ private:
 };
 
 template<typename ...Args>
-void HttpWriter::Write(const char *text, Args ...args) {
+void
+HttpWriter::Write(const char *text, Args ...args)
+{
     Write(text);
     Write(args...);
 }
 
 template<typename ...Args>
-void HttpWriter::WriteLine(const char *text, Args ...args) {
+void
+HttpWriter::WriteLine(const char *text, Args ...args)
+{
     Write(text);
     Write(args...);
     Write("\r\n");

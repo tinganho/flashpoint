@@ -84,7 +84,7 @@ private:
     parse_object_name(ObjectLike *object, SymbolKind);
 
     Name*
-    parse_input_object_name(InputObject* object);
+    ParseInputObjectName(InputObject *object);
 
     Implementations*
     parse_implementations();

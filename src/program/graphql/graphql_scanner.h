@@ -164,78 +164,79 @@ namespace flashpoint::program::graphql {
         Glib::ustring directive_name;
 
         unsigned long long
-        get_token_length();
+        GetTokenLength();
 
         GraphQlToken
-        take_next_token(bool treat_keyword_as_name, bool skip_white_space);
+        TakeNextToken(bool treat_keyword_as_name, bool skip_white_space);
 
         GraphQlToken
-        try_scan(const GraphQlToken& token);
+        TryScan(const GraphQlToken &token);
 
         GraphQlToken
-        try_scan(const GraphQlToken& token, bool treat_keyword_as_name);
+        TryScan(const GraphQlToken &token, bool treat_keyword_as_name);
 
         GraphQlToken
-        try_scan(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space);
+        TryScan(const GraphQlToken &token, bool treat_keyword_as_name, bool skip_white_space);
 
         GraphQlToken
-        scan_expected(const GraphQlToken& token);
+        ScanExpected(const GraphQlToken &token);
 
         GraphQlToken
-        scan_expected(const GraphQlToken& token, bool treat_keyword_as_name);
+        ScanExpected(const GraphQlToken &token, bool treat_keyword_as_name);
 
         GraphQlToken
-        scan_expected(const GraphQlToken& token, bool treat_keyword_as_name, bool skip_white_space);
+        ScanExpected(const GraphQlToken &token, bool treat_keyword_as_name, bool skip_white_space);
 
         void
-        set_token_start_position();
+        SetTokenStartPosition();
 
         Location
-        search_for_line(std::size_t start, std::size_t end, std::size_t position);
+        SearchForLine(std::size_t start, std::size_t end, std::size_t position);
 
         Location
-        get_token_location(const Syntax* syntax);
+        GetTokenLocation(const Syntax *syntax);
 
         void
-        save();
+        SaveCurrentLocation();
 
         void
-        revert();
+        RevertToPreviousLocation();
 
         Glib::ustring
-        get_value() const;
+        GetValue() const;
 
         Glib::ustring
-        get_value_from_syntax(Syntax* syntax) const;
+        GetValueFromSyntax(Syntax *syntax) const;
 
         Glib::ustring
-        get_name() const;
+        GetName() const;
 
         void
-        scan_rest_of_line();
+        ScanRestOfLine();
 
         Glib::ustring
-        get_text_from_syntax(Syntax*);
+        GetTextFromSyntax(Syntax *syntax);
 
         void
-        scan_comment_line();
+        ScanCommentLine();
 
         GraphQlToken
-        scan_integer_part();
+        ScanIntegerPart();
 
-        bool is_digit(char32_t ch);
+        bool
+        IsDigit(char32_t ch);
 
         GraphQlToken
-        peek_next_token();
+        PeekNextToken();
 
         void
-        skip_block();
+        SkipBlock();
 
         GraphQlToken
-        skip_to(std::vector<GraphQlToken>);
+        SkipTo(std::vector<GraphQlToken>);
 
         Glib::ustring
-        get_string_value();
+        GetStringValue();
 
         Glib::ustring
         get_text_from_location(std::size_t start, std::size_t end);
@@ -260,10 +261,10 @@ namespace flashpoint::program::graphql {
         saved_text_cursors;
 
         char32_t
-        current_char() const;
+        GetCurrentChar() const;
 
         void
-        increment_position();
+        IncrementPosition();
 
         bool
         is_name_start(const char32_t &ch) const;
@@ -306,7 +307,7 @@ namespace flashpoint::program::graphql {
         scan_number();
 
         void
-        scan_digit_list();
+        ScanDigitList();
 
         bool
         is_hexadecimal(char32_t ch);

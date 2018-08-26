@@ -89,13 +89,13 @@ Command::get_flag_value(const char* flag)
 }
 
 bool
-Command::is(const char* c)
+Command::Is(const char *c)
 {
     return strcmp(command.name, c) == 0;
 }
 
 bool
-Command::has_flag(const char* flag)
+Command::HasFlag(const char *flag)
 {
     for (const auto f : flags) {
         if (strcmp(f.name, flag) == 0) {

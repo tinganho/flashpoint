@@ -20,7 +20,7 @@ public:
     Execute(const Glib::ustring &query);
 
     void
-    add_schema(const GraphQlSchema& schema);
+    AddSchema(const GraphQlSchema &schema);
 
 private:
 
@@ -115,7 +115,7 @@ private:
     parse_selection_set_after_open_brace();
 
     Name*
-    parse_expected_name();
+    ParseExpectedName();
 
     inline
     void

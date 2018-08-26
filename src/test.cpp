@@ -9,12 +9,13 @@ using namespace flashpoint::lib;
 using namespace flashpoint::test;
 
 int main(int argc, char* argv[]) {
-    BaselineTestRunner test_runner;
     std::vector<CommandDefinition> commands = {
         { "", "default", "",
             {
                 { "test", "t", "Run specific test", true, false, "" } ,
                 { "folder", "", "Run specific folder", true, false, "" },
+                { "only-http-tests", "", "Run only HTTP tests", false, false, "" },
+                { "only-graphql-tests", "", "Run only GraphQL tests", false, false, "" },
                 { "use-external-server", "", "Use external server", false, false, "" },
             }
         },
@@ -33,38 +34,60 @@ int main(int argc, char* argv[]) {
         }
         return 1;
     };
-    RunOption run_option = { nullptr, nullptr };
-
-    if (command.has_flag("test")) {
+    BaselineTestRunnerOption run_option = { nullptr, nullptr };
+    if (command.HasFlag("test")) {
         run_option.test = new std::string(command.get_flag_value("test"));
     }
-    else if (command.has_flag("folder")) {
+    else if (command.HasFlag("folder")) {
         run_option.folder = new std::string(command.get_flag_value("folder"));
     }
-    if (command.is("accept")) {
-        test_runner.AcceptGraphQlTests(run_option);
+    if (command.HasFlag("use-external-server")) {
+        run_option.with_timeout = false;
     }
     else {
-        if (command.has_flag("use-external-server")) {
-            test_runner.DefineGraphQlTests(run_option);
-            test_runner.DefineHttpTests(run_option);
-            test_runner.Run(run_option);
-            return 0;
+        run_option.with_timeout = true;
+    }
+    BaselineTestRunner test_runner(run_option);
+    if (command.Is("accept")) {
+        test_runner.AcceptGraphQlTests();
+    }
+    else {
+        if (!command.HasFlag("use-external-server")) {
+            test_runner.DefineGraphQlTests();
+            test_runner.DefineHttpTests();
+            test_runner.Run();
+            return EXIT_SUCCESS;
+        }
+        int pipefds[2];
+        if (pipe(pipefds)) {
+            fprintf (stderr, "Pipe failed. %s\n", strerror(errno));
+            return EXIT_FAILURE;
         }
         pid_t child_pid = fork();
         if (child_pid == -1) {
-            std::cerr << "An error occurred when forking process" << std::endl;
-            return 1;
+            fprintf(stderr, "Could not fork process.  %s\n", strerror(errno));
+            return EXIT_FAILURE;
         }
         if (child_pid == 0) {
-            if (!command.has_flag("start-server")) {
-                test_runner.StartServer();
+            if (!command.HasFlag("use-external-server")) {
+                close(pipefds[1]);
+                test_runner.StartServer(pipefds[0]);
             }
         }
         else {
-            test_runner.DefineGraphQlTests(run_option);
-//            test_runner.DefineHttpTests(run_option);
-            test_runner.Run(run_option);
+            close(pipefds[0]);
+            write(pipefds[1], "h", 1);
+            if (command.HasFlag("only-http-tests")) {
+                test_runner.DefineHttpTests();
+            }
+            else if (command.HasFlag("only-graphql-tests")) {
+                test_runner.DefineGraphQlTests();
+            }
+            else {
+                test_runner.DefineGraphQlTests();
+                test_runner.DefineHttpTests();
+            }
+            test_runner.Run();
 
             kill(child_pid, SIGTERM);
         }
