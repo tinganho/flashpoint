@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 #include <lib/text_writer.h>
-#include "test_case_scanner.h"
+#include "GraphQlTestCaseScanner.h"
 #include <boost/filesystem/path.hpp>
 #include <uv.h>
 

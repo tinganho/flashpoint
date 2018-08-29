@@ -3,7 +3,7 @@
 
 #include <uv.h>
 #include <openssl/ssl.h>
-#include <program/http_parser.h>
+#include <program/HttpParser.h>
 #include <lib/memory_pool.h>
 #include <glibmm/ustring.h>
 #include <program/graphql/graphql_syntaxes.h>
@@ -37,6 +37,7 @@ struct GatewayClient {
     BIO* write_bio;
     HttpParser *http_parser;
     MemoryPoolTicket *ticket;
+    bool finished;
     std::map<const char*, Field*> fields;
     unsigned int resolved_fields = 0;
     unsigned int fields_to_resolve = 0;

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <openssl/ssl.h>
-#include "http_scanner.h"
-#include "http_response.h"
+#include "HttpWriter.h"
 
 namespace flashpoint {
 

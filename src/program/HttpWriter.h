@@ -1,9 +1,8 @@
 #ifndef FLASHPOINT_HTTP_RESPONSE_H
 #define FLASHPOINT_HTTP_RESPONSE_H
 
-#include <program/http_parser.h>
-#include <program/http_scanner.h>
-#include <program/http_server.h>
+#include <program/HttpParser.h>
+#include <program/HttpServer.h>
 #include <unordered_map>
 #include <openssl/ssl.h>
 #include <exception>
@@ -97,8 +96,6 @@ private:
     char* write_buffer_;
     std::size_t buffer_size_ = 4096;
     std::size_t position_ = 0;
-    std::map<HttpHeader, const char*> headers;
-    std::map<const char*, const char*> custom_headers;
 
     void FlushBuffer();
 

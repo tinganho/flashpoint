@@ -2,5 +2,9 @@
   "Expected '{0}', but got '{1}'.": {},
   "Expected directive.": {},
   "Expected identifier.": {},
-  "Expected end directive, instead reached the end of the document.": {}
+  "Expected end directive, instead reached the end of the document.": {},
+  "Expected hostname.": {},
+  "Expected port.": {},
+  "Hostname cannot exceed 255 characters.": {},
+  "Invalid hostname": {}
 }

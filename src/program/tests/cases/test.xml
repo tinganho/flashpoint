@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<server-test>
+    <backend https="true" hostname="localhost" port="8000">
+        <graphql-field name="field">
+            <header name="Accept" value="*/*"/>
+            <body>{ "data": { "field" : 1 } }</body>
+        </graphql-field>
+        <graphql-field name="field">
+            <body>{ "data": { "field" : 1 } }</body>
+        </graphql-field>
+    </backend>
+    <request>
+        <header name="Accept" value="*/*"/>
+        <body>{ "data": { "field" : 1 } }</body>
+    </request>
+</server-test>

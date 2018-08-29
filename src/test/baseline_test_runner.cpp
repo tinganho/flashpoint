@@ -1,5 +1,5 @@
 #include <iostream>
-#include <program/http_server.h>
+#include <program/HttpServer.h>
 #include <program/graphql/graphql_executor.h>
 #include <program/graphql/graphql_schema.h>
 #include <lib/tcp_client_raw.h>
@@ -14,7 +14,7 @@
 #include <string>
 #include <sstream>
 #include "diagnostic_writer.h"
-#include "test_case_scanner.h"
+#include "GraphQlTestCaseScanner.h"
 #include <regex>
 #include <curl/curl.h>
 #include <thread>
@@ -66,8 +66,8 @@ void BaselineTestRunner::visit_tests(
         }
         else {
             const char* content = read_file(test_path);
-            TestCaseScanner scanner(content);
-            auto test_cases = scanner.scan();
+            GraphQlTestCaseScanner scanner(content);
+            auto test_cases = scanner.Scan();
             if (test_cases.empty()) {
                 call_test(test_folder, test_path, test_path, scanner.get_source_code({}), callback);
             }
@@ -246,10 +246,11 @@ BaselineTestRunner::DefineHttpTests() {
                      char fd_flag[10];
                      sprintf(fd_flag, "--fd=%d", pipe_fds[0]);
                      int r = execl(command,
-                                   "test",
-                                   R"(--response="{ "query": "{ "field": 1 }"})",
-                                   fd_flag,
-                                   (char *) NULL);
+                          "test",
+                          R"(--response="{ "data": "{ "field": 1 }"})",
+                          fd_flag,
+                          (char*)NULL
+                     );
                      if (r == -1) {
                          printf("Could not execute script. %s\n", strerror(errno));
                      }
@@ -291,7 +292,8 @@ BaselineTestRunner::DefineHttpTests() {
                                  curl_easy_cleanup(curl);
                                  curl_global_cleanup();
                                  continue;
-                             } else {
+                             }
+                             else {
                                  fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
                                  return;
                              }

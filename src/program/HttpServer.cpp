@@ -1,6 +1,6 @@
-#include <program/http_server.h>
-#include <program/http_parser.h>
-#include <program/http_response.h>
+#include <program/HttpServer.h>
+#include <program/HttpParser.h>
+#include <program/HttpWriter.h>
 #include <program/graphql/graphql_schema.h>
 #include <program/graphql/graphql_executor.h>
 #include <lib/memory_pool.h>
@@ -15,6 +15,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include "HttpException.h"
 
 using namespace boost::filesystem;
 
@@ -26,7 +27,7 @@ ForwardRequestToGraphQlEndpoint(
     Field *field);
 
 ExecutableDefinition*
-ParseRequest(GatewayClient *gateway_client)
+ParseGraphQlRequest(GatewayClient *gateway_client);
 
 void
 AllocateBuffer(
@@ -93,9 +94,11 @@ void
 OnResolvedAllGraphQlFields(GatewayClient *gateway_client)
 {
     HttpWriter http_writer(gateway_client->tcp_handle, gateway_client->ssl_handle);
+    http_writer.WriteLine("HTTP/1.1 200 OK");
     for (const auto& field : gateway_client->fields_result) {
-        HttpParser http_parser(*field.second);
+//        HttpParser http_parser(*field.second);
     }
+    gateway_client->finished = true;
     uv_close((uv_handle_t*)gateway_client->tcp_handle, OnCloseGraphQlFieldRequest);
 }
 
@@ -195,7 +198,7 @@ ForwardRequestToGraphQlEndpoint(GraphQlFieldRequest *graphql_field_request, Fiel
     auto loop = gateway_client->server->loop;
     int r = uv_getaddrinfo(loop, addrinfo, OnResolvedIpv4, graphql_field_request->hostname, "80", hints);
     if (r) {
-        printf("Error at dns request: %s.\n", uv_strerror(r));
+        printf("Error at DNS request: %s.\n", uv_strerror(r));
         uv_close((uv_handle_t*)gateway_client->tcp_handle, nullptr);
         return;
     }
@@ -205,12 +208,12 @@ std::map<const char*, BackendEndpoint, CompareStrings> field_to_endpoint = {
     { "field", { "http://localhost:4000/graphql", "localhost:4000", "localhost", 4000, "/graphql"} }
 };
 
-void
-DoSomething(GatewayClient *gateway_client)
+bool
+ExecuteGraphQlQuery(GatewayClient *gateway_client)
 {
-    auto executable_definition = ParseRequest(gateway_client);
+    auto executable_definition = ParseGraphQlRequest(gateway_client);
     if (executable_definition == nullptr) {
-        return;
+        return false;
     }
     OperationDefinition* operation_definition;
     if (executable_definition->operation_definitions.size() == 1) {
@@ -223,13 +226,13 @@ DoSomething(GatewayClient *gateway_client)
             return operation_definition->name->identifier == name;
         });
         if (operation_definition_it == operation_definitions.end()) {
-            return;
+            return false;
         }
         operation_definition = *operation_definition_it;
     }
     for (const auto& selection : operation_definition->selection_set->selections) {
         if (selection->kind != SyntaxKind::S_Field) {
-            return;
+            throw InvalidGraphQlQueryException();
         }
         auto field = static_cast<Field*>(selection);
         auto name = static_cast<Field*>(selection)->name->identifier;
@@ -250,10 +253,8 @@ DoSomething(GatewayClient *gateway_client)
             gateway_client->fields_to_resolve++;
             ForwardRequestToGraphQlEndpoint(client_request, field);
         }
-        else {
-            return;
-        }
     }
+    return true;
 }
 
 void
@@ -274,7 +275,7 @@ OnGatewayClientRequestRead(uv_stream_t *client_stream, ssize_t read_length, cons
     std::size_t read_buffer_size = 4096;
     char *read_buffer = (char*)gateway_client->server->memory_pool->Allocate(read_buffer_size, 1, gateway_client->ticket);
     BIO_write(gateway_client->ssl_handle->rbio, buf->base, read_length);
-    int read_size = SSL_read(gateway_client->ssl_handle, read_buffer, sizeof(read_buffer));
+    int read_size = SSL_read(gateway_client->ssl_handle, read_buffer, read_buffer_size);
     if (read_size <= 0) {
         // TODO: Handle SSL read error
         SSL_get_error(gateway_client->ssl_handle, read_size);
@@ -285,27 +286,39 @@ OnGatewayClientRequestRead(uv_stream_t *client_stream, ssize_t read_length, cons
         auto http_parser = gateway_client->http_parser;
         http_parser->ParseRequest(read_buffer, read_size);
         if (http_parser->IsFinished()) {
-            DoSomething(gateway_client);
+            ExecuteGraphQlQuery(gateway_client);
         }
     }
 }
 
-ExecutableDefinition*
-ParseRequest(GatewayClient *gateway_client)
+const char*
+ToConstChar(std::vector<TokenValue>& token_values)
 {
-    std::unique_ptr<HttpRequest> request = http_parser.ParseRequest();
-    if (request == nullptr) {
-        uv_close((uv_handle_t*)gateway_client->tcp_handle, nullptr);
-        return nullptr;
+    std::size_t size = 0;
+    for (const auto& token_value : token_values) {
+        size += token_value.length;
     }
-    auto memory_pool = gateway_client->server->memory_pool;
-    GraphQlSchema schema("type Query { field: Int }", memory_pool, gateway_client->ticket);
-    GraphQlExecutor graphql_executor(memory_pool, ticket);
-    graphql_executor.AddSchema(schema);
-    Json::Reader json_reader;
-    Json::Value request_body;
-    if (request->body != nullptr) {
-        json_reader.parse(request->body, request_body);
+    char* text = new char[size];
+    for (const auto& token_value : token_values) {
+        for (std::size_t i = 0; i < token_value.length; i++) {
+            text[i] = token_value.value[i];
+        }
+    }
+    return text;
+}
+
+ExecutableDefinition*
+ParseGraphQlRequest(GatewayClient *gateway_client)
+{
+    auto body = gateway_client->http_parser->body;
+    if (!body.empty()) {
+        Json::Reader json_reader;
+        Json::Value request_body;
+        json_reader.parse(ToConstChar(body), request_body);
+        auto memory_pool = gateway_client->server->memory_pool;
+        GraphQlSchema schema("type Query { field: Int }", memory_pool, gateway_client->ticket);
+        GraphQlExecutor graphql_executor(memory_pool, gateway_client->ticket);
+        graphql_executor.AddSchema(schema);
         std::string graphql_query = request_body["query"].asString();
         return graphql_executor.Execute(graphql_query);
     }
@@ -396,11 +409,15 @@ void HttpServer::Listen(const char *host, unsigned int port) {
     }
 }
 
-void HttpServer::Close() {
+void
+HttpServer::Close()
+{
     uv_loop_close(loop);
 }
 
-void HttpServer::SetSecurityContext() {
+void
+HttpServer::SetSecurityContext()
+{
     ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
     SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv2);
     SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv3);

@@ -60,7 +60,7 @@ namespace flashpoint::test {
         EndOfDocument,
     };
 
-    const std::map<Glib::ustring, const TestCaseToken> testCaseStringToToken = {
+    const std::map<Glib::ustring, const TestCaseToken> test_case_string_to_token = {
         { "@end", TestCaseToken::EndDirective },
         { "@foreach", TestCaseToken::ForEachDirective },
         { "@test", TestCaseToken::TestDirective },
@@ -78,12 +78,12 @@ namespace flashpoint::test {
         std::map<std::string, std::string> source_code_arguments;
     };
 
-    class TestCaseScanner : public DiagnosticTrait<TestCaseScanner> {
+    class GraphQlTestCaseScanner : public DiagnosticTrait<GraphQlTestCaseScanner> {
     public:
-        TestCaseScanner(const Glib::ustring& source);
+        GraphQlTestCaseScanner(const Glib::ustring& source);
 
         std::vector<TestCaseArguments*>
-        scan();
+        Scan();
 
         Location
         get_token_location();
@@ -159,7 +159,7 @@ namespace flashpoint::test {
         revert();
 
         std::vector<std::string>
-        scan_parameters_after_open_paren();
+        ScanParametersAfterOpenParen();
 
         TestCaseToken
         get_token_from_value(Glib::ustring value, std::size_t size);
@@ -183,12 +183,13 @@ namespace flashpoint::test {
         parse_source_code_arguments(std::vector<TestCaseArguments*>& test_cases);
 
         void
-        replace_variable_test_case(
-            const std::vector<std::vector<std::map<std::string, std::string>*>>& foreach_statements,
-            const std::vector<TestCaseArguments*>& noexpanded_test_cases,
-            std::vector<TestCaseArguments*>& expanded_test_cases,
-            std::map<std::string, std::string>& replacements,
-            std::size_t index);
+        ReplaceVariableTestCase(
+            const std::vector<std::vector<std::map<std::string, std::string> *>> &foreach_statements,
+            const std::vector<TestCaseArguments *> &noexpanded_test_cases,
+            std::vector<TestCaseArguments *> &expanded_test_cases,
+            std::map<std::string, std::string> &replacements,
+            std::size_t index
+        );
     };
 }
 

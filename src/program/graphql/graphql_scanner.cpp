@@ -731,7 +731,8 @@ GraphQlScanner::scan_string_literal()
         IncrementPosition();
     }
     if (is_truncated) {
-        errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Unterminated_string_value));
+        errors.emplace(CreateDiagnostic(Location{start_line, start_column, position - start_position, false},
+                                        D::Unterminated_string_value));
         return GraphQlToken::InvalidString;
     }
     return GraphQlToken::G_StringValue;
@@ -779,7 +780,8 @@ GraphQlScanner::scan_hexadecimal_escape(const std::size_t& start_position, const
         }
         else {
             is_invalid = true;
-            errors.emplace(create_diagnostic(Location { start_line, start_column, position - start_position, false }, D::Invalid_Unicode_escape_sequence));
+            errors.emplace(CreateDiagnostic(Location{start_line, start_column, position - start_position, false},
+                                            D::Invalid_Unicode_escape_sequence));
             break;
         }
         IncrementPosition();

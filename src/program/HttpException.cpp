@@ -1,4 +1,4 @@
-#include "http_exception.h"
+#include "HttpException.h"
 
 HttpParsingError::HttpParsingError(const std::string &message) noexcept
     : std::runtime_error(message)
@@ -14,4 +14,8 @@ UriTooLongException::UriTooLongException() noexcept
 
 UnexpectedTokenException::UnexpectedTokenException(const std::string &message) noexcept
     : std::runtime_error(message)
+{ }
+
+InvalidGraphQlQueryException::InvalidGraphQlQueryException() noexcept
+    : std::exception()
 { }

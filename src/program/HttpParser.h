@@ -1,12 +1,11 @@
 #ifndef FLASH_HTTP_PARSER_H
 #define FLASH_HTTP_PARSER_H
 
-#include <program/http_scanner.h>
 #include <unordered_map>
 #include <types.h>
+#include <stack>
+#include <algorithm>
 #include <uv.h>
-
-using namespace flashpoint::lib;
 
 namespace flashpoint {
 
@@ -14,6 +13,25 @@ namespace flashpoint {
 struct TokenValue {
     const char *value;
     std::size_t length;
+};
+
+struct TokenValueComparer {
+    bool operator()(const TokenValue& a, const TokenValue& b) const
+    {
+        auto min = std::min(a.length, b.length);
+        for (std::size_t i = 0; i < min; i++) {
+            if (a.value[i] > b.value[i]) {
+                return true;
+            }
+            else if (a.value[i] < b.value[i]) {
+                return false;
+            }
+            else {
+                continue;
+            }
+        }
+        return a.length > b.length;
+    }
 };
 
 struct SavedTextCursor {
@@ -57,35 +75,8 @@ enum class StartLineToken {
     EndOfRequestTarget,
 };
 
-struct RequestLine {
-    HttpMethod method;
-    char* path;
-    char* query;
-};
-
-struct StatusLine {
-    unsigned int status_code;
-    const char* reason_phrase;
-};
-
-struct HttpRequest {
-    HttpMethod method;
-    char* path;
-    char* query;
-    std::map<HttpHeader, char*> headers;
-    char* body;
-};
-
-struct HttpResponse {
-    unsigned int status_code;
-    std::map<HttpHeader, char*> headers;
-    char* body;
-    std::size_t body_size;
-};
-
 enum class ParsingLocation {
-    RequestLine,
-    StatusLine,
+    StartLine,
     HeaderName,
     HeaderValue,
     Body,
@@ -98,10 +89,10 @@ public:
     HttpParser();
 
     void
-    ParseRequest(const char *buffer, std::size_t read_length);
+    ParseRequest(char *buffer, std::size_t read_length);
 
     void
-    ParseResponse(const char *buffer, std::size_t read_length);
+    ParseResponse(char *buffer, std::size_t read_length);
 
     void
     ParseRequestLine();
@@ -119,7 +110,7 @@ public:
     ParseBody();
 
     void
-    AddBuffer(const char *buffer, std::size_t read_length);
+    AddBuffer(char *buffer, std::size_t read_length);
 
     void
     ScanRequestTarget();
@@ -166,56 +157,9 @@ public:
     bool
     NextCharIs(char ch);
 
-private:
-    HttpScanner scanner;
-
-    bool has_content_length;
-
-    std::size_t content_length;
-
-    unsigned int status_code;
-
-    TokenValue reason_phrase;
-
     std::vector<TokenValue> body;
 
-    TokenValue current_header_name;
-
-    std::map<TokenValue, TokenValue> headers;
-
-    ParsingLocation location = ParsingLocation::StatusLine;
-
-    unsigned int length;
-
-    std::size_t buffer_index = 0;
-
-    std::size_t current_buffer_read_length;
-
-    const char *current_buffer_text;
-
-    std::size_t buffer_position = 0;
-
-    std::size_t start_position = 0;
-
-    std::size_t end_position = 0;
-
-    std::size_t body_length = 0;
-
-    TokenValue path;
-
-    TokenValue query;
-
-    ParserMode parser_mode;
-
-    std::stack<SavedTextCursor> saved_text_cursors;
-
-    std::size_t size;
-
-    const std::map<HttpHeader, const char*>
-        header_enum_to_string;
-
-    const std::map<const char*, HttpHeader, char_compare>
-        header_to_token_enum;
+private:
 
     bool
     IsDigit(char32_t ch);
@@ -266,13 +210,61 @@ private:
     IncrementPosition();
 
     void
+    IncrementPosition(std::size_t increment);
+
+    void
     SetTokenStartPosition();
 
     char
     GetCurrentChar();
 
-    HttpHeader
-    GetHeader(char *ch);
+    TokenValue*
+    GetHeader(const char* name);
+
+    std::size_t
+    ToUint(TokenValue* token_value);
+
+    bool has_content_length;
+
+    std::size_t content_length;
+
+    unsigned int status_code;
+
+    TokenValue reason_phrase;
+
+    TokenValue current_header_name;
+
+    std::map<TokenValue, TokenValue, TokenValueComparer> headers;
+
+    ParsingLocation location = ParsingLocation::StartLine;
+
+    unsigned int length;
+
+    std::size_t buffer_index = 0;
+
+    std::size_t current_buffer_read_length;
+
+    char *current_buffer_text;
+
+    std::size_t buffer_position = 0;
+
+    std::size_t start_position = 0;
+
+    std::size_t end_position = 0;
+
+    std::size_t body_length = 0;
+
+    HttpMethod method;
+
+    TokenValue path;
+
+    TokenValue query;
+
+    ParserMode parser_mode;
+
+    std::stack<SavedTextCursor> saved_text_cursors;
+
+    std::size_t size;
 };
 
 }

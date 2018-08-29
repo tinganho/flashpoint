@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         test_runner.AcceptGraphQlTests();
     }
     else {
-        if (!command.HasFlag("use-external-server")) {
+        if (!command.HasFlag("only-http-tests") && !command.HasFlag("only-graphql-tests")) {
             test_runner.DefineGraphQlTests();
             test_runner.DefineHttpTests();
             test_runner.Run();

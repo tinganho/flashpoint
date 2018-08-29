@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
-#include <program/http_parser.h>
+#include <program/HttpParser.h>
 #include <lib/character.h>
-#include "http_exception.h"
+#include "HttpException.h"
 
 using namespace flashpoint::lib;
 
@@ -12,12 +12,12 @@ HttpParser::HttpParser()
 { }
 
 void
-HttpParser::ParseRequest(const char *buffer, std::size_t read_length)
+HttpParser::ParseRequest(char *buffer, std::size_t read_length)
 {
     AddBuffer(buffer, read_length);
     while (location != ParsingLocation::End) {
         switch (location) {
-            case ParsingLocation::StatusLine:
+            case ParsingLocation::StartLine:
                 try {
                     ParseRequestLine();
                 }
@@ -32,12 +32,12 @@ HttpParser::ParseRequest(const char *buffer, std::size_t read_length)
 }
 
 void
-HttpParser::ParseResponse(const char *buffer, std::size_t read_length)
+HttpParser::ParseResponse(char *buffer, std::size_t read_length)
 {
     AddBuffer(buffer, read_length);
     while (location != ParsingLocation::End) {
         switch (location) {
-            case ParsingLocation::StatusLine:
+            case ParsingLocation::StartLine:
                 try {
                     ParseStatusLine();
                 }
@@ -90,17 +90,9 @@ HttpParser::ParseStatusLine()
     location = ParsingLocation::HeaderName;
 }
 
-char*
-HttpParser::ParseBody()
-{
-    if (has_content_length) {
-        ScanBody();
-    }
-}
-
 void
 HttpParser::ParseRequestLine() {
-    HttpMethod method = ScanMethod();
+    method = ScanMethod();
     ScanExpected(Character::Space);
     path = ScanAbsolutePath();
     query = ScanQuery();
@@ -108,9 +100,10 @@ HttpParser::ParseRequestLine() {
     ScanHttpVersion();
     ScanExpected(Character::CarriageReturn);
     ScanExpected(Character::NewLine);
+    location = ParsingLocation::HeaderName;
 }
 
-void HttpParser::AddBuffer(const char *buffer, std::size_t read_length)
+void HttpParser::AddBuffer(char *buffer, std::size_t read_length)
 {
     buffer_position = 0;
     current_buffer_text = buffer;
@@ -170,7 +163,7 @@ HttpParser::ScanMethod()
             token = HttpMethod::Trace;
             break;
     }
-    if (buffer_position >= size) {
+    if (buffer_position >= current_buffer_read_length) {
         throw std::logic_error("Invalid request.");
     }
     return token;
@@ -181,15 +174,15 @@ HttpParser::ScanBody()
 {
     SetTokenStartPosition();
     while (true) {
-        if (buffer_position >= current_buffer_read_length) {
-            break;
-        }
         if (has_content_length && body_length >= content_length) {
+            location = ParsingLocation::End;
             break;
         }
-        IncrementPosition();
-        buffer_position++;
-        body_length++;
+        if (has_content_length) {
+            auto rest = current_buffer_read_length - buffer_position;
+            body_length += rest;
+            IncrementPosition(rest);
+        }
     }
     return GetTokenValue();
 }
@@ -200,7 +193,7 @@ HttpParser::ScanAbsolutePath()
     SetTokenStartPosition();
     ScanExpected(Character::Slash);
     char ch = GetCurrentChar();
-    while (buffer_position < size && (IsPchar(ch) || ch == Character::Slash)) {
+    while (buffer_position < current_buffer_read_length && (IsPchar(ch) || ch == Character::Slash)) {
         IncrementPosition();
         ch = GetCurrentChar();
     }
@@ -213,7 +206,7 @@ HttpParser::ScanQuery()
     SetTokenStartPosition();
     if (NextCharIs(Character::Question)) {
         char ch = GetCurrentChar();
-        while (buffer_position < size && (IsPchar(ch) || ch == Character::Slash || ch == Character::Question)) {
+        while (buffer_position < current_buffer_read_length && (IsPchar(ch) || ch == Character::Slash || ch == Character::Question)) {
             IncrementPosition();
             ch = GetCurrentChar();
         }
@@ -270,18 +263,77 @@ HttpParser::ScanReasonPhrase()
     return GetTokenValue();
 }
 
+TokenValue*
+HttpParser::GetHeader(const char* name)
+{
+    auto header_it = headers.find(TokenValue { name, strlen(name) });
+    if (header_it != headers.end()) {
+        return &header_it->second;
+    }
+    return nullptr;
+}
+
+std::size_t
+HttpParser::ToUint(TokenValue* token_value)
+{
+    std::size_t integer_value = 0;
+    auto value = token_value->value;
+    auto length = token_value->length;
+    for (std::size_t i = 0; i < length; i++) {
+        switch (value[length - i - 1]) {
+            case '0':
+                continue;
+            case '1':
+                integer_value += 1 * (std::size_t)std::pow(10, i);
+                break;
+            case '2':
+                integer_value += 2 * (std::size_t)std::pow(10, i);
+                break;
+            case '3':
+                integer_value += 3 * (std::size_t)std::pow(10, i);
+                break;
+            case '4':
+                integer_value += 4 * (std::size_t)std::pow(10, i);
+                break;
+            case '5':
+                integer_value += 5 * (std::size_t)std::pow(10, i);
+                break;
+            case '6':
+                integer_value += 6 * (std::size_t)std::pow(10, i);
+                break;
+            case '7':
+                integer_value += 7 * (std::size_t)std::pow(10, i);
+                break;
+            case '8':
+                integer_value += 8 * (std::size_t)std::pow(10, i);
+                break;
+            case '9':
+                integer_value += 9 * (std::size_t)std::pow(10, i);
+                break;
+            default:
+                throw HttpParsingError("Could not parse integer.");
+        }
+    }
+    return integer_value;
+}
+
 void
 HttpParser::ParseHeaderName()
 {
+    SetTokenStartPosition();
     if (!IsHeaderFieldStart(GetCurrentChar())) {
         if (ScanOptional(Character::CarriageReturn)) {
             ScanExpected(Character::NewLine);
             location = ParsingLocation::Body;
+            auto content_length = GetHeader("content-length");
+            if (content_length != nullptr) {
+                has_content_length = true;
+                this->content_length = ToUint(content_length);
+            }
             return;
         }
     }
-    SetTokenStartPosition();
-    while (buffer_position < size && IsHeaderFieldPart(GetCurrentChar())) {
+    while (buffer_position < current_buffer_read_length && IsHeaderFieldPart(GetCurrentChar())) {
         IncrementPosition();
     }
     location = ParsingLocation::HeaderName;
@@ -296,23 +348,11 @@ HttpParser::ParseHeaderValue()
 {
     SetTokenStartPosition();
     ScanHeaderValue();
+    headers[current_header_name] = GetTokenValue();
     ScanOptional(Character::Space);
     ScanExpected(Character::CarriageReturn);
     ScanExpected(Character::NewLine);
-    headers[current_header_name] = GetTokenValue();
     location = ParsingLocation::HeaderName;
-}
-
-HttpHeader
-HttpParser::GetHeader(char *ch)
-{
-    auto it = string_to_token.find(ch);
-    if (it != string_to_token.end())
-    {
-        return it->second;
-    }
-
-    return HttpHeader::Unknown;
 }
 
 bool
@@ -339,7 +379,7 @@ HttpParser::IsMethodPart(char ch)
 void
 HttpParser::ScanRequestTarget()
 {
-    while (buffer_position < size)
+    while (buffer_position < current_buffer_read_length)
     {
         char ch = GetCurrentChar();
         IncrementPosition();
@@ -377,7 +417,7 @@ HttpParser::ScanFieldContent()
     if (ch == Space || ch == HorizontalTab) {
         IncrementPosition();
         ch = GetCurrentChar();
-        while (buffer_position < size && (ch == Space || ch == HorizontalTab)) {
+        while (buffer_position < current_buffer_read_length && (ch == Space || ch == HorizontalTab)) {
             IncrementPosition();
             ch = GetCurrentChar();
         }
@@ -396,7 +436,7 @@ HttpParser::ScanFieldContent()
 void
 HttpParser::ScanHeaderValue()
 {
-    while (buffer_position < size) {
+    while (buffer_position < current_buffer_read_length) {
         if (ScanFieldContent()) {
             continue;
         }
@@ -492,10 +532,19 @@ HttpParser::IsObsText(char ch)
 void
 HttpParser::IncrementPosition()
 {
-    if (buffer_position >= current_buffer_read_length) {
+    buffer_position++;
+    if (buffer_position > current_buffer_read_length) {
         throw BufferOverflowException();
     }
-    buffer_position++;
+}
+
+void
+HttpParser::IncrementPosition(std::size_t increment)
+{
+    buffer_position += increment;
+    if (buffer_position > current_buffer_read_length) {
+        throw BufferOverflowException();
+    }
 }
 
 bool
@@ -575,11 +624,11 @@ TokenValue
 HttpParser::GetLowerCaseTokenValue()
 {
     for (std::size_t i = start_position; i < buffer_position; i++) {
-        current_buffer_text[buffer_position] = static_cast<char>(tolower(current_buffer_text[start_position + i]));
+        current_buffer_text[i] = static_cast<char>(tolower(current_buffer_text[i]));
     }
     return {
-        &current_buffer_text[buffer_position],
-        buffer_position - start_position + 1
+        &current_buffer_text[start_position],
+        buffer_position - start_position
     };
 }
 
@@ -587,8 +636,8 @@ TokenValue
 HttpParser::GetTokenValue() const
 {
     return {
-        &current_buffer_text[buffer_position],
-        buffer_position - start_position + 1
+        &current_buffer_text[start_position],
+        buffer_position - start_position
     };
 }
 

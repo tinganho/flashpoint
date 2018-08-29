@@ -13,7 +13,11 @@ public:
     static DiagnosticMessageTemplate Expected_0_but_got_1;
     static DiagnosticMessageTemplate Expected_directive;
     static DiagnosticMessageTemplate Expected_end_directive_instead_reached_the_end_of_the_document;
+    static DiagnosticMessageTemplate Expected_hostname;
     static DiagnosticMessageTemplate Expected_identifier;
+    static DiagnosticMessageTemplate Expected_port;
+    static DiagnosticMessageTemplate Hostname_cannot_exceed_255_characters;
+    static DiagnosticMessageTemplate Invalid_hostname;
 };
 
 }
