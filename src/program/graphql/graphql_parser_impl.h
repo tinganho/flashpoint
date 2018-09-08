@@ -51,7 +51,7 @@ GraphQlParser<TParser, TToken, TScanner>::GetTokenValue() const
 
 template<typename TParser, typename TToken, typename TScanner>
 Location
-GraphQlParser<TParser, TToken, TScanner>::get_token_location()
+GraphQlParser<TParser, TToken, TScanner>::GetTokenLocation() const
 {
     return Location {
         scanner->line,
@@ -188,10 +188,10 @@ GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, bool
     TToken result = scanner->ScanExpected(token, treat_keyword_as_name, skip_white_space);
     if (result != token) {
         if (result == TToken::EndOfDocument) {
-            static_cast<TParser*>(this)->add_diagnostic(D::Expected_0_but_instead_reached_the_end_of_document, graphQlTokenToString.at(token));
+            static_cast<TParser*>(this)->AddDiagnostic(D::Expected_0_but_instead_reached_the_end_of_document, graphQlTokenToString.at(token));
         }
         else {
-            static_cast<TParser*>(this)->add_diagnostic(D::Expected_0_but_got_1, graphQlTokenToString.at(token), static_cast<TParser*>(this)->GetTokenValue());
+            static_cast<TParser*>(this)->AddDiagnostic(D::Expected_0_but_got_1, graphQlTokenToString.at(token), static_cast<TParser*>(this)->GetTokenValue());
         }
         return false;
     }
@@ -204,7 +204,7 @@ GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, Diag
 {
     TToken result = scanner->ScanExpected(token);
     if (result != token) {
-        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
+        static_cast<TParser*>(this)->AddDiagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
         return false;
     }
     return true;
@@ -216,7 +216,7 @@ GraphQlParser<TParser, TToken, TScanner>::ScanExpected(const TToken& token, Diag
 {
     TToken result = scanner->ScanExpected(token, treat_keyword_as_name);
     if (result != token) {
-        static_cast<TParser*>(this)->add_diagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
+        static_cast<TParser*>(this)->AddDiagnostic(_template, static_cast<TParser*>(this)->GetTokenValue());
         return false;
     }
     return true;

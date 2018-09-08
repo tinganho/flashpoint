@@ -34,7 +34,7 @@ GraphQlScanner::TakeNextToken(bool treat_keyword_as_name, bool skip_white_space)
         char32_t ch = GetCurrentChar();
         IncrementPosition();
         switch (ch) {
-            case NewLine:
+            case Newline:
                 position_to_line_list.emplace_back(position, ++line);
                 if (!skip_white_space) {
                     return GraphQlToken::WhiteSpace;
@@ -45,7 +45,7 @@ GraphQlScanner::TakeNextToken(bool treat_keyword_as_name, bool skip_white_space)
                 start_position++;
                 continue;
             case CarriageReturn:
-                if (source[position + 1] == NewLine) {
+                if (source[position + 1] == Newline) {
                     IncrementPosition();
                 }
                 position_to_line_list.emplace_back(position, ++line);
@@ -422,7 +422,7 @@ GraphQlScanner::scan_directive_location()
         IncrementPosition();
 
         switch (ch) {
-            case NewLine:
+            case Newline:
                 position_to_line_list.emplace_back(position, ++line);
                 column = 1;
                 start_column = 1;
@@ -430,7 +430,7 @@ GraphQlScanner::scan_directive_location()
                 start_position++;
                 continue;
             case CarriageReturn:
-                if (source[position + 1] == NewLine) {
+                if (source[position + 1] == Newline) {
                     IncrementPosition();
                 }
                 position_to_line_list.emplace_back(position, ++line);
@@ -683,7 +683,7 @@ bool
 GraphQlScanner::is_source_character(char32_t ch)
 {
     switch (ch) {
-        case Character::NewLine:
+        case Character::Newline:
         case Character::CarriageReturn:
         case Character::HorizontalTab:
             return true;
@@ -718,7 +718,7 @@ GraphQlScanner::scan_string_literal()
             }
             continue;
         }
-        if (ch == Character::NewLine || ch == Character::CarriageReturn) {
+        if (ch == Character::Newline || ch == Character::CarriageReturn) {
             is_truncated = true;
             IncrementPosition();
             continue;
@@ -941,7 +941,7 @@ inline
 bool
 GraphQlScanner::is_line_break(const char32_t& ch) const
 {
-    return ch == NewLine || ch == CarriageReturn;
+    return ch == Newline || ch == CarriageReturn;
 }
 
 

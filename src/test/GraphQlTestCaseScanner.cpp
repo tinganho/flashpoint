@@ -20,25 +20,25 @@ GraphQlTestCaseScanner::Scan()
     std::vector<std::string> for_each_arguments = {};
     std::vector<std::vector<std::map<std::string, std::string>*>> foreach_statements = {};
     while(true) {
-        TestCaseToken token = take_next_token();
+        TestCaseToken token = TakeNextToken();
         switch (token) {
             case TestCaseToken::EndOfDocument:
                 goto outer;
 
             case TestCaseToken::ForEachDirective: {
-                if (!scan_expected(TestCaseToken::OpenParen)) {
+                if (!ScanExpectedToken(TestCaseToken::OpenParen)) {
                     goto outer;
                 }
                 for_each_arguments = ScanParametersAfterOpenParen();
-                if (!scan_expected(TestCaseToken::Colon)) {
+                if (!ScanExpectedToken(TestCaseToken::Colon)) {
                     goto outer;
                 }
                 std::vector<std::map<std::string, std::string>*> foreach_statement = {};
                 while (true) {
-                    if (!scan_optional(TestCaseToken::OpenBracket)) {
+                    if (!ScanOptionalToken(TestCaseToken::OpenBracket)) {
                         break;
                     }
-                    auto replacement_arguments = parse_replacement_arguments();
+                    auto replacement_arguments = ParseReplacementArguments();
                     if (replacement_arguments == nullptr) {
                         goto outer;
                     }
@@ -50,15 +50,15 @@ GraphQlTestCaseScanner::Scan()
 
             case TestCaseToken::TestDirective: {
                 std::vector<std::string> arguments;
-                if (!scan_expected(TestCaseToken::OpenParen)) {
+                if (!ScanExpectedToken(TestCaseToken::OpenParen)) {
                     goto outer;
                 }
                 arguments = ScanParametersAfterOpenParen();
-                if (!scan_expected(TestCaseToken::Colon)) {
+                if (!ScanExpectedToken(TestCaseToken::Colon)) {
                     goto outer;
                 }
                 while (true) {
-                    token = take_next_token();
+                    token = TakeNextToken();
                     if (token == TestCaseToken::EndOfDocument) {
                         AddDiagnostic(D::Expected_end_directive_instead_reached_the_end_of_the_document);
                         break;
@@ -67,9 +67,9 @@ GraphQlTestCaseScanner::Scan()
                         break;
                     }
                     if (token != TestCaseToken::OpenBracket) {
-                        AddDiagnostic(D::Expected_0_but_got_1, "[", get_token_value());
+                        AddDiagnostic(D::Expected_0_but_got_1, "[", GetTokenValue());
                     }
-                    auto t = parse_test_case_arguments();
+                    auto t = ParseTestCaseArguments();
                     if (t == nullptr) {
                         continue;
                     }
@@ -162,7 +162,7 @@ GraphQlTestCaseScanner::ScanParametersAfterOpenParen()
 {
     std::vector<std::string> parameters = {};
     while (true) {
-        TestCaseToken token = take_next_token();
+        TestCaseToken token = TakeNextToken();
         if (token == TestCaseToken::EndOfDocument) {
             break;
         }
@@ -170,18 +170,18 @@ GraphQlTestCaseScanner::ScanParametersAfterOpenParen()
             AddDiagnostic(D::Expected_identifier);
             break;
         }
-        parameters.push_back(get_token_value());
-        if (scan_optional(TestCaseToken::Comma)) {
+        parameters.push_back(GetTokenValue());
+        if (ScanOptionalToken(TestCaseToken::Comma)) {
             continue;
         }
-        scan_expected(TestCaseToken::CloseParen);
+        ScanExpectedToken(TestCaseToken::CloseParen);
         break;
     }
     return parameters;
 }
 
 std::string
-GraphQlTestCaseScanner::get_filename(std::string filename_template, std::map<std::string, std::string> file_arguments)
+GraphQlTestCaseScanner::GetFilename(std::string filename_template, std::map<std::string, std::string> file_arguments)
 {
     std::string filename = filename_template;
     for (const auto& it : file_arguments) {
@@ -191,7 +191,7 @@ GraphQlTestCaseScanner::get_filename(std::string filename_template, std::map<std
 }
 
 std::string
-GraphQlTestCaseScanner::get_source_code(std::map<std::string, std::string> source_code_arguments)
+GraphQlTestCaseScanner::GetSourceCode(std::map<std::string, std::string> source_code_arguments)
 {
     std::string source_code = source_code_template;
     for (const auto& it : source_code_arguments) {
@@ -201,16 +201,16 @@ GraphQlTestCaseScanner::get_source_code(std::map<std::string, std::string> sourc
 }
 
 TestCaseArguments*
-GraphQlTestCaseScanner::parse_test_case_arguments()
+GraphQlTestCaseScanner::ParseTestCaseArguments()
 {
-    auto file_arguments = parse_replacement_arguments();
+    auto file_arguments = ParseReplacementArguments();
     if (file_arguments == nullptr) {
         return nullptr;
     }
-    if (!scan_expected(TestCaseToken::Colon)) {
+    if (!ScanExpectedToken(TestCaseToken::Colon)) {
         return nullptr;
     }
-    auto content_arguments = parse_content_arguments();
+    auto content_arguments = ParseContentArguments();
     if (content_arguments == nullptr) {
         return nullptr;
     }
@@ -221,12 +221,12 @@ GraphQlTestCaseScanner::parse_test_case_arguments()
 }
 
 std::map<std::string, std::string>*
-GraphQlTestCaseScanner::parse_replacement_arguments()
+GraphQlTestCaseScanner::ParseReplacementArguments()
 {
     auto file_arguments = new std::map<std::string, std::string>();
     bool can_parse_comma = false;
     while (true) {
-        TestCaseToken token = take_next_token();
+        TestCaseToken token = TakeNextToken();
         if (token == TestCaseToken::EndOfDocument) {
             break;
         }
@@ -245,14 +245,14 @@ GraphQlTestCaseScanner::parse_replacement_arguments()
             AddDiagnostic(D::Expected_identifier);
             return file_arguments;
         }
-        auto key = get_token_value();
-        if (!scan_expected(TestCaseToken::Colon)) {
+        auto key = GetTokenValue();
+        if (!ScanExpectedToken(TestCaseToken::Colon)) {
             return file_arguments;
         }
-        if (!scan_expected(TestCaseToken::StringLiteral)) {
+        if (!ScanExpectedToken(TestCaseToken::StringLiteral)) {
             return file_arguments;
         }
-        auto string_value = get_string_literal();
+        auto string_value = GetStringLiteral();
         std::string new_value = string_value;
         file_arguments->emplace(key, new_value);
         can_parse_comma = true;
@@ -262,14 +262,14 @@ GraphQlTestCaseScanner::parse_replacement_arguments()
 }
 
 std::map<std::string, std::string>*
-GraphQlTestCaseScanner::parse_content_arguments()
+GraphQlTestCaseScanner::ParseContentArguments()
 {
-    if (!scan_expected(TestCaseToken::OpenBrace)) {
+    if (!ScanExpectedToken(TestCaseToken::OpenBrace)) {
         return nullptr;
     }
     auto content_arguments = new std::map<std::string, std::string>();
     while (true) {
-        TestCaseToken token = take_next_token();
+        TestCaseToken token = TakeNextToken();
         if (token == TestCaseToken::EndOfDocument) {
             break;
         }
@@ -283,35 +283,35 @@ GraphQlTestCaseScanner::parse_content_arguments()
             AddDiagnostic(D::Expected_identifier);
             return nullptr;
         }
-        auto key = get_token_value();
-        if (!scan_expected(TestCaseToken::Colon)) {
+        auto key = GetTokenValue();
+        if (!ScanExpectedToken(TestCaseToken::Colon)) {
             return nullptr;
         }
-        if (!scan_expected(TestCaseToken::StringLiteral)) {
+        if (!ScanExpectedToken(TestCaseToken::StringLiteral)) {
             return nullptr;
         }
-        content_arguments->emplace(key, get_string_literal());
+        content_arguments->emplace(key, GetStringLiteral());
     }
     return content_arguments;
 }
 
 TestCaseToken
-GraphQlTestCaseScanner::take_next_token()
+GraphQlTestCaseScanner::TakeNextToken()
 {
-    return take_next_token(true);
+    return TakeNextToken(true);
 }
 
 TestCaseToken
-GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
+GraphQlTestCaseScanner::TakeNextToken(bool skip_white_space)
 {
     bool last_one_was_at_char = false;
-    set_token_start_position();
+    SetTokenStartPosition();
     while (position < size) {
-        char32_t ch = current_char();
-        increment_position();
+        char32_t ch = GetCurrentCharacter();
+        IncrementPosition();
 
         switch (ch) {
-            case Character::NewLine:
+            case Character::Newline:
                 newline_position = position - 1;
                 if (!skip_white_space) {
                     return TestCaseToken::WhiteSpace;
@@ -323,8 +323,8 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
                 continue;
             case Character::CarriageReturn:
                 newline_position = position - 1;
-                if (source[position + 1] == NewLine) {
-                    increment_position();
+                if (source[position + 1] == Newline) {
+                    IncrementPosition();
                 }
                 if (!skip_white_space) {
                     return TestCaseToken::WhiteSpace;
@@ -335,7 +335,7 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
                 token_start_position++;
                 continue;
             case Character::DoubleQuote:
-                return scan_string_literal();
+                return ScanStringLiteral();
             case Character::ByteOrderMark:
             case Character::Space:
                 if (!skip_white_space) {
@@ -361,7 +361,7 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
                 token_start_column++;
                 continue;
             case Character::DoubleQuote:
-                return scan_string_literal();
+                return ScanStringLiteral();
             case Character::Colon:
                 return TestCaseToken::Colon;
             case Character::Comma:
@@ -380,13 +380,13 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
                 return TestCaseToken::CloseBrace;
 
             default:
-                if (is_identifier_start(ch)) {
+                if (IsIdentifierStart(ch)) {
                     std::size_t name_size = 1;
-                    while (position < size && is_identifier_part(current_char())) {
-                        increment_position();
+                    while (position < size && IsIdenitiferPart(GetCurrentCharacter())) {
+                        IncrementPosition();
                         name_size++;
                     }
-                    auto token = get_token_from_value(get_token_value(), name_size);
+                    auto token = GetTokenFromValue(GetTokenValue(), name_size);
                     if (last_one_was_at_char) {
                         switch (token) {
                             case TestCaseToken::ForEachDirective:
@@ -404,7 +404,7 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
                             case TestCaseToken::EndDirective:
                                 return TestCaseToken::EndDirective;
                             default:
-                                set_token_start_position();
+                                SetTokenStartPosition();
                                 continue;
                         }
                     }
@@ -417,16 +417,16 @@ GraphQlTestCaseScanner::take_next_token(bool skip_white_space)
 }
 
 bool
-GraphQlTestCaseScanner::scan_expected(TestCaseToken token)
+GraphQlTestCaseScanner::ScanExpectedToken(TestCaseToken token)
 {
-    TestCaseToken result = take_next_token();
+    TestCaseToken result = TakeNextToken();
     if (result != token) {
         if (result == TestCaseToken::EndOfDocument) {
             AddDiagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), "EndOfDocument");
             return false;
         }
         if (test_case_token_to_string.find(result) == test_case_token_to_string.end()) {
-            AddDiagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), get_token_value());
+            AddDiagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token), GetTokenValue());
             return false;
         }
         AddDiagnostic(D::Expected_0_but_got_1, test_case_token_to_string.at(token),
@@ -437,26 +437,26 @@ GraphQlTestCaseScanner::scan_expected(TestCaseToken token)
 }
 
 bool
-GraphQlTestCaseScanner::scan_optional(const TestCaseToken& token)
+GraphQlTestCaseScanner::ScanOptionalToken(const TestCaseToken &token)
 {
-    return try_scan(token) == token;
+    return TryScanToken(token) == token;
 }
 
 TestCaseToken
-GraphQlTestCaseScanner::try_scan(const TestCaseToken& token)
+GraphQlTestCaseScanner::TryScanToken(const TestCaseToken &token)
 {
-    save();
-    auto result = take_next_token();
+    SaveCurrentLocation();
+    auto result = TakeNextToken();
     if (result == token) {
         return token;
     }
-    revert();
+    RevertToPreviousLocation();
     return result;
 }
 
 
 void
-GraphQlTestCaseScanner::save()
+GraphQlTestCaseScanner::SaveCurrentLocation()
 {
     saved_text_cursors.emplace(
         position,
@@ -469,8 +469,8 @@ GraphQlTestCaseScanner::save()
 }
 
 void
-GraphQlTestCaseScanner::revert() {
-    const SavedTextCursor& saved_text_cursor = saved_text_cursors.top();
+GraphQlTestCaseScanner::RevertToPreviousLocation() {
+    const ScanningTextCursor& saved_text_cursor = saved_text_cursors.top();
     position = saved_text_cursor.position;
     line = saved_text_cursor.line;
     column = saved_text_cursor.column;
@@ -481,31 +481,31 @@ GraphQlTestCaseScanner::revert() {
 }
 
 Glib::ustring
-GraphQlTestCaseScanner::get_token_value()
+GraphQlTestCaseScanner::GetTokenValue()
 {
-    return source.substr(token_start_position, get_token_length());
+    return source.substr(token_start_position, GetTokenLength());
 }
 
 Glib::ustring
-GraphQlTestCaseScanner::get_string_literal()
+GraphQlTestCaseScanner::GetStringLiteral()
 {
     return string_literal;
 }
 
 std::size_t
-GraphQlTestCaseScanner::get_token_length()
+GraphQlTestCaseScanner::GetTokenLength()
 {
     return position - token_start_position;
 }
 
 void
-GraphQlTestCaseScanner::set_token_start_position()
+GraphQlTestCaseScanner::SetTokenStartPosition()
 {
     token_start_position = position;
 }
 
 TestCaseToken
-GraphQlTestCaseScanner::scan_string_literal()
+GraphQlTestCaseScanner::ScanStringLiteral()
 {
     auto start = position;
     string_literal = "";
@@ -513,31 +513,31 @@ GraphQlTestCaseScanner::scan_string_literal()
         if (position > size) {
             break;
         }
-        char32_t ch = current_char();
+        char32_t ch = GetCurrentCharacter();
         if (ch == Character::Backslash) {
-            scan_escape_sequence();
+            ScanEscapeSequence();
             continue;
         }
 
         if (ch == Character::DoubleQuote) {
             string_literal += source.substr(start, position - start);
-            increment_position();
+            IncrementPosition();
             break;
         }
-        increment_position();
+        IncrementPosition();
     }
     return TestCaseToken::StringLiteral;
 }
 
 
 void
-GraphQlTestCaseScanner::scan_escape_sequence()
+GraphQlTestCaseScanner::ScanEscapeSequence()
 {
     std::size_t start_position = position;
     std::size_t start_line = line;
     std::size_t start_column = column;
-    increment_position();
-    char32_t ch = current_char();
+    IncrementPosition();
+    char32_t ch = GetCurrentCharacter();
     switch (ch) {
         case Character::DoubleQuote:
         case Character::Backslash:
@@ -547,14 +547,14 @@ GraphQlTestCaseScanner::scan_escape_sequence()
         case Character::n:
         case Character::r:
         case Character::t:
-            increment_position();
+            IncrementPosition();
             return;
         default:;
     }
 }
 
 TestCaseToken
-GraphQlTestCaseScanner::get_token_from_value(Glib::ustring value, std::size_t size)
+GraphQlTestCaseScanner::GetTokenFromValue(Glib::ustring value, std::size_t size)
 {
     auto result = test_case_string_to_token.find(value);
     if (result != test_case_string_to_token.end()) {
@@ -564,18 +564,18 @@ GraphQlTestCaseScanner::get_token_from_value(Glib::ustring value, std::size_t si
 }
 
 Location
-GraphQlTestCaseScanner::get_token_location()
+GraphQlTestCaseScanner::GetTokenLocation()
 {
     return Location {
         token_start_line,
         token_start_column,
-        get_token_length(),
+        GetTokenLength(),
         position >= size,
     };
 }
 
 bool
-GraphQlTestCaseScanner::is_identifier_start(const char32_t &ch) const
+GraphQlTestCaseScanner::IsIdentifierStart(const char32_t &ch) const
 {
     return (ch >= A && ch <= Z) ||
            (ch >= a && ch <= z) ||
@@ -583,7 +583,7 @@ GraphQlTestCaseScanner::is_identifier_start(const char32_t &ch) const
 }
 
 bool
-GraphQlTestCaseScanner::is_identifier_part(const char32_t &ch) const
+GraphQlTestCaseScanner::IsIdenitiferPart(const char32_t &ch) const
 {
     return (ch >= a && ch <= z) ||
            (ch >= A && ch <= Z) ||
@@ -592,13 +592,13 @@ GraphQlTestCaseScanner::is_identifier_part(const char32_t &ch) const
 }
 
 char32_t
-GraphQlTestCaseScanner::current_char()
+GraphQlTestCaseScanner::GetCurrentCharacter()
 {
     return source[position];
 }
 
 void
-GraphQlTestCaseScanner::increment_position()
+GraphQlTestCaseScanner::IncrementPosition()
 {
     column++;
     position++;

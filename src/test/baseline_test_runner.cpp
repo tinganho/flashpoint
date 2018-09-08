@@ -15,12 +15,14 @@
 #include <sstream>
 #include "diagnostic_writer.h"
 #include "GraphQlTestCaseScanner.h"
+#include "ServerTestScanner.h"
 #include <regex>
 #include <curl/curl.h>
 #include <thread>
 #include <chrono>
 #include <unistd.h>
 #include <stdio.h>
+#include <lib/text_span.h>
 
 using namespace flashpoint::lib;
 using namespace flashpoint::program;
@@ -50,38 +52,39 @@ void BaselineTestRunner::VisistTestsByPath(
         }
     }
     std::vector<std::string> tests = find_files(tests_folder / "cases/*");
-    visit_tests(folder, tests, callback);
+    VisitTests(folder, tests, callback);
 }
 
-void BaselineTestRunner::visit_tests(
-    const path& test_folder,
-    std::vector<std::string>& tests,
-    std::function<void(const TestCase& test_case)> callback)
+void BaselineTestRunner::VisitTests(
+    const path &test_folder,
+    std::vector<std::string> &tests,
+    std::function<void(const TestCase &test_case)> callback)
 {
     for (const auto& test : tests) {
         path test_path = boost::filesystem::weakly_canonical(test);
         if (is_directory(test_path)) {
             auto files = find_files(test_path / "*");
-            visit_tests(test_folder, files, callback);
+            VisitTests(test_folder, files, callback);
         }
         else {
             const char* content = read_file(test_path);
+            auto ext = extension(test_path);
             GraphQlTestCaseScanner scanner(content);
             auto test_cases = scanner.Scan();
             if (test_cases.empty()) {
-                call_test(test_folder, test_path, test_path, scanner.get_source_code({}), callback);
+                CallTest(test_folder, test_path, test_path, scanner.GetSourceCode({}), callback);
             }
             else {
                 for (const auto& test_case : test_cases) {
-                    Glib::ustring source_code = scanner.get_source_code(test_case->source_code_arguments);
+                    Glib::ustring source_code = scanner.GetSourceCode(test_case->source_code_arguments);
                     const std::string test_path_string = test_path.string();
                     boost::regex rgx("\\{\\w+\\}");
                     boost::smatch match;
                     if (!boost::regex_search(test_path_string.begin(), test_path_string.end(), match, rgx)) {
                         throw std::logic_error("The path '" + test_path_string + "' must contain template arguments.");
                     }
-                    path new_test_path = scanner.get_filename(test_path_string, test_case->file_arguments);
-                    call_test(test_folder, new_test_path, test_path, source_code, callback);
+                    path new_test_path = scanner.GetFilename(test_path_string, test_case->file_arguments);
+                    CallTest(test_folder, new_test_path, test_path, source_code, callback);
                 }
             }
         }
@@ -89,12 +92,12 @@ void BaselineTestRunner::visit_tests(
 }
 
 void
-BaselineTestRunner::call_test(
+BaselineTestRunner::CallTest(
     path test_folder,
     path test_path,
     path aggregate_path,
-    Glib::ustring source_code,
-    const std::function<void(const TestCase& test_case)>& callback)
+    std::string source_code,
+    const std::function<void(const TestCase &test_case)> &callback)
 {
     std::string relative_test_path = replace_string(test_path.string(), root_dir().string() + "/", "");
     std::vector<std::string> test_paths = split_string(relative_test_path, '/');
@@ -223,97 +226,103 @@ BaselineTestRunner::DefineHttpTests() {
         if (option.test && *option.test != test_case.name) {
             return;
         }
-        test(test_case.name,
-             [&](Test *test, std::function<void()> success, std::function<void(std::string error)> error) -> void {
-                 CURL *curl;
-                 CURLcode code;
-                 std::size_t retries = 0;
+        test(test_case.name, [=](Test *test, std::function<void()> success, std::function<void(std::string error)> error) -> void {
+            CURL *curl;
+            CURLcode code;
+            ServerTestScanner server_test_scanner(test_case.source.c_str(), test_case.source.size());
+            server_test_scanner.Scan();
+            auto start = std::chrono::steady_clock::now();
+            for (auto &backend : server_test_scanner.backends) {
+                pipe(&backend->pipe_fd[0]);
+                backend->child_pid = fork();
 
-                 auto start = std::chrono::steady_clock::now();
-                 std::size_t max_retries = 50;
-                 int pipe_fds[2];
-                 pipe(pipe_fds);
-                 pid_t child_pid = fork();
-                 if (child_pid == -1) {
-                     printf("Could not fork child process. %s\n", strerror(errno));
-                     return;
-                 }
+                if (backend->child_pid == -1) {
+                    printf("Could not fork child process. %s\n", strerror(errno));
+                    return;
+                }
 
-                 if (child_pid == 0) {
-                     close(pipe_fds[1]);
-                     auto p = resolve_paths(root_dir(), "src/test/test_server/bin/test");
-                     const char *command = p.c_str();
-                     char fd_flag[10];
-                     sprintf(fd_flag, "--fd=%d", pipe_fds[0]);
-                     int r = execl(command,
-                          "test",
-                          R"(--response="{ "data": "{ "field": 1 }"})",
-                          fd_flag,
-                          (char*)NULL
-                     );
-                     if (r == -1) {
-                         printf("Could not execute script. %s\n", strerror(errno));
-                     }
-                     return;
-                 }
+                if (backend->child_pid == 0) {
+                    close(backend->pipe_fd[1]);
+                    auto p = resolve_paths(root_dir(), "src/test/test_server/bin/test");
+                    const char *command = p.c_str();
+                    char fd_flag[10];
+                    sprintf(fd_flag, "--fd=%d", backend->pipe_fd[0]);
+                    Json::Value root = Json::arrayValue;
+                    for (const auto &graphql_response : backend->graphql_responses) {
+                        Json::Value response_json;
+                        response_json["assertGraphqlField"] = ToCharArray(graphql_response.field);
+                        response_json["assertGraphqlLocation"] = "payload";
+                        response_json["body"] = ToCharArray(graphql_response.body);
+                        root.append(response_json);
+                    }
+                    Json::StyledWriter writer;
+                    int r = execl(command,
+                        "test",
+                        "--responses", writer.write(root).c_str(),
+                        fd_flag,
+                        (char*)NULL
+                    );
+                    if (r == -1) {
+                        std::cout << command << std::endl;
+                        printf("Could not execute script. %s\n", strerror(errno));
+                    }
+                    return;
+                }
 
-                 do {
-                     close(pipe_fds[0]);
-                     curl = curl_easy_init();
-                     curl_global_init(CURL_GLOBAL_ALL);
+                do {
+                    close(backend->pipe_fd[0]);
+                    curl = curl_easy_init();
+                    curl_global_init(CURL_GLOBAL_ALL);
 
-                     if (curl) {
-                         curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorBuffer);
-                         code = curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:8000");
-                         if (code != CURLE_OK) {
-                             fprintf(stderr, "Failed to set URL [%s]\n", errorBuffer);
-                             return;
-                         }
-                         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-                         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-                         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-                         curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-                         curl_slist *slist1 = nullptr;
-                         slist1 = curl_slist_append(slist1, "Content-Type: application/json");
-                         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist1);
-                         code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"query\":\"{ field }\"}");
-                         if (code != CURLE_OK) {
-                             fprintf(stderr, "Failed to set body [%s]\n", errorBuffer);
-                             return;
-                         }
+                    if (curl) {
+                        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorBuffer);
+                        code = curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:8000");
+                        if (code != CURLE_OK) {
+                            fprintf(stderr, "Failed to set URL [%s]\n", errorBuffer);
+                            return;
+                        }
+                        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+                        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+                        curl_slist *slist1 = nullptr;
+                        slist1 = curl_slist_append(slist1, "Content-Type: application/json");
+                        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist1);
+                        const char* body = ToCharArray(server_test_scanner.request.body);
+                        code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
+                        if (code != CURLE_OK) {
+                            fprintf(stderr, "Failed to set body [%s]\n", errorBuffer);
+                            return;
+                        }
 
-                         code = curl_easy_perform(curl);
-                         if (code != CURLE_OK) {
-                             auto end = std::chrono::steady_clock::now();
-                             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                             if (duration < 5000) {
-                                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                                 curl_easy_cleanup(curl);
-                                 curl_global_cleanup();
-                                 continue;
-                             }
-                             else {
-                                 fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
-                                 return;
-                             }
-                         }
-                         curl_easy_cleanup(curl);
-                         curl_global_cleanup();
-                         break;
-                     }
-                 } while (true);
-//                tcp_client.bind("0.0.0.0", 8000);
-//                tcp_client.send_message(test_case.source.c_str());
-//                const char* current_file_content = tcp_client.recieve_message();
-//                write_file(test_case.current_folder, current_file_content);
-//                std::stringstream error_message;
-//                if (!assert_baselines(current_file_content, test_case.reference_folder, error_message)) {
-//                    return error(error_message.str());
-//                }
-                 success();
-                 kill(child_pid, SIGTERM);
-             });
+                        code = curl_easy_perform(curl);
+                        if (code != CURLE_OK) {
+                            auto end = std::chrono::steady_clock::now();
+                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+                            if (duration < 5000) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                                curl_easy_cleanup(curl);
+                                curl_global_cleanup();
+                                continue;
+                            }
+                            else {
+                                fprintf(stderr, "curl_easy_perform(): [%s]\n", errorBuffer);
+                                return;
+                            }
+                        }
+                        curl_easy_cleanup(curl);
+                        curl_global_cleanup();
+                        break;
+                    }
+                }
+                while (true);
+            }
+            success();
+            for (auto &backend : server_test_scanner.backends) {
+                kill(backend->child_pid, SIGTERM);
+            }
+        });
     });
 }
 

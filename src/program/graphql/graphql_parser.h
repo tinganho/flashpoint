@@ -27,7 +27,7 @@ public:
     source;
 
     Location
-    get_token_location();
+    GetTokenLocation() const;
 
     MemoryPool*
     memory_pool;
@@ -85,9 +85,6 @@ public:
 
     Glib::ustring
     GetTokenValue() const;
-
-    Location
-    GetTokenLocation() const;
 
     Glib::ustring
     GetStringValue();

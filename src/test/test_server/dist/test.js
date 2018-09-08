@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const commander_1 = __importDefault(require("commander"));
+const body_parser_1 = __importDefault(require("body-parser"));
 const fs_1 = __importDefault(require("fs"));
 const app = express_1.default();
 app.set('etag', false);
@@ -16,19 +17,69 @@ app.use((_, res, next) => {
 });
 commander_1.default
     .version('0.1.0')
-    .option('--response <response>', 'Add response')
+    .option('--responses <responses>', 'Responses')
     .option('--fd <fd>', 'File descriptor')
-    .option('--headers <headers>', 'Add headers')
-    .option('--status [status]', 'Add status code', 200)
     .parse(process.argv);
-app.all('/graphql', (_, res) => {
-    if (commander_1.default.headers) {
-        const headers = JSON.parse(commander_1.default.headers);
-        for (const name in headers) {
-            res.append(name, headers[name]);
+console.log('[TEST_SERVER] - Request: ');
+console.log(commander_1.default.responses);
+const responses = JSON.parse(commander_1.default.responses);
+app.use(body_parser_1.default.json());
+app.all('*', (req, res) => {
+    console.log('[TEST_SERVER] - Recieved:');
+    console.log(req.method, req.url);
+    for (const header in req.headers) {
+        console.log(header, req.headers[header]);
+    }
+    console.log(req.body);
+    const response = responses.pop();
+    if (!response) {
+        console.error('Unexpected request.');
+        res.status(500).send('Unexpected request.');
+        return;
+    }
+    if (response.assertRequestMethod && response.assertRequestMethod !== req.method) {
+        console.error(`Expected path '${response.assertRequestPath}'.`);
+        res.status(500).send(`Expected method '${response.assertRequestMethod}'.`);
+        return;
+    }
+    if (typeof response.assertRequestPath !== 'undefined' && response.assertRequestPath !== req.path) {
+        console.error(`Expected path '${response.assertRequestPath}'.`);
+        res.status(500);
+        return;
+    }
+    if (response.assertGraphqlQuery) {
+        let graphqlQuery;
+        if (response.assertGraphqlQueryLocation && response.assertGraphqlQueryLocation === 'query-parameter') {
+            if (!req.query.query) {
+                console.error(`Expected GraphQL query to be in location '${response.assertGraphqlQuery}'.`);
+                res.status(500);
+                return;
+            }
+            graphqlQuery = JSON.parse(req.query.query);
+        }
+        else if (response.assertGraphqlQueryLocation && response.assertGraphqlQueryLocation === 'payload') {
+            if (!req.body.query) {
+                console.error(`Expected GraphQL query to be in location '${response.assertGraphqlQuery}'.`);
+                res.status(500);
+                return;
+            }
+            graphqlQuery = JSON.parse(req.body.query);
+        }
+        else {
+            graphqlQuery = JSON.parse(req.body.query || req.query.query);
+        }
+        if (graphqlQuery !== response.assertGraphqlQuery) {
+            console.error(`Expected GraphQL query '${response.assertGraphqlQuery}'.`);
+            res.status(500);
+            return;
         }
     }
-    res.status(commander_1.default.status).send(commander_1.default.response);
+    if (response.headers) {
+        for (const name in response.headers) {
+            res.append(name, response.headers[name]);
+        }
+    }
+    res.status(response.status || 200).send(response.body || '');
 });
 const buffer = new Buffer(1024);
 const server = app.listen(4000, () => {

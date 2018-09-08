@@ -10,6 +10,7 @@ namespace flashpoint::test {
 
 class D {
 public:
+    static DiagnosticMessageTemplate Expected_0_directive;
     static DiagnosticMessageTemplate Expected_0_but_got_1;
     static DiagnosticMessageTemplate Expected_directive;
     static DiagnosticMessageTemplate Expected_end_directive_instead_reached_the_end_of_the_document;

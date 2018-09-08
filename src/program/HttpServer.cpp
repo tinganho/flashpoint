@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include "HttpException.h"
 
+#define HTTP_WRITE(string) \
+    string, sizeof(string)
+
 using namespace boost::filesystem;
 
 namespace flashpoint {
@@ -42,13 +45,13 @@ AllocateBuffer(
 void
 OnCloseGraphQlFieldRequest(uv_handle_t *handle)
 {
-    printf("Closed GraphQL field request.");
+    printf("Closed GraphQL field request.\n");
 }
 
 void
 OnCloseGatewayClientRequest(uv_handle_t *handle)
 {
-    printf("Closed GraphQL field request.");
+    printf("Closed GraphQL field request.\n");
 }
 
 void
@@ -95,8 +98,11 @@ OnResolvedAllGraphQlFields(GatewayClient *gateway_client)
 {
     HttpWriter http_writer(gateway_client->tcp_handle, gateway_client->ssl_handle);
     http_writer.WriteLine("HTTP/1.1 200 OK");
-    for (const auto& field : gateway_client->fields_result) {
-//        HttpParser http_parser(*field.second);
+    HttpParser http_parser;
+    for (auto field : gateway_client->fields_result) {
+        http_parser.ParseResponse(field.second);
+
+        http_writer.WriteLine();
     }
     gateway_client->finished = true;
     uv_close((uv_handle_t*)gateway_client->tcp_handle, OnCloseGraphQlFieldRequest);
@@ -111,12 +117,11 @@ OnGraphQlRequestRead(uv_stream_t *tcp, ssize_t length, const uv_buf_t *buf)
     if (length >= 0) {
         auto field_it = gateway_client->fields_result.find(field_request->field);
         if (field_it == gateway_client->fields_result.end()) {
-            gateway_client->fields_result.emplace(field_request->field, new std::vector { buf });
+            gateway_client->fields_result.emplace(field_request->field, std::vector { new TextSpan(buf->base, length) });
         }
         else {
-            field_it->second->push_back(buf);
+            field_it->second.push_back(new TextSpan(buf->base, length));
         }
-        printf("%s", buf->base);
     }
     else {
         gateway_client->resolved_fields++;
@@ -141,13 +146,15 @@ OnClientConnect(uv_connect_t *connection, int status)
     for (const auto& field : gateway_client->fields) {
         auto http_writer = HttpWriter(client_request->tcp_handle, nullptr);
         http_writer.WriteRequest(HttpMethod::Post, client_request->path);
+        auto field_name = field.second->name->identifier;
         http_writer.WriteLine("Host: ", client_request->host);
         http_writer.WriteLine("User-Agent: flash");
         http_writer.WriteLine("Accept: */*");
         http_writer.WriteLine("Content-Type: application/json; charset=utf-8");
-        http_writer.WriteLine("Content-Length: 24");
-        http_writer.WriteLine();
-        http_writer.Write("{ \"query\": \"{ field }\" }");
+        http_writer.ScheduleBodyWrite("{ \"query\": \"{ ");
+        http_writer.ScheduleBodyWrite(field.second->name->identifier.c_str());
+        http_writer.ScheduleBodyWrite(" }\" }");
+        http_writer.CommitBodyWrite();
         http_writer.End();
     }
 }
@@ -284,7 +291,7 @@ OnGatewayClientRequestRead(uv_stream_t *client_stream, ssize_t read_length, cons
     }
     else if (read_size > 0) {
         auto http_parser = gateway_client->http_parser;
-        http_parser->ParseRequest(read_buffer, read_size);
+        http_parser->ParseRequest(new TextSpan(read_buffer, read_size));
         if (http_parser->IsFinished()) {
             ExecuteGraphQlQuery(gateway_client);
         }
@@ -292,16 +299,16 @@ OnGatewayClientRequestRead(uv_stream_t *client_stream, ssize_t read_length, cons
 }
 
 const char*
-ToConstChar(std::vector<TokenValue>& token_values)
+ToConstChar(std::vector<TextSpan*>& token_values)
 {
     std::size_t size = 0;
     for (const auto& token_value : token_values) {
-        size += token_value.length;
+        size += token_value->length;
     }
     char* text = new char[size];
     for (const auto& token_value : token_values) {
-        for (std::size_t i = 0; i < token_value.length; i++) {
-            text[i] = token_value.value[i];
+        for (std::size_t i = 0; i < token_value->length; i++) {
+            text[i] = token_value->value[i];
         }
     }
     return text;

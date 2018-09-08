@@ -6,33 +6,9 @@
 #include <stack>
 #include <algorithm>
 #include <uv.h>
+#include <lib/text_span.h>
 
 namespace flashpoint {
-
-
-struct TokenValue {
-    const char *value;
-    std::size_t length;
-};
-
-struct TokenValueComparer {
-    bool operator()(const TokenValue& a, const TokenValue& b) const
-    {
-        auto min = std::min(a.length, b.length);
-        for (std::size_t i = 0; i < min; i++) {
-            if (a.value[i] > b.value[i]) {
-                return true;
-            }
-            else if (a.value[i] < b.value[i]) {
-                return false;
-            }
-            else {
-                continue;
-            }
-        }
-        return a.length > b.length;
-    }
-};
 
 struct SavedTextCursor {
     std::size_t position;
@@ -89,10 +65,16 @@ public:
     HttpParser();
 
     void
-    ParseRequest(char *buffer, std::size_t read_length);
+    ParseRequest(TextSpan *text_span);
 
     void
-    ParseResponse(char *buffer, std::size_t read_length);
+    ParseRequestTest(TextSpan *text_span);
+
+    void
+    ParseResponse(TextSpan *text_span);
+
+    void
+    ParseResponse(std::vector<TextSpan*> &text_spans);
 
     void
     ParseRequestLine();
@@ -110,9 +92,6 @@ public:
     ParseBody();
 
     void
-    AddBuffer(char *buffer, std::size_t read_length);
-
-    void
     ScanRequestTarget();
 
     void
@@ -121,28 +100,28 @@ public:
     void
     ParseHeaderValue();
 
-    TokenValue
+    TextSpan*
     ScanAbsolutePath();
 
-    TokenValue
+    TextSpan*
     ScanQuery();
 
-    TokenValue
+    TextSpan*
     ScanBody();
 
     StartLineToken
     ScanHttpVersion();
 
-    TokenValue
+    TextSpan*
     ScanReasonPhrase();
 
     HttpMethod
     ScanMethod();
 
-    TokenValue
+    TextSpan*
     GetLowerCaseTokenValue();
 
-    TokenValue
+    TextSpan*
     GetTokenValue() const;
 
     unsigned int
@@ -157,7 +136,9 @@ public:
     bool
     NextCharIs(char ch);
 
-    std::vector<TokenValue> body;
+    std::map<TextSpan*, TextSpan*, TextSpanComparer> header;
+
+    std::vector<TextSpan*> body;
 
 private:
 
@@ -218,11 +199,13 @@ private:
     char
     GetCurrentChar();
 
-    TokenValue*
+    TextSpan*
     GetHeader(const char* name);
 
     std::size_t
-    ToUint(TokenValue* token_value);
+    ToUint(TextSpan* token_value);
+
+    TextSpan *current_text_span;
 
     bool has_content_length;
 
@@ -230,11 +213,9 @@ private:
 
     unsigned int status_code;
 
-    TokenValue reason_phrase;
+    TextSpan* reason_phrase;
 
-    TokenValue current_header_name;
-
-    std::map<TokenValue, TokenValue, TokenValueComparer> headers;
+    TextSpan* current_header_name;
 
     ParsingLocation location = ParsingLocation::StartLine;
 
@@ -242,11 +223,7 @@ private:
 
     std::size_t buffer_index = 0;
 
-    std::size_t current_buffer_read_length;
-
-    char *current_buffer_text;
-
-    std::size_t buffer_position = 0;
+    std::size_t text_span_position = 0;
 
     std::size_t start_position = 0;
 
@@ -256,9 +233,9 @@ private:
 
     HttpMethod method;
 
-    TokenValue path;
+    TextSpan* path;
 
-    TokenValue query;
+    TextSpan* query;
 
     ParserMode parser_mode;
 

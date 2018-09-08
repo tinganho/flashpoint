@@ -3,8 +3,11 @@
 
 #include <glibmm/ustring.h>
 #include <program/diagnostic.h>
+#include <program/HttpParser.h>
+#include "ScanningTextCursor.h"
 #include <vector>
 #include <map>
+#include <lib/text_span.h>
 
 using namespace flashpoint::program;
 namespace flashpoint::test {
@@ -16,6 +19,7 @@ enum class ServerTestToken {
     Space,
     Newline,
     Identifier,
+    IntegerLiteral,
 
     BackendDirective,
     EndDirective,
@@ -24,42 +28,87 @@ enum class ServerTestToken {
     EndOfDocument,
 };
 
-extern const std::map<const Glib::ustring, const ServerTestToken> server_test_string_to_token;
-extern const std::map<const ServerTestToken, const Glib::ustring> server_test_token_to_string;
+extern const std::map<const TextSpan*, const ServerTestToken, TextSpanComparer> server_test_string_to_token;
+extern const std::map<const ServerTestToken, const TextSpan*> server_test_token_to_string;
+
+struct GraphqlResponse {
+    TextSpan *field;
+    std::map<TextSpan*, TextSpan*, TextSpanComparer> header;
+    std::vector<TextSpan*> body;
+};
+
+struct Request {
+    TextSpan *hostname;
+    TextSpan *port;
+    std::map<TextSpan*, TextSpan*, TextSpanComparer> header;
+    std::vector<TextSpan*> body;
+};
 
 struct Backend {
-    const char* hostname;
-    const char* port;
-    bool https;
+    TextSpan *hostname;
+    TextSpan *port;
+    std::vector<GraphqlResponse> graphql_responses;
+    int pipe_fd[2];
+    pid_t child_pid;
+};
+
+enum class ServerTestScanningLocation {
+    Backend,
+    BackendBody,
+    Request,
 };
 
 class ServerTestScanner : public DiagnosticTrait<ServerTestScanner> {
 public:
-    ServerTestScanner(const Glib::ustring& source);
+
+    ServerTestScanner(const char* source, std::size_t size);
 
     void
     Scan();
 
-    std::vector<Backend> backends;
+    Location
+    GetTokenLocation();
+
+    std::vector<Backend*> backends;
+
+    Request request;
 
 private:
-    Glib::ustring source;
-    std::size_t position = 0;
-    std::size_t line = 1;
-    std::size_t size;
-    std::size_t column = 1;
-    std::size_t token_start_position;
-    std::size_t token_start_line;
-    std::size_t token_start_column;
-    Glib::ustring hostname;
-    Glib::ustring port;
-    Glib::ustring current_field;
-    Glib::ustring current_content;
+
+    const char *source_;
+
+    std::size_t size_;
+
+    std::size_t position_ = 0;
+
+    std::size_t line_ = 1;
+
+    std::size_t column_ = 1;
+
+    std::size_t token_start_position_;
+
+    std::size_t token_start_line_;
+
+    std::size_t token_start_column_;
+
+    Backend* current_backend_;
+
+    std::map<TextSpan*, TextSpan*> current_graphql_fields_;
+
+    std::stack<ScanningTextCursor> saved_text_cursors;
+
+    ServerTestScanningLocation location_ = ServerTestScanningLocation::Backend;
 
     void
     IncrementPosition();
 
-    Glib::ustring
+    void
+    SaveCurrentLocation();
+
+    void
+    RevertToPreviousLocation();
+
+    TextSpan*
     GetTokenValue();
 
     std::size_t
@@ -74,6 +123,12 @@ private:
     char32_t
     GetCurrentChar();
 
+    void
+    SkipWhiteSpace();
+
+    bool
+    IsWhitespace(char32_t ch);
+
     bool
     ScanExpected(ServerTestToken token);
 
@@ -87,19 +142,28 @@ private:
     IsIdentifierPart(const char32_t &ch) const;
 
     ServerTestToken
-    GetTokenFromValue(const Glib::ustring& value);
+    GetTokenFromValue(const TextSpan *value) const;
 
     bool
-    ValidateHostname(const Glib::ustring &hostname);
+    ValidateHostname(const TextSpan *hostname);
 
     bool
-    ValidatePort(const Glib::ustring &port);
+    ValidatePort(const TextSpan *port);
 
     void
     SkipRestOfLine();
 
     void
     ScanContent();
+
+    ServerTestToken
+    ScanInteger();
+
+    void
+    ScanDigitList();
+
+    bool
+    IsDigit(char32_t ch);
 };
 
 }

@@ -12,14 +12,15 @@ HttpParser::HttpParser()
 { }
 
 void
-HttpParser::ParseRequest(char *buffer, std::size_t read_length)
+HttpParser::ParseRequest(TextSpan* text_span)
 {
-    AddBuffer(buffer, read_length);
+    current_text_span = text_span;
     while (location != ParsingLocation::End) {
         switch (location) {
             case ParsingLocation::StartLine:
                 try {
                     ParseRequestLine();
+                    location = ParsingLocation::HeaderName;
                 }
                 catch (BufferOverflowException& ex) {
                     throw UriTooLongException();
@@ -32,9 +33,20 @@ HttpParser::ParseRequest(char *buffer, std::size_t read_length)
 }
 
 void
-HttpParser::ParseResponse(char *buffer, std::size_t read_length)
+HttpParser::ParseRequestTest(TextSpan *text_span)
 {
-    AddBuffer(buffer, read_length);
+    current_text_span = text_span;
+    location = ParsingLocation::HeaderName;
+    while (location != ParsingLocation::End) {
+        ParseDefaultLocations();
+    }
+}
+
+void
+HttpParser::ParseResponse(TextSpan *text_span)
+{
+    current_text_span = text_span;
+    text_span_position = 0;
     while (location != ParsingLocation::End) {
         switch (location) {
             case ParsingLocation::StartLine:
@@ -48,6 +60,14 @@ HttpParser::ParseResponse(char *buffer, std::size_t read_length)
             default:
                 ParseDefaultLocations();
         }
+    }
+}
+
+void
+HttpParser::ParseResponse(std::vector<TextSpan*> &text_spans)
+{
+    for (const auto text_span : text_spans) {
+        ParseResponse(text_span);
     }
 }
 
@@ -85,9 +105,12 @@ void
 HttpParser::ParseStatusLine()
 {
     ScanHttpVersion();
+    IncrementPosition();
     status_code = ScanPositiveInteger();
+    IncrementPosition();
     reason_phrase = ScanReasonPhrase();
     location = ParsingLocation::HeaderName;
+    IncrementPosition(2);
 }
 
 void
@@ -99,21 +122,13 @@ HttpParser::ParseRequestLine() {
     ScanExpected(Character::Space);
     ScanHttpVersion();
     ScanExpected(Character::CarriageReturn);
-    ScanExpected(Character::NewLine);
-    location = ParsingLocation::HeaderName;
-}
-
-void HttpParser::AddBuffer(char *buffer, std::size_t read_length)
-{
-    buffer_position = 0;
-    current_buffer_text = buffer;
-    current_buffer_read_length = read_length;
+    ScanExpected(Character::Newline);
 }
 
 char
 HttpParser::GetCurrentChar()
 {
-    return current_buffer_text[buffer_position];
+    return current_text_span->value[text_span_position];
 }
 
 HttpMethod
@@ -122,91 +137,96 @@ HttpParser::ScanMethod()
     HttpMethod token = HttpMethod::None;
     switch (GetCurrentChar()) {
         case Character::C:
-            buffer_position += 7;
+            text_span_position += 7;
             token = HttpMethod::Connect;
             break;
         case Character::D:
-            buffer_position += 6;
+            text_span_position += 6;
             token = HttpMethod::Delete;
             break;
         case Character::G:
-            buffer_position += 3;
+            text_span_position += 3;
             token = HttpMethod::Get;
             break;
         case Character::H:
-            buffer_position += 4;
+            text_span_position += 4;
             token = HttpMethod::Head;
             break;
         case Character::O:
-            buffer_position += 7;
+            text_span_position += 7;
             token = HttpMethod::Options;
             break;
         case Character::P:
             IncrementPosition();
             switch (GetCurrentChar()) {
                 case Character::A:
-                    buffer_position += 4;
+                    text_span_position += 4;
                     token = HttpMethod::Patch;
                     break;
                 case Character::O:
-                    buffer_position += 3;
+                    text_span_position += 3;
                     token = HttpMethod::Post;
                     break;
                 case Character::U:
-                    buffer_position += 2;
+                    text_span_position += 2;
                     token = HttpMethod::Put;
                     break;
             }
             break;
         case Character::T:
-            buffer_position += 5;
+            text_span_position += 5;
             token = HttpMethod::Trace;
             break;
     }
-    if (buffer_position >= current_buffer_read_length) {
+    if (text_span_position >= current_text_span->length) {
         throw std::logic_error("Invalid request.");
     }
     return token;
 }
 
-TokenValue
+TextSpan*
 HttpParser::ScanBody()
 {
     SetTokenStartPosition();
     while (true) {
-        if (has_content_length && body_length >= content_length) {
+        if ((has_content_length && body_length >= content_length) ||
+            text_span_position >= current_text_span->length)
+        {
             location = ParsingLocation::End;
             break;
         }
         if (has_content_length) {
-            auto rest = current_buffer_read_length - buffer_position;
+            auto rest = current_text_span->length - text_span_position;
             body_length += rest;
             IncrementPosition(rest);
+        }
+        else {
+            IncrementPosition();
         }
     }
     return GetTokenValue();
 }
 
-TokenValue
+TextSpan*
 HttpParser::ScanAbsolutePath()
 {
     SetTokenStartPosition();
     ScanExpected(Character::Slash);
     char ch = GetCurrentChar();
-    while (buffer_position < current_buffer_read_length && (IsPchar(ch) || ch == Character::Slash)) {
+    while (text_span_position < current_text_span->length && (IsPchar(ch) || ch == Character::Slash)) {
         IncrementPosition();
         ch = GetCurrentChar();
     }
     return GetTokenValue();
 }
 
-TokenValue
+TextSpan*
 HttpParser::ScanQuery()
 {
     SetTokenStartPosition();
     if (NextCharIs(Character::Question)) {
         char ch = GetCurrentChar();
-        while (buffer_position < current_buffer_read_length && (IsPchar(ch) || ch == Character::Slash || ch == Character::Question)) {
+        while (text_span_position < current_text_span->length && (IsPchar(ch) || ch == Character::Slash || ch == Character::Question)) {
             IncrementPosition();
             ch = GetCurrentChar();
         }
@@ -218,18 +238,19 @@ StartLineToken
 HttpParser::ScanHttpVersion()
 {
     ScanExpected(Character::H);
-    buffer_position += 7;
+    text_span_position += 7;
     return StartLineToken::HttpVersion1_1;
 }
 
 unsigned int
 HttpParser::ScanPositiveInteger()
 {
+    SetTokenStartPosition();
     while (IsDigit(GetCurrentChar())) {
         IncrementPosition();
     }
     auto token_value = GetTokenValue();
-    return static_cast<unsigned int>(std::atoi(token_value.value));
+    return static_cast<unsigned int>(std::atoi(token_value->value));
 }
 
 bool
@@ -238,43 +259,38 @@ HttpParser::IsDigit(char ch)
     return ch >= Character::_0 && ch <= Character::_9;
 }
 
-TokenValue
+TextSpan*
 HttpParser::ScanReasonPhrase()
 {
-    while (true) {
+    SetTokenStartPosition();
+    while (text_span_position < current_text_span->length) {
         auto ch = GetCurrentChar();
-        if (ch == Character::NewLine) {
-            break;
+        if (ch == Character::CarriageReturn) {
+            return GetTokenValue();
         }
-        if (ch == Character::Space) {
-            continue;
-        }
-        if (ch == Character::HorizontalTab) {
-            continue;
-        }
-        if (IsVchar(ch)) {
-            continue;
-        }
-        if (IsObsText(ch)) {
+        if (ch == Character::Space ||
+            ch == Character::HorizontalTab ||
+            IsVchar(ch) || IsObsText(ch))
+        {
+            IncrementPosition();
             continue;
         }
         throw HttpParsingError("Could not parse reason phrase on status line.");
     }
-    return GetTokenValue();
 }
 
-TokenValue*
+TextSpan*
 HttpParser::GetHeader(const char* name)
 {
-    auto header_it = headers.find(TokenValue { name, strlen(name) });
-    if (header_it != headers.end()) {
-        return &header_it->second;
+    auto header_it = header.find(new TextSpan { name, strlen(name) });
+    if (header_it != header.end()) {
+        return header_it->second;
     }
     return nullptr;
 }
 
 std::size_t
-HttpParser::ToUint(TokenValue* token_value)
+HttpParser::ToUint(TextSpan* token_value)
 {
     std::size_t integer_value = 0;
     auto value = token_value->value;
@@ -323,7 +339,7 @@ HttpParser::ParseHeaderName()
     SetTokenStartPosition();
     if (!IsHeaderFieldStart(GetCurrentChar())) {
         if (ScanOptional(Character::CarriageReturn)) {
-            ScanExpected(Character::NewLine);
+            ScanExpected(Character::Newline);
             location = ParsingLocation::Body;
             auto content_length = GetHeader("content-length");
             if (content_length != nullptr) {
@@ -333,7 +349,7 @@ HttpParser::ParseHeaderName()
             return;
         }
     }
-    while (buffer_position < current_buffer_read_length && IsHeaderFieldPart(GetCurrentChar())) {
+    while (text_span_position < current_text_span->length && IsHeaderFieldPart(GetCurrentChar())) {
         IncrementPosition();
     }
     location = ParsingLocation::HeaderName;
@@ -348,10 +364,10 @@ HttpParser::ParseHeaderValue()
 {
     SetTokenStartPosition();
     ScanHeaderValue();
-    headers[current_header_name] = GetTokenValue();
+    header[current_header_name] = GetTokenValue();
     ScanOptional(Character::Space);
     ScanExpected(Character::CarriageReturn);
-    ScanExpected(Character::NewLine);
+    ScanExpected(Character::Newline);
     location = ParsingLocation::HeaderName;
 }
 
@@ -379,7 +395,7 @@ HttpParser::IsMethodPart(char ch)
 void
 HttpParser::ScanRequestTarget()
 {
-    while (buffer_position < current_buffer_read_length)
+    while (text_span_position < current_text_span->length)
     {
         char ch = GetCurrentChar();
         IncrementPosition();
@@ -417,7 +433,7 @@ HttpParser::ScanFieldContent()
     if (ch == Space || ch == HorizontalTab) {
         IncrementPosition();
         ch = GetCurrentChar();
-        while (buffer_position < current_buffer_read_length && (ch == Space || ch == HorizontalTab)) {
+        while (text_span_position < current_text_span->length && (ch == Space || ch == HorizontalTab)) {
             IncrementPosition();
             ch = GetCurrentChar();
         }
@@ -436,7 +452,7 @@ HttpParser::ScanFieldContent()
 void
 HttpParser::ScanHeaderValue()
 {
-    while (buffer_position < current_buffer_read_length) {
+    while (text_span_position < current_text_span->length) {
         if (ScanFieldContent()) {
             continue;
         }
@@ -532,8 +548,8 @@ HttpParser::IsObsText(char ch)
 void
 HttpParser::IncrementPosition()
 {
-    buffer_position++;
-    if (buffer_position > current_buffer_read_length) {
+    text_span_position++;
+    if (text_span_position > current_text_span->length) {
         throw BufferOverflowException();
     }
 }
@@ -541,8 +557,8 @@ HttpParser::IncrementPosition()
 void
 HttpParser::IncrementPosition(std::size_t increment)
 {
-    buffer_position += increment;
-    if (buffer_position > current_buffer_read_length) {
+    text_span_position += increment;
+    if (text_span_position > current_text_span->length) {
         throw BufferOverflowException();
     }
 }
@@ -567,17 +583,21 @@ HttpParser::NextCharIs(char ch) {
 void
 HttpParser::ScanExpected(char ch)
 {
-    if (GetCurrentChar() == ch) {
+    auto current_char = GetCurrentChar();
+    if (current_char == ch) {
         IncrementPosition();
         return;
     }
     if (ch == Character::CarriageReturn) {
         throw UnexpectedTokenException(std::string("Expected character '") + "\\r'.");
     }
-    if (ch == Character::NewLine) {
+    if (ch == Character::Newline) {
         throw UnexpectedTokenException(std::string("Expected character '") + "\\n'.");
     }
-    throw UnexpectedTokenException(std::string("Expected character '") + ch + "'");
+    if (current_char == Character::CarriageReturn) {
+        throw UnexpectedTokenException(std::string("Expected character '") + ch + "' but got '\\n'");
+    }
+    throw UnexpectedTokenException(std::string("Expected character '") + ch + "' but got '" + current_char + "'");
 }
 
 
@@ -596,7 +616,7 @@ void
 HttpParser::Save()
 {
     SavedTextCursor saved_text_cursor {
-        buffer_position,
+        text_span_position,
         start_position,
         end_position,
     };
@@ -607,7 +627,7 @@ void
 HttpParser::Revert()
 {
     const SavedTextCursor& saved_text_cursor = saved_text_cursors.top();
-    buffer_position = saved_text_cursor.position;
+    text_span_position = saved_text_cursor.position;
     start_position = saved_text_cursor.start_position;
     end_position = saved_text_cursor.end_position;
     saved_text_cursors.pop();
@@ -617,27 +637,27 @@ HttpParser::Revert()
 void
 HttpParser::SetTokenStartPosition()
 {
-    start_position = buffer_position;
+    start_position = text_span_position;
 }
 
-TokenValue
+TextSpan*
 HttpParser::GetLowerCaseTokenValue()
 {
-    for (std::size_t i = start_position; i < buffer_position; i++) {
-        current_buffer_text[i] = static_cast<char>(tolower(current_buffer_text[i]));
+    for (std::size_t i = start_position; i < text_span_position; i++) {
+        ((char*)current_text_span->value)[i] = static_cast<char>(tolower(current_text_span->value[i]));
     }
-    return {
-        &current_buffer_text[start_position],
-        buffer_position - start_position
+    return new TextSpan {
+        &current_text_span->value[start_position],
+        text_span_position - start_position
     };
 }
 
-TokenValue
+TextSpan*
 HttpParser::GetTokenValue() const
 {
-    return {
-        &current_buffer_text[start_position],
-        buffer_position - start_position
+    return new TextSpan {
+        &current_text_span->value[start_position],
+        text_span_position - start_position
     };
 }
 

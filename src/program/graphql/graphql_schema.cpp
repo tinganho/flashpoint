@@ -1196,7 +1196,7 @@ GraphQlSchema::parse_value()
 //                return std::make_pair(argument_literal, ValueKind::Argument);
         case GraphQlToken::OpenBrace: {
             std::size_t start_position = scanner->start_position;
-            auto location = get_token_location();
+            auto location = GetTokenLocation();
             auto object_value = CreateSyntax<ObjectValue>(SyntaxKind::S_ObjectValue);
             while (true) {
                 GraphQlToken token = TakeNextToken(/*treat_keyword_as_name*/true, /*skip_white_space*/true);

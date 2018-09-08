@@ -3,194 +3,172 @@
 
 #include <glibmm/ustring.h>
 #include <program/diagnostic.h>
+#include "ScanningTextCursor.h"
 #include <map>
 
 using namespace flashpoint::program;
 
 namespace flashpoint::test {
-    struct SavedTextCursor {
-        unsigned long long position;
-        unsigned long long line;
-        unsigned long long column;
-        unsigned long long token_start_position;
-        unsigned long long token_start_line;
-        unsigned long long token_start_column;
 
-        SavedTextCursor(
-            unsigned long long position,
-            unsigned long long line,
-            unsigned long long column,
-            unsigned long long start_position,
-            unsigned long long start_line,
-            unsigned long long start_column):
+enum class TestCaseToken {
+    Unknown,
 
-            position(position),
-            line(line),
-            column(column),
-            token_start_position(start_position),
-            token_start_line(start_line),
-            token_start_column(start_column)
-        { }
-    };
+    TestDirective,
+    EndDirective,
+    ForEachDirective,
 
-    enum class TestCaseToken {
-        Unknown,
+    CasesKeyword,
+    EndKeyword,
+    OpenBracket,
+    OpenParen,
+    CloseBracket,
+    OpenBrace,
+    CloseBrace,
+    CloseParen,
+    Colon,
+    Comma,
+    StringLiteral,
+    Hash,
+    At,
+    Identifier,
 
-        TestDirective,
-        EndDirective,
-        ForEachDirective,
+    WhiteSpace,
 
-        CasesKeyword,
-        EndKeyword,
-        OpenBracket,
-        OpenParen,
-        CloseBracket,
-        OpenBrace,
-        CloseBrace,
-        CloseParen,
-        Colon,
-        Comma,
-        StringLiteral,
-        Hash,
-        At,
-        Identifier,
+    EndOfDocument,
+};
 
-        WhiteSpace,
+const std::map<Glib::ustring, const TestCaseToken> test_case_string_to_token = {
+    { "@end", TestCaseToken::EndDirective },
+    { "@foreach", TestCaseToken::ForEachDirective },
+    { "@test", TestCaseToken::TestDirective },
+    { ":", TestCaseToken::Colon },
+};
 
-        EndOfDocument,
-    };
+const std::map<const TestCaseToken, Glib::ustring> test_case_token_to_string = {
+    { TestCaseToken::TestDirective, "@test" },
+    { TestCaseToken::EndKeyword, "@end" },
+    { TestCaseToken::Colon, ":" },
+};
 
-    const std::map<Glib::ustring, const TestCaseToken> test_case_string_to_token = {
-        { "@end", TestCaseToken::EndDirective },
-        { "@foreach", TestCaseToken::ForEachDirective },
-        { "@test", TestCaseToken::TestDirective },
-        { ":", TestCaseToken::Colon },
-    };
+struct TestCaseArguments {
+    std::map<std::string, std::string> file_arguments;
+    std::map<std::string, std::string> source_code_arguments;
+};
 
-    const std::map<const TestCaseToken, Glib::ustring> test_case_token_to_string = {
-        { TestCaseToken::TestDirective, "@test" },
-        { TestCaseToken::EndKeyword, "@end" },
-        { TestCaseToken::Colon, ":" },
-    };
+class GraphQlTestCaseScanner : public DiagnosticTrait<GraphQlTestCaseScanner> {
+public:
+    GraphQlTestCaseScanner(const Glib::ustring& source);
 
-    struct TestCaseArguments {
-        std::map<std::string, std::string> file_arguments;
-        std::map<std::string, std::string> source_code_arguments;
-    };
+    std::vector<TestCaseArguments*>
+    Scan();
 
-    class GraphQlTestCaseScanner : public DiagnosticTrait<GraphQlTestCaseScanner> {
-    public:
-        GraphQlTestCaseScanner(const Glib::ustring& source);
+    Location
+    GetTokenLocation();
 
-        std::vector<TestCaseArguments*>
-        Scan();
+    std::string
+    GetSourceCode(std::map<std::string, std::string> source_code_arguments);
 
-        Location
-        get_token_location();
+    std::string
+    GetFilename(std::string filename_template, std::map<std::string, std::string> file_arguments);
 
-        std::string
-        get_source_code(std::map<std::string, std::string> source_code_arguments);
+private:
+    Glib::ustring source;
+    Glib::ustring string_literal;
+    Glib::ustring source_code_template;
+    std::size_t position = 0;
+    std::size_t line = 1;
+    std::size_t column = 1;
+    std::size_t token_start_position;
+    std::size_t token_start_line;
+    std::size_t token_start_column;
+    std::size_t size;
+    std::size_t newline_position;
+    std::vector<TestCaseArguments*> scanned_arguments;
+    std::stack<ScanningTextCursor> saved_text_cursors;
+    bool in_definition_location = false;
 
-        std::string
-        get_filename(std::string filename_template, std::map<std::string, std::string> file_arguments);
+    TestCaseToken
+    TakeNextToken(bool skip_white_space);
 
-    private:
-        Glib::ustring source;
-        Glib::ustring string_literal;
-        Glib::ustring source_code_template;
-        std::size_t position = 0;
-        std::size_t line = 1;
-        std::size_t column = 1;
-        std::size_t token_start_position;
-        std::size_t token_start_line;
-        std::size_t token_start_column;
-        std::size_t size;
-        std::size_t newline_position;
-        std::vector<TestCaseArguments*> scanned_arguments;
-        std::stack<SavedTextCursor> saved_text_cursors;
-        bool in_definition_location = false;
+    TestCaseToken
+    TakeNextToken();
 
-        TestCaseToken
-        take_next_token(bool skip_white_space);
+    void
+    IncrementPosition();
 
-        TestCaseToken
-        take_next_token();
+    void
+    SetTokenStartPosition();
 
-        void
-        increment_position();
+    Glib::ustring
+    GetTokenValue();
 
-        void
-        set_token_start_position();
+    std::size_t
+    GetTokenLength();
 
-        Glib::ustring
-        get_token_value();
+    Glib::ustring
+    GetStringLiteral();
 
-        std::size_t
-        get_token_length();
+    char32_t
+    GetCurrentCharacter();
 
-        Glib::ustring
-        get_string_literal();
+    bool
+    IsIdentifierStart(const char32_t &ch) const;
 
-        char32_t
-        current_char();
+    bool
+    IsIdenitiferPart(const char32_t &ch) const;
 
-        bool
-        is_identifier_start(const char32_t& ch) const;
+    TestCaseToken
+    ScanStringLiteral();
 
-        bool
-        is_identifier_part(const char32_t& ch) const;
+    bool
+    ScanExpectedToken(TestCaseToken token);
 
-        TestCaseToken
-        scan_string_literal();
+    TestCaseToken
+    TryScanToken(const TestCaseToken &token);
 
-        bool
-        scan_expected(TestCaseToken token);
+    bool
+    ScanOptionalToken(const TestCaseToken &token);
 
-        TestCaseToken
-        try_scan(const TestCaseToken& token);
+    void
+    SaveCurrentLocation();
 
-        bool
-        scan_optional(const TestCaseToken& token);
+    void
+    RevertToPreviousLocation();
 
-        void
-        save();
+    std::vector<std::string>
+    ScanParametersAfterOpenParen();
 
-        void
-        revert();
+    TestCaseToken
+    GetTokenFromValue(Glib::ustring value, std::size_t size);
 
-        std::vector<std::string>
-        ScanParametersAfterOpenParen();
+    std::vector<TestCaseArguments*>
+    parse_test_cases();
 
-        TestCaseToken
-        get_token_from_value(Glib::ustring value, std::size_t size);
+    TestCaseArguments*
+    ParseTestCaseArguments();
 
-        std::vector<TestCaseArguments*>
-        parse_test_cases();
+    std::map<std::string, std::string>*
+    ParseReplacementArguments();
 
-        TestCaseArguments*
-        parse_test_case_arguments();
+    void
+    ScanEscapeSequence();
 
-        std::map<std::string, std::string>*
-        parse_replacement_arguments();
+    std::map<std::string, std::string>*
+    ParseContentArguments();
 
-        void
-        scan_escape_sequence();
+    void
+    parse_source_code_arguments(std::vector<TestCaseArguments*>& test_cases);
 
-        std::map<std::string, std::string>*
-        parse_content_arguments();
+    void
+    ReplaceVariableTestCase(
+        const std::vector<std::vector<std::map<std::string, std::string> *>> &foreach_statements,
+        const std::vector<TestCaseArguments *> &noexpanded_test_cases,
+        std::vector<TestCaseArguments *> &expanded_test_cases,
+        std::map<std::string, std::string> &replacements,
+        std::size_t index
+    );
+};
 
-        void
-        parse_source_code_arguments(std::vector<TestCaseArguments*>& test_cases);
-
-        void
-        ReplaceVariableTestCase(
-            const std::vector<std::vector<std::map<std::string, std::string> *>> &foreach_statements,
-            const std::vector<TestCaseArguments *> &noexpanded_test_cases,
-            std::vector<TestCaseArguments *> &expanded_test_cases,
-            std::map<std::string, std::string> &replacements,
-            std::size_t index
-        );
-    };
 }
 
 

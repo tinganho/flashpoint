@@ -98,7 +98,7 @@ enum Character {
     Hash = 0x23,                  // #
     HorizontalTab = 0x09,         // [HORIZONTAL_TAB]
     LessThan = 0x3C,              // <
-    NewLine = 0x0A,               // \n
+    Newline = 0x0A,               // \n
     Minus = 0x2D,                 // -
     Dash = Minus,                 // -
     OpenBrace = 0x7B,             // {

@@ -1,0 +1,19 @@
+BACKEND localhost 8000:
+
+ON_GRAPHQL_FIELD field:
+
+{ "data": { "field" : 1 } }
+END
+
+ON_GRAPHQL_FIELD field2:
+Accept: */*
+
+{ "data": { "field" : 2 } }
+END
+
+END
+
+REQUEST localhost 8000:
+
+{ "query": "{ field }" }
+END

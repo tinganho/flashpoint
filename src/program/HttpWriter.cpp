@@ -3,8 +3,10 @@
 #include "HttpWriter.h"
 
 namespace flashpoint {
+static constexpr int const& SIZE_T_LEN = ((sizeof(size_t) * CHAR_BIT + 2) / 3 + 1 );
 
 namespace HttpWriterHelperMethods {
+
 
 void
 OnWriteEnd(uv_write_t *write_request, int status)
@@ -56,12 +58,45 @@ HttpWriter::WriteRequest(
 void
 HttpWriter::Write(const char *text)
 {
-    for (std::size_t i = 0; i < strlen(text); i++) {
+    auto length = strlen(text);
+    for (std::size_t i = 0; i < length; i++) {
         if (position_ == buffer_size_) {
             FlushBuffer();
         }
         write_buffer_[position_] = text[i];
         position_++;
+    }
+}
+
+
+void
+HttpWriter::Write(const char *text, std::size_t length)
+{
+    for (std::size_t i = 0; i < length; i++) {
+        if (position_ == buffer_size_) {
+            FlushBuffer();
+        }
+        write_buffer_[position_] = text[i];
+        position_++;
+    }
+}
+
+void
+HttpWriter::ScheduleBodyWrite(const char *text)
+{
+    auto length = strlen(text);
+    content_length_ += length;
+    scheduled_body_writes.push_back(new TextSpan(text, length));
+}
+
+void
+HttpWriter::CommitBodyWrite()
+{
+    char *content_length = new char[SIZE_T_LEN];
+    sprintf(content_length, "Content-Length: %zu\r\n\r\n", content_length_);
+    Write(content_length);
+    for (const TextSpan* text_span : scheduled_body_writes) {
+        Write(text_span->value, text_span->length);
     }
 }
 
@@ -85,15 +120,15 @@ HttpWriter::FlushBuffer()
         return;
     }
     if (use_ssl_) {
-        SSL_write(ssl_handle, write_buffer_, (int)position_);
+        SSL_write(ssl_handle, write_buffer_, position_);
         char buf[1024 * 16];
-        int bytes_read = 0;
-        while ((bytes_read = BIO_read(ssl_handle->wbio, buf, sizeof(buf))) > 0) {
+        unsigned int bytes_read = 0;
+        while ((bytes_read = static_cast<unsigned int>(BIO_read(ssl_handle->wbio, buf, sizeof(buf)))) != 0) {
             auto write_request = (uv_write_t*)malloc(sizeof(uv_write_t));
             write_request->data = this;
-            uv_buf_t buffer = uv_buf_init(buf, (unsigned int)bytes_read);
+            uv_buf_t buffer = uv_buf_init(buf, bytes_read);
             int r = uv_write(write_request, (uv_stream_t*)tcp_handle, &buffer, 1, HttpWriterHelperMethods::OnWriteEnd);
-            if(r < 0) {
+            if (r < 0) {
                 printf("ERROR: WriteToSocket erro");
                 return;
             }

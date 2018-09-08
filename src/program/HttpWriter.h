@@ -66,9 +66,18 @@ public:
     void
     Write(const char *text);
 
+    void
+    Write(const char *text, std::size_t length);
+
     template<typename ...Args>
     void
     Write(const char*, Args ...args);
+
+    void
+    ScheduleBodyWrite(const char *text);
+
+    void
+    CommitBodyWrite();
 
     void
     WriteLine();
@@ -88,18 +97,28 @@ public:
     void(*Read)(uv_stream_t* tcp_handle, ssize_t nread, const uv_buf_t* buf);
 
     bool is_end = false;
+
     SSL* ssl_handle;
+
     uv_tcp_t *tcp_handle;
 
 private:
-    bool use_ssl_;
-    char* write_buffer_;
-    std::size_t buffer_size_ = 4096;
-    std::size_t position_ = 0;
 
     void FlushBuffer();
 
     void WriteToSocket();
+
+    bool use_ssl_;
+
+    char* write_buffer_;
+
+    std::vector<TextSpan*> scheduled_body_writes;
+
+    unsigned int buffer_size_ = 4096;
+
+    unsigned int position_ = 0;
+
+    std::size_t content_length_;
 };
 
 template<typename ...Args>

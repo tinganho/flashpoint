@@ -52,10 +52,10 @@ private:
       std::function<void(const TestCase &test_case)> callback,
       bool delete_folder);
 
-    void visit_tests(
-        const path& test_folder,
-        std::vector<std::string>& tests,
-        std::function<void(const TestCase& test_case)> callback);
+    void VisitTests(
+        const path &test_folder,
+        std::vector<std::string> &tests,
+        std::function<void(const TestCase &test_case)> callback);
 
     bool assert_baselines(
         const char* current,
@@ -67,12 +67,12 @@ private:
         bool is_insertion,
         TextWriter &tw);
 
-    void call_test(
+    void CallTest(
         path test_folder,
         path test_path,
         path aggregate_path,
-        Glib::ustring source_code,
-        const std::function<void(const TestCase& test_case)>& callback);
+        std::string source_code,
+        const std::function<void(const TestCase &test_case)> &callback);
 
     std::string append_all_lines_except_last_line(
         const std::string &chunk,

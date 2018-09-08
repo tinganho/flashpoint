@@ -5,6 +5,7 @@
   "Expected end directive, instead reached the end of the document.": {},
   "Expected hostname.": {},
   "Expected port.": {},
+  "Expected '{0}' directive.": {},
   "Hostname cannot exceed 255 characters.": {},
   "Invalid hostname": {}
 }

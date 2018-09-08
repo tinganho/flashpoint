@@ -41,7 +41,7 @@ struct GatewayClient {
     std::map<const char*, Field*> fields;
     unsigned int resolved_fields = 0;
     unsigned int fields_to_resolve = 0;
-    std::map<const char*, std::vector<const uv_buf_t*>*> fields_result;
+    std::map<const char*, std::vector<TextSpan*>> fields_result;
     std::vector<FragmentDefinition*>* fragments;
 };
 

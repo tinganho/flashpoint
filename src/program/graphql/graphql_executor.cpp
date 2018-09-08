@@ -564,7 +564,7 @@ GraphQlExecutor::parse_value(Type* type)
 //                return std::make_pair(argument_literal, ValueKind::Argument);
         case GraphQlToken::OpenBrace: {
             std::size_t start_position = scanner->start_position;
-            auto location = get_token_location();
+            auto location = GetTokenLocation();
             if (type->type != TypeEnum::T_Object || type->is_list_type) {
                 // TODO: Create a version of parse_value that doesn't do checking and proper object parsing
                 scanner->SkipBlock();
